@@ -1,5 +1,7 @@
 (ns composition-kit.scratch
-  (:require [composition-kit.midi-util :as midi-util]))
+  (:require [composition-kit.midi-util :as midi-util])
+  (:require [composition-kit.music-sequence :as ms])
+  )
 
 (defn playNote
   [rcv chan pitch velocity dur]
@@ -24,3 +26,18 @@
     (conj 2)
     first
     )
+
+(def aa (-> (ms/new-sequence)
+            (ms/->sequence 
+             (fn[rt] (println "hi 2 " rt)) 2000
+             (fn[rt] (println "hi 3 " rt)) 3000
+             (fn[rt] (println "hi 1 " rt)) 1000)
+            ms/play
+            ;; ( (fn [a] (await a) @a) )
+            ))
+
+;;(agent-error aa)
+aa
+
+
+

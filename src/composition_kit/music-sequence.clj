@@ -1,4 +1,5 @@
-(ns composition-kit.music-sequence)
+(ns composition-kit.music-sequence
+  (import (java.util.concurrent Executors)))
 
 (defn ^:private compare-by-key-then [k]
   (fn [c1 c2]
@@ -8,4 +9,31 @@
         comp)))
   )
 
-(def seq-atom
+(defn new-sequence [] (atom (sorted-set-by (compare-by-key-then :time))))
+
+(defn ->sequence [s & items]
+  (loop [ss              s
+         [ i t & rest]   items ]
+    (if (nil? i) s
+        (recur (swap! s conj { :item i :time t }) rest)))
+  )
+
+(defn ^:private play-on-thread [agent-data t0-in-millis]
+  ;; So basically we will do a spin loop here playing and stripping the sequence
+  (loop [to-be-played      @(:seq agent-data)
+         ]
+    (let [rnow   (- (System/currentTimeMillis) t0-in-millis)
+          curr   (first to-be-played)]
+      (if (nil? curr) (assoc agent-data :play false)
+          (if (<= (:time curr) rnow) (do ((:item curr) rnow) (recur (rest to-be-played)))
+              ;;(do (Thread/sleep 1) (recur to-be-played))))))
+              (recur to-be-played)))))
+  )
+
+(defn play [ s & items ]
+  (let [args  (apply hash-map items)
+        play-agent  (agent {:seq s :play true})
+        ]
+    (send play-agent play-on-thread (System/currentTimeMillis))
+    )
+  )

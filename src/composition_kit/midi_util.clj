@@ -3,7 +3,7 @@
   )
 
 (defn ^{:private true} getOpenedReceiver-unmemo
-  ([]  (getIACReceiver-unmemo "Bus 1"))
+  ([]  (getOpenedReceiver-unmemo "Bus 1"))
   ([name]
    (->> (MidiSystem/getMidiDeviceInfo)
         (filter #(= (.getName %) name))
