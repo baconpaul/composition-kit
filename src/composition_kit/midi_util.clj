@@ -22,3 +22,4 @@
 (defn note-on [chan pitch vel] (ShortMessage. ShortMessage/NOTE_ON chan pitch vel))
 (defn note-off [chan pitch] (ShortMessage. ShortMessage/NOTE_OFF chan pitch 0))
 
+(defn gen-send [rcv msg] (fn [time] (.send rcv msg -1)))

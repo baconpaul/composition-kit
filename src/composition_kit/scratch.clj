@@ -18,33 +18,23 @@
 (map #(playNote (midi-util/getOpenedReceiver) 1 % 80 1000) [60 63 67])
 
 
-;;; Sorted Set Noodling
-;;(def xx (sorted-set))
-(-> (sorted-set)
-    (conj 8)
-    (conj 3)
-    (conj 2)
-    first
-    )
+
+;; This actually sequences properly!
+(def aa
+  (let [rcv (midi-util/getOpenedReceiver)
+        sd  (partial midi-util/gen-send rcv)
+        ]
+    (-> (ms/new-sequence)
+        (ms/->sequence 
+         (sd (midi-util/note-on 1 60 100)) 500
+         (sd (midi-util/note-on 1 61 100)) 520
+         (sd (midi-util/note-off 1 60)) 1000
+         (sd (midi-util/note-off 1 61)) 2000
+         ))))
+
+(ms/play aa)
 
 
-(-> (ms/new-sequence)
-    (ms/->sequence 
-     (fn[rt] (println "hi 2 " rt)) 2000
-     (fn[rt] (println "hi 3 " rt)) 3000
-     (fn[rt] (println "hi 1 " rt)) 1000))
-
-
-
-
-(def aa (-> (ms/new-sequence)
-            (ms/->sequence 
-             (fn[rt] (println "hi 2 " rt)) 3000
-             (fn[rt] (println "hi 3 " rt)) 5000
-             (fn[rt] (println "hi 1 " rt)) 1000)
-            ms/play
-            ;; ( (fn [a] (await a) @a) )
-            ))
 
 ;; (println (agent-error aa))
 
