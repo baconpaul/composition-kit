@@ -22,12 +22,15 @@
   ;; So basically we will do a spin loop here playing and stripping the sequence
   (loop [to-be-played      @(:seq agent-data)
          ]
-    (let [rnow   (- (System/currentTimeMillis) t0-in-millis)
-          curr   (first to-be-played)]
+    (let [rnow        (- (System/currentTimeMillis) t0-in-millis)
+          curr        (first to-be-played)
+          ]
       (if (nil? curr) (assoc agent-data :play false)
           (if (<= (:time curr) rnow) (do ((:item curr) rnow) (recur (rest to-be-played)))
-              ;;(do (Thread/sleep 1) (recur to-be-played))))))
-              (recur to-be-played)))))
+              (let [time-until  (- (:time curr) rnow)]
+                ;; Basically don't spin if I know i have to wait
+                (when (> time-until 2) (Thread/sleep (* time-until 0.7)))
+                (recur to-be-played))))))
   )
 
 (defn play [ s & items ]
