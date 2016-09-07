@@ -27,17 +27,31 @@
     first
     )
 
+
+(-> (ms/new-sequence)
+    (ms/->sequence 
+     (fn[rt] (println "hi 2 " rt)) 2000
+     (fn[rt] (println "hi 3 " rt)) 3000
+     (fn[rt] (println "hi 1 " rt)) 1000))
+
+
+
+
 (def aa (-> (ms/new-sequence)
             (ms/->sequence 
-             (fn[rt] (println "hi 2 " rt)) 2000
-             (fn[rt] (println "hi 3 " rt)) 3000
+             (fn[rt] (println "hi 2 " rt)) 3000
+             (fn[rt] (println "hi 3 " rt)) 5000
              (fn[rt] (println "hi 1 " rt)) 1000)
             ms/play
             ;; ( (fn [a] (await a) @a) )
             ))
 
+;; (println (agent-error aa))
+
 ;;(agent-error aa)
-aa
+
+(ms/stop aa)
+
 
 
 
