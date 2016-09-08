@@ -55,10 +55,13 @@
       (nil? curr)              (assoc agent-data :play false)
       (not (:play agent-data)) agent-data  ;; someone stopped me in another action so just chillax
       (<= (:time curr) rnow)   (do
+                                 ;; Make the agent data strip the first item then schedule out the rest
                                  ((:item curr) rnow)
                                  (send *agent* play-on-thread t0-in-millis)
                                  (assoc agent-data :seq (rest to-be-played)))
+      
       :else                    (let [time-until  (- (:time curr) rnow)]
+                                 ;; spin (with a little backoff sleeping)
                                  (send *agent* play-on-thread t0-in-millis)
                                  (when (> time-until 2) (Thread/sleep (* time-until 0.7)))
                                  agent-data)
