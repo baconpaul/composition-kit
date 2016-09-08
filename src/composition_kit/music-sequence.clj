@@ -1,20 +1,34 @@
 (ns composition-kit.music-sequence
   (import (java.util.concurrent Executors)))
 
+;; This is a set of functions which allow you to build a sequence of functions then 'play' them (have them triggered at their time)
+;; once built. It's not really intended for adding events on live but I suppose you could do that, since it would work.
+;;
+;; The implementation is done by making the sequence 'object' an agent with a sorted set to hold the notes, sorted by time of
+;; the item. We may want to sort by time then message type later. Lets see.
+
 (defn ^:private compare-by-key-then [k]
   (fn [c1 c2]
     (let [comp  (compare (k c1) (k c2))]
       (if (zero? comp)
-        (compare c1 c2)
+        (reduce (fn [s n] (if (zero? s) n s) )
+                (map (fn [[k v]]
+                       (if (and (instance? Comparable (first v)) (instance? Comparable (second v)))
+                         (compare (first v) (second v))
+                         (compare (hash (first v)) (hash (second v)))))
+                     (merge-with (fn [& v] v) c1 c2))
+                )
         comp)))
   )
 
+
 (defn new-sequence []
+  "Generate a new sequence object to which sequencable items can be added"
   (agent {:seq (sorted-set-by (compare-by-key-then :time))
           :play true }))
 
 
-(defn ->sequence [s & items]
+(defn add-to-sequence [s & items]
   (let [add-to-seq  (fn [agent-data item] (assoc agent-data :seq (conj (:seq agent-data) item)))]
     (last (map (fn [ i t ] (send s add-to-seq { :item i :time t } ))
                (take-nth 2 items)
