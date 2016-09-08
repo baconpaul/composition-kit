@@ -24,11 +24,11 @@
 
 (defn new-sequence []
   "Generate a new sequence object to which sequencable items can be added"
-  (agent {:seq (sorted-set-by (compare-by-key-then :time))
-          :play true }))
+  {:seq (sorted-set-by (compare-by-key-then :time))
+   :play true })
 
 
-(defn add-to-sequence [s & items]
+(defn add-to-sequence-agent [s & items]
   (let [add-to-seq  (fn [agent-data item] (assoc agent-data :seq (conj (:seq agent-data) item)))]
     (last (map (fn [ i t ] (send s add-to-seq { :item i :time t } ))
                (take-nth 2 items)
@@ -36,6 +36,12 @@
                )
           ))
   )
+
+(defn add-to-sequence [s & items]
+  (let [item-maps (map (fn [ i t ] { :item i :time t }) (take-nth 2 items) (take-nth 2 (rest items)))
+        new-set   (reduce (fn [ss ii] (conj ss ii)) (:seq s) item-maps)]
+    (assoc s :seq new-set)))
+
 
 
 (defn ^:private play-on-thread [agent-data t0-in-millis]
@@ -63,9 +69,9 @@
 
 (defn play [ s & items ]
   (let [args  (apply hash-map items)         ]
-    (send s play-on-thread (System/currentTimeMillis))
+    (send (agent s) play-on-thread (System/currentTimeMillis))
     )
   )
 
 (defn stop [ s ] (send s (fn [agent-data] (assoc agent-data :play false))))
-  
+
