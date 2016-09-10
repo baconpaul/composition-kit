@@ -13,6 +13,8 @@
     (is (= (.getData2 non) 34))
     (is (= (.getCommand non) (javax.sound.midi.ShortMessage/NOTE_ON)))
 
+    (is (= (m/message-to-map non) { :channel 12 :data1 23 :data2 34 :command javax.sound.midi.ShortMessage/NOTE_ON } ))
+
     (is (= (.getChannel nof) 11))
     (is (= (.getData1 nof) 22))
     (is (= (.getData2 nof) 0))
@@ -41,11 +43,40 @@
 (deftest midi-transport-has-fidelity
   (let [r (m/get-opened-receiver)
         t (m/get-opened-transmitter)
+        callback-store (atom [])
         ]
     (is (not (nil? r)))
     (is (not (nil? t)))
+    (is (not (nil? (m/register-transmitter-callback
+                    t
+                    (fn [msg time] (swap! callback-store conj (m/message-to-map msg)))
+                    ))))
+    (let [test-midi-cycle
+          (do
+            ((m/send-control-change r 0 12 72) 0)
+            (Thread/sleep 1)
+            ((m/send-control-change r 1 17 73) 1)
+            (Thread/sleep 1)
+            ((m/send-note-on r 2 18 120) 2)
+            (Thread/sleep 1)
+            ((m/send-note-off r 2 18) 2)
+            (loop [ct 0]
+              (if (or (= (count @callback-store) 4) (== ct 10)) @callback-store
+                  (do
+                    (Thread/sleep 100)
+                    (recur (inc ct))))))]
+      (is (= (map :channel test-midi-cycle) '(0 1 2 2)))
+      (is (= (map :command test-midi-cycle) (list javax.sound.midi.ShortMessage/CONTROL_CHANGE
+                                                  javax.sound.midi.ShortMessage/CONTROL_CHANGE
+                                                  javax.sound.midi.ShortMessage/NOTE_ON
+                                                  javax.sound.midi.ShortMessage/NOTE_OFF
+                                                  )))
+      (is (= (map :data1 test-midi-cycle) '(12 17 18 18)))
+      (is (= (map :data2 test-midi-cycle) '(72 73 120 0)))
+      )
     )
   )
 
 
-;;mid(run-tests)
+;;mid
+;; (run-tests)

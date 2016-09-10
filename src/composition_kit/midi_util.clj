@@ -62,8 +62,16 @@
 (def send-control-change (gen-send-message-func ShortMessage/CONTROL_CHANGE))
 (def send-pitch-bend (gen-send-message-func ShortMessage/PITCH_BEND))
 
+(defn message-to-map [m]
+  {:channel (.getChannel m)
+   :command (.getCommand m)
+   :data1   (.getData1 m)
+   :data2   (.getData2 m)})
+
 ;; The transmitter API is a bit clunky if you want raw messages so lets abstract it away a little bit
 (defn register-transmitter-callback [ t f ]
   (.setReceiver t
                 (reify javax.sound.midi.Receiver
-                  (send [this msg time] (f msg time))))) 
+                  (send [this msg time] (f msg time))))
+  t
+  ) 
