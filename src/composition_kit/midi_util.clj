@@ -16,7 +16,23 @@
    )
   )
 
+(defn ^{:private true} getOpenedTransmitter-unmemo
+  ([]  (getOpenedTransmitter-unmemo "Bus 1"))
+  ([name]
+   (->> (MidiSystem/getMidiDeviceInfo)
+        (filter #(= (.getName %) name))
+        (map #(MidiSystem/getMidiDevice %))
+        (filter #(>= (.getMaxReceivers %) 0))
+        first
+        (#(do (.open %) %))
+        (#(.getTransmitter %))
+        )
+   )
+  )
+
+
 (def getOpenedReceiver (memoize getOpenedReceiver-unmemo))
+(def getOpenedTransmitter (memoize getOpenedTransmitter-unmemo))
 
 ;; Wrappers for short message types
 (defn ^:private gen-short-message-func
@@ -46,3 +62,8 @@
 (def send-control-change (gen-send-message-func ShortMessage/CONTROL_CHANGE))
 (def send-pitch-bend (gen-send-message-func ShortMessage/PITCH_BEND))
 
+;; The transmitter API is a bit clunky if you want raw messages so lets abstract it away a little bit
+(defn register-transmitter-callback [ t f ]
+  (.setReceiver t
+                (reify javax.sound.midi.Receiver
+                  (send [this msg time] (f msg time))))) 
