@@ -32,15 +32,15 @@
   )
 
 ;; Testing send message is really hard unless I also implement recieve message and listen on IAC. Do that later
-;;(let [r (midi-util/getOpenedTransmitter)
-;;q (midi-util/getOpenedReceiver)]
+;;(let [r (midi-util/get-OpenedTransmitter)
+;;q (midi-util/get-OpenedReceiver)]
 ;;(midi-util/register-transmitter-callback r (fn [m t] (println "YEEHAH" m t )))
 ;;( (midi-util/send-control-change q 2 3 4 ) 0 )
 ;;)
 
 (deftest midi-transport-has-fidelity
-  (let [r (m/getOpenedReceiver)
-        t (m/getOpenedTransmitter)
+  (let [r (m/get-opened-receiver)
+        t (m/get-opened-transmitter)
         ]
     (is (not (nil? r)))
     (is (not (nil? t)))
@@ -48,4 +48,4 @@
   )
 
 
-;;(run-tests)
+;;mid(run-tests)

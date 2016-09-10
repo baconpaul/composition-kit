@@ -2,8 +2,8 @@
   (:import (javax.sound.midi MidiSystem ShortMessage))
   )
 
-(defn ^{:private true} getOpenedReceiver-unmemo
-  ([]  (getOpenedReceiver-unmemo "Bus 1"))
+(defn ^{:private true} get-opened-receiver-unmemo
+  ([]  (get-opened-receiver-unmemo "Bus 1"))
   ([name]
    (->> (MidiSystem/getMidiDeviceInfo)
         (filter #(= (.getName %) name))
@@ -16,8 +16,8 @@
    )
   )
 
-(defn ^{:private true} getOpenedTransmitter-unmemo
-  ([]  (getOpenedTransmitter-unmemo "Bus 1"))
+(defn ^{:private true} get-opened-transmitter-unmemo
+  ([]  (get-opened-transmitter-unmemo "Bus 1"))
   ([name]
    (->> (MidiSystem/getMidiDeviceInfo)
         (filter #(= (.getName %) name))
@@ -31,8 +31,8 @@
   )
 
 
-(def getOpenedReceiver (memoize getOpenedReceiver-unmemo))
-(def getOpenedTransmitter (memoize getOpenedTransmitter-unmemo))
+(def get-opened-receiver (memoize get-opened-receiver-unmemo))
+(def get-opened-transmitter (memoize get-opened-transmitter-unmemo))
 
 ;; Wrappers for short message types
 (defn ^:private gen-short-message-func
