@@ -17,7 +17,7 @@
                      :return-values
                      (#(map (fn [p n] (reduce (fn [s k] (assoc s k (- (k n) (k p)))) {} (keys p))) % (rest %)))
                      )
-        close   (fn [a b] (< (max (- a b) (- b a)) 3))
+        close   (fn [a b] (< (max (- a b) (- b a)) 2))
         ]
     (is (every? identity (map #( close (:dt %) (:ct %)) test-set)))
     (is (every? identity (map close (map :dt test-set) '(500 1000 600))))
