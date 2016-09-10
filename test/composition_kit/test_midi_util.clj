@@ -31,3 +31,5 @@
     )
   )
 
+;; Testing send message is really hard unless I also implement recieve message and listen on IAC. Do that later
+
