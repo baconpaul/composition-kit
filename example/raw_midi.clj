@@ -10,14 +10,14 @@
 ;; The functions you want to schedule are ones which send midi events to a connected midi reciever. So lets do a little example of
 ;; playing a single note.
 
-(let [rcv (mid/getOpenedReceiver)]
+(let [rcv (mid/get-opened-receiver)]
   (-> (msq/new-sequence)
       (msq/add-to-sequence (mid/send-note-on rcv 1 60 100) 0)
       (msq/add-to-sequence (mid/send-note-off rcv 1 60) 2000)
       (msq/play)))
 
 ;; Note the alternate syntax where add-to-sequence can take a set of function time pairs. Here's a lovely tritone
-(let [rcv (mid/getOpenedReceiver)]
+(let [rcv (mid/get-opened-receiver)]
   (-> (msq/new-sequence)
       (msq/add-to-sequence
        (mid/send-note-on rcv 1 60 100) 0
@@ -32,7 +32,7 @@
 ;; You don't have to add the events in order. They sort themselves out behind the scene. Here's a way to generate an
 ;; increasingly legato whole tone scale, for instance, by mapping across ranges. Now this is gross because the state
 ;; object is silently collecting state inside itself and breaks the immutability contract through this API.
-(let [rcv (mid/getOpenedReceiver)]
+(let [rcv (mid/get-opened-receiver)]
   (-> (msq/new-sequence)
       (#(reduce (fn [s d]
                   (msq/add-to-sequence s
@@ -55,11 +55,11 @@
 ;; + click on the knob you want to automate
 ;; + click 'learn'
 ;; + send one control message. For instance
-;;     ((mid/send-control-change (mid/getOpenedReceiver) 1 -cc- 64) 0)
+;;     ((mid/send-control-change (mid/get-opened-receiver) 1 -cc- 64) 0)
 ;; + You should see that learned
 
 ;; And then you can do something like this
-(let [rcv (mid/getOpenedReceiver)]
+(let [rcv (mid/get-opened-receiver)]
   (-> (msq/new-sequence)
       (#(reduce (fn [s v]
                   (msq/add-to-sequence
