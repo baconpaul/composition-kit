@@ -60,7 +60,7 @@
       :else                    (let [time-until  (- (:time curr) rnow)]
                                  ;; spin (with a little backoff sleeping)
                                  (send *agent* play-on-thread t0-in-millis)
-                                 (when (> time-until 2) (Thread/sleep (* time-until 0.7)))
+                                 (when (> time-until 5) (Thread/sleep (* time-until 0.7)))
                                  agent-data)
       )
     )
