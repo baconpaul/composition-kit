@@ -1,6 +1,6 @@
 (ns composition-kit.example.raw-midi
   (:require [composition-kit.midi-util :as mid])
-  (:require [composition-kit.music-sequence :as msq]))
+  (:require [composition-kit.physical-sequence :as psq]))
 
 ;; This example shows the raw midi APIs. Probably you don't want to use antyhing at this level in composition but it's handy
 ;; to have an example kicking around to make sure it all still works.

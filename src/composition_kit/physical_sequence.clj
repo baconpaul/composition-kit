@@ -1,5 +1,4 @@
-(ns composition-kit.music-sequence
-  (import (java.util.concurrent Executors)))
+(ns composition-kit.physical-sequence)
 
 ;; This is a set of functions which allow you to build a sequence of functions then 'play' them (have them triggered at their time)
 ;; once built. It's not really intended for adding events on live but I suppose you could do that, since it would work.

@@ -1,16 +1,16 @@
-(ns composition-kit.test-music-sequence
+(ns composition-kit.test-physical-sequence
   (use clojure.test)
-  (require [composition-kit.music-sequence :as ms])
+  (require [composition-kit.physical-sequence :as ps])
   )
 
 ;; Run a set of functions recording return values and see how they do
 (deftest play-sequence-test
-  (let [test-set (-> (ms/new-sequence)
-                     (ms/add-to-sequence (fn [t] {:dt t :ct (System/currentTimeMillis)}) 500)
-                     (ms/add-to-sequence (fn [t] {:dt t :ct (System/currentTimeMillis)}) 1000)
-                     (ms/add-to-sequence (fn [t] {:dt t :ct (System/currentTimeMillis)}) 2000)
-                     (ms/add-to-sequence (fn [t] {:dt t :ct (System/currentTimeMillis)}) 2600)
-                     (ms/play)
+  (let [test-set (-> (ps/new-sequence)
+                     (ps/add-to-sequence (fn [t] {:dt t :ct (System/currentTimeMillis)}) 500)
+                     (ps/add-to-sequence (fn [t] {:dt t :ct (System/currentTimeMillis)}) 1000)
+                     (ps/add-to-sequence (fn [t] {:dt t :ct (System/currentTimeMillis)}) 2000)
+                     (ps/add-to-sequence (fn [t] {:dt t :ct (System/currentTimeMillis)}) 2600)
+                     (ps/play)
                      ;; Now if we wanted this to be a production app we would add a watcher looking
                      ;; for the play status to flip to false or seq to empty but instead do this
                      ( (fn [a] (Thread/sleep 3000 ) @a))
@@ -26,17 +26,17 @@
 
 (deftest assemble-sequence-test
   ;; Lots of different ways to assemble sequences
-  (let [s1   (-> (ms/new-sequence)
-                 (ms/add-to-sequence identity 0 identity 100 identity 200 identity 400))
+  (let [s1   (-> (ps/new-sequence)
+                 (ps/add-to-sequence identity 0 identity 100 identity 200 identity 400))
         ;; order shouldn't matter
-        s2   (-> (ms/new-sequence)
-                 (ms/add-to-sequence identity 100 identity 0 identity 400 identity 200))
+        s2   (-> (ps/new-sequence)
+                 (ps/add-to-sequence identity 100 identity 0 identity 400 identity 200))
         ;; nor syntax
-        s3   (-> (ms/new-sequence)
-                 (ms/add-to-sequence identity 100)
-                 (ms/add-to-sequence identity 0)
-                 (ms/add-to-sequence identity 200)
-                 (ms/add-to-sequence identity 400))
+        s3   (-> (ps/new-sequence)
+                 (ps/add-to-sequence identity 100)
+                 (ps/add-to-sequence identity 0)
+                 (ps/add-to-sequence identity 200)
+                 (ps/add-to-sequence identity 400))
         stimes (fn [s] (map :time (:seq s)))
         disitem (fn [s] (distinct (map :item (:seq s))))
         ]
