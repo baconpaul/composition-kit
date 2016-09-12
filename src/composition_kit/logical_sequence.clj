@@ -49,3 +49,35 @@
 (defn concrete-logical-sequence [items]
   (sort-by item-time items))
 
+;; Merged sequences are a lazy sequence which makes the earliest one its first. This is actually 
+(defn merged-logical-sequences [sequences]
+  (if (empty? sequences)
+    []
+
+    (let [first-els      (remove nil? (map first sequences))
+          earliest-time  (apply min (map item-time first-els))
+          headel-picked
+          (loop [seqs    sequences
+                 res     { :headel nil :rest [] }]
+            (cond
+              (empty? seqs) res
+              
+              (= earliest-time (item-time (first (first seqs))))
+              (-> res
+                  (assoc :headel (first (first seqs)))
+                  (assoc :rest (concat (:rest res)
+                                       (if (empty? (rest (first seqs))) [] [ (rest (first seqs)) ])
+                                       (rest seqs))))
+              
+              :else (recur (rest seqs) (assoc res :rest (conj (:rest res) (first seqs)))))
+            
+            )]
+      (lazy-seq (cons (:headel headel-picked) (merged-logical-sequences (:rest headel-picked))))
+      )
+    )
+  )
+
+
+
+
+
