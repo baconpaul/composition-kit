@@ -62,8 +62,6 @@
                   (= ivl 'WH) (+ 3 prior)
                   (= ivl 'W) (+ 2 prior)
                   (= ivl 'H) (inc prior)
-                  (= ivl 'T) (+ 2 prior)
-                  (= ivl 'S) (inc prior)
                   )) 0 intervals))
 
 (def ^:private scales-data

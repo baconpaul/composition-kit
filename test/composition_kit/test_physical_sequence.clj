@@ -37,6 +37,12 @@
                  (ps/add-to-sequence identity 0)
                  (ps/add-to-sequence identity 200)
                  (ps/add-to-sequence identity 400))
+        ;; Nor contemperaneous events (as long as they are actually distinct)
+        s4   (-> (ps/new-sequence)
+                 (ps/add-to-sequence identity 10)
+                 (ps/add-to-sequence partial 10)
+                 (ps/add-to-sequence juxt 10))
+        
         stimes (fn [s] (map :time (:seq s)))
         disitem (fn [s] (distinct (map :item (:seq s))))
         ]
@@ -51,9 +57,14 @@
     (is (= (first (disitem s2)) identity))
     (is (= (first (disitem s3)) identity))
 
+    (is (= (count s4) 3))
+    (is (= (count (distinct (map :time (:seq s4)))) 1))
+    (is (= (set (map :item (:seq s4))) #{ identity partial juxt }))
+    
     (is (:play s1))
     (is (:play s2))
     (is (:play s3))
+    (is (:play s4))
     )
   )
 

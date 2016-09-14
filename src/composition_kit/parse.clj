@@ -1,58 +1,6 @@
 (ns composition-kit.parse
   (require [composition-kit.tonal-theory :as th]))
 
-;; rejigger this so it works
-(defn- lily-note-to-data-ancient [n prior]
-  (let [[m1 pitch prel pdur]   (re-find (re-pattern "^([a-z]+)([^\\d]*)(\\d*.*)") n)
-
-        ;; Duration carries over from prior if not specified
-        ;; FIXME: We need to deal with duration parsing (like 4.. and stuff) and have to worry
-        ;; about triplets one day
-        sdur                   (if (= pdur "") (:sdur prior) pdur)
-        dur                    (/ 4 (Integer/parseInt sdur)) ;; in quarter note beats
-
-        ;; Convert to a overtone note name and note
-        [m2 pb pacc]           (re-find (re-pattern "^([a-g])(.*)$") pitch)
-        notename               (str pb (cond (= pacc "is") "#" (= pacc "es") "b"))
-        rnote                  ((keyword notename) {})
-        note                   (or rnote (:note prior))
-
-        ;; OK is the distance to prior and octave shifts
-        pnotediff              (- note (:note prior))
-        poctavediff            (cond
-                                 (>= pnotediff 7) -1
-                                 (<= pnotediff -7) +1
-                                 true 0)
-        ;; There is invariably a cleverer way to do this, but this works for now
-        roctavediff            (cond
-                                 (= prel ",") -1
-                                 (= prel ",,") -2
-                                 (= prel ",,,") -3
-                                 (= prel ",,,,") -4
-                                 (= prel "'" ) 1
-                                 (= prel "''" ) 2
-                                 (= prel "'''" ) 3
-                                 (= prel "''''" ) 4
-                                 true 0)
-        octavediff             (+ poctavediff roctavediff)
-        
-        notediff               (+ pnotediff (* 12 octavediff))
-        midinote               (+ (:midinote prior) notediff)
-        ]
-    {:lily n
-     :notename notename
-     :note note
-     :pitch pitch
-     :midinote midinote
-     :value midinote
-     :notediff notediff
-     :isrest   (nil? rnote)
-     :sdur sdur
-     :dur dur
-     :prior (dissoc prior :prior)
-     :type ::MidiNotesWithDuration}))
-
-
 
 (defn ^:private lily-note-to-data [n prior]
   (let [[m1 spitch prel pdur]   (re-find (re-pattern "^([a-z]+)([^\\d]*)(\\d*.*)") n)

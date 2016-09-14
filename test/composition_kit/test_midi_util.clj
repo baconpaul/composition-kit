@@ -77,6 +77,36 @@
     )
   )
 
+(deftest midi-instrument-api
+  (let [m (m/midi-instrument "Bus 1" 0)
+        t (m/get-opened-transmitter)
+        callback-store (atom [])
+        ]
+    (is (not (nil? m)))
+    (is (not (nil? t)))
+    (is (not (nil? (m/register-transmitter-callback
+                    t
+                    (fn [msg time] (swap! callback-store conj (m/message-to-map msg)))
+                    ))))
+    (let [test-midi-cycle
+          (do
+            ((m/send-control-change (:receiver m) (:channel m) 12 72) 0)
+            (Thread/sleep 1)
+            (loop [ct 0]
+              (if (or (= (count @callback-store) 1) (== ct 10)) @callback-store
+                  (do
+                    (Thread/sleep 100)
+                    (recur (inc ct))))))]
+      (is (= (map :channel test-midi-cycle) '(0)))
+      (is (= (map :command test-midi-cycle) (list javax.sound.midi.ShortMessage/CONTROL_CHANGE)))
+
+      (is (= (map :data1 test-midi-cycle) '(12)))
+      (is (= (map :data2 test-midi-cycle) '(72)))
+
+      (is (= (m/midi-instrument "Bus 1" 13) (m/midi-instrument 13)))
+      )
+    )
+  )
 
 ;;mid
 ;; (run-tests)
