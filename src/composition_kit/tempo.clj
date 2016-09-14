@@ -1,7 +1,7 @@
 (ns composition-kit.tempo)
 
 ;; We have a few key operations we can do on a tempo clock. Define them as multimethods switched on :clocktype
-(defmulti metronome?           (fn [cl] (:clocktype cl)))
+(defmulti metronome?           :clocktype)
 (defmethod metronome? :default [cl] false)
 
 (defmulti beats-to-time        (fn [cl b] (:clocktype cl))) ;; beats since epoch. 0

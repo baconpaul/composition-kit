@@ -64,7 +64,7 @@
          fprior { :note (th/note-by-name rel) }]
      (map (fn[ el ]
             (-> (dissoc el :prior)
-                ((fn [x] (assoc x :note (if (:rest x) nil (:note x)))))
+                ((fn [x] (assoc x :note (when-not (:rest x) (:note x)))))
                 ((fn [x] (assoc x :note-name (:note (:note x)))))))
           (loop  [n    notes
                   res  []

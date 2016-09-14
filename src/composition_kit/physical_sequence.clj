@@ -31,7 +31,7 @@
 
 (defn add-to-sequence [s & items]
   (let [item-maps (map (fn [ i t ] { :item i :time t }) (take-nth 2 items) (take-nth 2 (rest items)))
-        new-set   (reduce (fn [ss ii] (conj ss ii)) (:seq s) item-maps)]
+        new-set   (reduce conj (:seq s) item-maps)]
     (assoc s :seq new-set)))
 
 

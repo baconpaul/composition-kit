@@ -1,14 +1,14 @@
 (ns composition-kit.logical-sequence)
 
 ;; so we start with an item which can be sequenced, defined by a pair of multimethods
-(defmulti music-item?    (fn [it] (:itemtype it)))
+(defmulti music-item?    :itemtype)
 (defmethod music-item? :default [it] false)
 
-(defmulti item-payload  (fn [it] (:itemtype it)))
-(defmethod item-payload :default [it] (if (music-item? it) ( :payload it ) nil ))
+(defmulti item-payload   :itemtype)
+(defmethod item-payload :default [it] (when (music-item? it) ( :payload it )))
 
-(defmulti item-beat   (fn [it] (:itemtype it)))
-(defmethod item-beat :default [it] (if (music-item? it) ( :beat it ) nil ))
+(defmulti item-beat      :itemtype)
+(defmethod item-beat :default [it] (when (music-item? it) ( :beat it )))
 
 ;; We define two types of items; one which has a duration (like a note) and one which is simply at a point
 ;; in beat (like, say, a dynamics). The note with a duration has a separate dimension of time which is how long
@@ -60,14 +60,14 @@
             (cond
               (empty? seqs) res
               
-              (= earliest-beat (item-beat (first (first seqs))))
+              (= earliest-beat (item-beat (ffirst seqs)))
               (-> res
-                  (assoc :headel (first (first seqs)))
+                  (assoc :headel (ffirst seqs))
                   (assoc :rest (concat (:rest res)
                                        (if (empty? (rest (first seqs))) [] [ (rest (first seqs)) ])
                                        (rest seqs))))
               
-              :else (recur (rest seqs) (assoc res :rest (conj (:rest res) (first seqs)))))
+              :else (recur (rest seqs) (update-in res [ :rest ] conj (first seqs))))
             
             )]
       (lazy-seq (cons (:headel headel-picked) (merged-logical-sequences (:rest headel-picked))))
