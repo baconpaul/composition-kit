@@ -11,21 +11,34 @@
 (defmethod item-beat :default [it] (if (music-item? it) ( :beat it ) nil ))
 
 ;; We define two types of items; one which has a duration (like a note) and one which is simply at a point
-;; in beat (like, say, a dynamics)
+;; in beat (like, say, a dynamics). The note with a duration has a separate dimension of time which is how long
+;; it is held for. Since notes can slur, echo, be staccato, be detache and so on, this is a number which
+;; when rendered would tell you how much to hold inside the duration.
 
-(defn notes-with-duration [ notes dur beat ]
-  {:itemtype :notes-with-duration
-   :payload  { :notes notes :dur dur }
-   :beat     beat
+(defn notes-with-duration
+  ([ notes dur beat ] (notes-with-duration notes dur beat 1))
+  ([ notes dur beat hold-for]
+   {:itemtype ::notes-with-duration
+    :payload  { :notes notes :dur dur :hold-for hold-for }
+    :beat     beat
+    })
+  )
+
+(defmethod music-item? ::notes-with-duration [it] true)
+
+(defn rest-with-duration [ dur beat ]
+  {:itemtype ::rest-with-duration
+   :payload { :dur dur }
+   :beat    beat
    })
-(defmethod music-item? :notes-with-duration [it] true)
+(defmethod music-item? ::rest-with-duration [it] true)
 
 (defn music-event [ event beat ]
-  {:itemtype :music-event
+  {:itemtype ::music-event
    :payload  event
    :beat     beat
    })
-(defmethod music-item? :music-event [it] true)
+(defmethod music-item? ::music-event [it] true)
 
 ;; so a logical sequence is simply an object respodning to first and rest where the guarantee is that
 ;; (item-beat first) < (item-beat (first rest)) always. There are lots of ways to make these. Here are a few,
@@ -63,9 +76,10 @@
   )
 
 
+;; FIXME - deal with rests
 (defn sequence-from-pitches-and-durations [ pitch-pattern duration-pattern & options-list ]
   (let [options     (apply hash-map options-list)
-        length      (get options :length :legato)
+        length      (get options :length :standard)
         volume      (get options :volume 100)
         start-beat  (get options :start-beat 0)
         ]
@@ -75,13 +89,34 @@
            res          [] ]
       (if (empty? pitches) res
           (let [fp       (first pitches)
-                this-dur (case length
-                           :legato    (first durations)
-                           :staccato  (/ (first durations) 10)
-                           :else      (* 0.95 (first durations)))
-                this-item (notes-with-duration fp this-dur curr-beat)]
+                this-hold (case length
+                            :legato    1
+                            :staccato  0.1
+                            :standard  0.95)
+                this-item (notes-with-duration fp (first durations) curr-beat this-hold)]
             (recur (rest pitches) (rest durations) (+ curr-beat (first durations)) (conj res this-item)))))))
-           
-    
 
+(defn ^:private loop-sequence-helper [ original current-subset count offset phrase-length ]
+  (if (empty? current-subset)
+    (if (<= count 1)
+      [] ;; we just finished playing something we want looped once; so we are done
+      (loop-sequence-helper original original (dec count) (+ offset phrase-length) phrase-length))
+    ;; So our current helper is not zero so:
+    (let [fc  (first current-subset)
+          fcb (item-beat fc)
+          rb  (assoc fc :beat (+ fcb offset))]
+      (lazy-seq (cons rb (loop-sequence-helper original (rest current-subset) count offset phrase-length ))))
+    ))
+
+(defn loop-sequence [ original count ]
+  (loop-sequence-helper original original count 0
+                        (reduce
+                         +
+                         (map
+                          (comp :dur item-payload)
+                          (filter (comp not nil? :dur item-payload) original)
+                          )
+                         )
+                        )
+  )
 
