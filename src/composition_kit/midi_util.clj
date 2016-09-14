@@ -1,5 +1,6 @@
 (ns composition-kit.midi-util
   (:import (javax.sound.midi MidiSystem ShortMessage))
+  (require [composition-kit.logical-sequence :as ls])
   )
 
 (defn ^{:private true} get-opened-receiver-unmemo
@@ -74,4 +75,18 @@
                 (reify javax.sound.midi.Receiver
                   (send [this msg time] (f msg time))))
   t
-  ) 
+  )
+
+;; Make a little abstraction for a midi instrument which we can use to pass around state later on.
+(defn midi-instrument
+  ([channel] (midi-instrument "Bus 1" channel))
+  ([bus channel]
+   {
+    :instrument-type ::midi-instrument
+    :receiver (get-opened-receiver bus)
+    :channel  channel
+    })
+  )
+
+
+

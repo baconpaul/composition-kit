@@ -7,47 +7,32 @@
 (defmulti item-payload  (fn [it] (:itemtype it)))
 (defmethod item-payload :default [it] (if (music-item? it) ( :payload it ) nil ))
 
-(defmulti item-time   (fn [it] (:itemtype it)))
-(defmethod item-time :default [it] (if (music-item? it) ( :time it ) nil ))
+(defmulti item-beat   (fn [it] (:itemtype it)))
+(defmethod item-beat :default [it] (if (music-item? it) ( :beat it ) nil ))
 
 ;; We define two types of items; one which has a duration (like a note) and one which is simply at a point
-;; in time (like, say, a dynamics)
+;; in beat (like, say, a dynamics)
 
-(defn notes-with-duration [ notes dur time ]
+(defn notes-with-duration [ notes dur beat ]
   {:itemtype :notes-with-duration
    :payload  { :notes notes :dur dur }
-   :time     time
+   :beat     beat
    })
 (defmethod music-item? :notes-with-duration [it] true)
 
-(defn music-event [ event time ]
+(defn music-event [ event beat ]
   {:itemtype :music-event
    :payload  event
-   :time     time
+   :beat     beat
    })
 (defmethod music-item? :music-event [it] true)
 
-;; Next we need an instrument abstraction. An instrument is a very simple thing on which we can play an
-;; event instantly. That's all of the contract. We don't actually define any instruments here, just the
-;; methods
-(defmulti instrument? (fn [it] (:instrument-type it)))
-(defmulti play-on (fn [instrument musicitem] [ (:instrument-type instrument) (:itemtype musicitem) ] ))
-
-;; Now we define an instrument-bound item which contains a subordinate item
-(defn instument-bound-item [ instrument item ]
-  {:itemtype :instrument-bound
-   :payload (fn [t] (play-on instrument item))
-   :time    (:time item)
-   })
-(defmethod music-item? :instrument-bound [it] true)
-
-
 ;; so a logical sequence is simply an object respodning to first and rest where the guarantee is that
-;; (item-time first) < (item-time (first rest)) always. There are lots of ways to make these. Here are a few,
+;; (item-beat first) < (item-beat (first rest)) always. There are lots of ways to make these. Here are a few,
 ;; but with lazy-seq you can of course do more
 
 (defn concrete-logical-sequence [items]
-  (sort-by item-time items))
+  (sort-by item-beat items))
 
 ;; Merged sequences are a lazy sequence which makes the earliest one its first. This is actually 
 (defn merged-logical-sequences [sequences]
@@ -55,14 +40,14 @@
     []
 
     (let [first-els      (remove nil? (map first sequences))
-          earliest-time  (apply min (map item-time first-els))
+          earliest-beat  (apply min (map item-beat first-els))
           headel-picked
           (loop [seqs    sequences
                  res     { :headel nil :rest [] }]
             (cond
               (empty? seqs) res
               
-              (= earliest-time (item-time (first (first seqs))))
+              (= earliest-beat (item-beat (first (first seqs))))
               (-> res
                   (assoc :headel (first (first seqs)))
                   (assoc :rest (concat (:rest res)
@@ -78,6 +63,25 @@
   )
 
 
-
+(defn sequence-from-pitches-and-durations [ pitch-pattern duration-pattern & options-list ]
+  (let [options     (apply hash-map options-list)
+        length      (get options :length :legato)
+        volume      (get options :volume 100)
+        start-beat  (get options :start-beat 0)
+        ]
+    (loop [pitches      pitch-pattern
+           durations    duration-pattern
+           curr-beat    start-beat
+           res          [] ]
+      (if (empty? pitches) res
+          (let [fp       (first pitches)
+                this-dur (case length
+                           :legato    (first durations)
+                           :staccato  (/ (first durations) 10)
+                           :else      (* 0.95 (first durations)))
+                this-item (notes-with-duration fp this-dur curr-beat)]
+            (recur (rest pitches) (rest durations) (+ curr-beat (first durations)) (conj res this-item)))))))
+           
+    
 
 
