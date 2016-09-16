@@ -36,7 +36,10 @@
 (defn notes-by-midinote [num]
   "(first (notes-by-midinote 60)) for instance"
   (get notes-data-by-midinote num))
-  
+
+(defn name-to-midinote [name]
+  (:midinote (get notes-data name)))
+
 
 
 (defn interval-from-c [note]

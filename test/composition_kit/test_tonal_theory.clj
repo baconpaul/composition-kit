@@ -7,6 +7,8 @@
 
   (is (= (- (:midinote (th/note-by-name :c5)) (:midinote (th/note-by-name :c4))) 12) "Octaves are octaves")
 
+  (is (= (th/name-to-midinote :c4) 60))
+  
   (is (every? (map (fn [n] (= (every? #(= (:midinote %) n)) (th/notes-by-midinote n)))) (map (partial + 30) (range 40))) "Enharmonic 1")
   (is (= (:midinote (th/note-by-name :cis3) (th/note-by-name :des3))) "Enharmonic 2")
   )
