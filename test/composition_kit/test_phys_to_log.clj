@@ -63,4 +63,14 @@
 
   )
 
-
+(deftest schedule-a-loop
+  (let [phrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
+        loop   (ls/loop-sequence phrase 10)
+        pseq   (ptol/schedule-logical-on-physical
+                (ps/new-sequence)
+                loop
+                (midi/midi-instrument 0)
+                (tempo/constant-tempo 4 4 120))]
+    (is (= (count (:seq pseq)) 60))
+    )
+  )

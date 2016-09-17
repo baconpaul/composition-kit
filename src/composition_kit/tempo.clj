@@ -26,24 +26,26 @@
 (defn multi-segment-constant-tempi [ beats-per-measure unit-of-measure & measures-and-tempi ]
   "This makes a clock which has constant tempo for a period then, at the start of a measure,
 switches to a new tempo. For instance here is a 7/8 which speeds up at measure 10 and slows down
-at measure 12
+at measure 12. Remember measures start at 1.
 
    (multi-segment-constant-tempi 7 8
-       0   120
+       1   120
        10  160
        12  104)"
-  (let [measures (take-nth 2 measures-and-tempi)
-        tempi    (take-nth 2 (rest measures-and-tempi))
-        beats-at-transition (map #(* (dec %) beats-per-measure) measures)
-        spb      (map #(/ 60 %) tempi)
-        ]
-    {:clocktype ::multi-segment-constant
-     :beats-per-measure beats-per-measure
-     :unit-of-measure unit-of-measure
+  (if (not (= (first measures-and-tempi) 1)) (throw (ex-info "The first measure has to be 1" {:inputs measures-and-tempi }))
+      (let [measures (take-nth 2 measures-and-tempi)
+            tempi    (take-nth 2 (rest measures-and-tempi))
+            beats-at-transition (map #(* (dec %) beats-per-measure) measures)
+            spb      (map #(/ 60 %) tempi)
+            ]
+        {:clocktype ::multi-segment-constant
+         :beats-per-measure beats-per-measure
+         :unit-of-measure unit-of-measure
 
-     :tempo-data (map (fn [a b c d] { :measure a :tempo b :spb c :beats-at-transition d })
-                      measures tempi spb beats-at-transition )
-     })
+         :tempo-data (map (fn [a b c d] { :measure a :tempo b :spb c :beats-at-transition d })
+                          measures tempi spb beats-at-transition )
+         })
+      )
   )
 
 (defmethod metronome?          ::multi-segment-constant [cl] true)

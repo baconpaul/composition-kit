@@ -32,10 +32,11 @@
 
 (deftest test-multi-segment-tempi
   (let [c1 (t/multi-segment-constant-tempi 4 4
-                                           1  120
+                                           1 120
                                            11 60
                                            21 90)]
     (is (t/metronome? c1))
+    (is (zero? (t/beats-to-time c1 0)))
 
     ;; OK so measure-beat-to-beat should all still be normal since it's a fixed metric
     (is (= (t/measure-beat-to-beat c1 1 1) 0))
@@ -53,4 +54,8 @@
     )
   )
 
+
+(deftest wonky-parameters
+  (is (= (try (t/multi-segment-constant-tempi 3 4  0 80  2 83) (catch Exception e (.getMessage e))) "The first measure has to be 1"))
+  )
 

@@ -1,7 +1,9 @@
 (ns piano-phase
-  (require [composition-kit.midi-util :as midi])
-  (require [composition-kit.tempo :as tempo])
-  (require [composition-kit.logical-sequence :as ls])
+  (:require [composition-kit.midi-util :as midi])
+  (:require [composition-kit.tempo :as tempo])
+  (:require [composition-kit.logical-sequence :as ls])
+  (:require [composition-kit.physical-sequence :as ps])
+  (:require [composition-kit.physical-to-logical :as ptol])
   )
 
 ;; An implementation of the first section of Reich's piano phase.
@@ -11,12 +13,16 @@
 
 (def clock-one (tempo/constant-tempo 3 4 80)) ;; constrant tempo
 (def clock-two (tempo/multi-segment-constant-tempi 3 4
-                                                   0 80
-                                                   10 83)) ;; line seg tempo. For now speed up after 10 repetitions
+                                                   1 80
+                                                   2 83)) ;; line seg tempo. For now speed up after 10 repetitions
 
 ;; Here's the reich pattern, all as 16th notes
-(def pitch-pattern [ :e4 :fis4 :b4 :cis5 :d5 :fis4 :ef :cis5 :b4 :fis4 :d5 :cis5 ] )
-(def duration-pattern (map #( / % 4 ) (range 12)))
+;;(def pitch-pattern [ :e4 :fis4 :b4 :cis5 :d5 :fis4 :e4 :cis5 :b4 :fis4 :d5 :cis5 ] )
+;;(def duration-pattern (repeat 12 1/4))
+(def pitch-pattern [ :c4 :d4 ])
+(def duration-pattern [ 1/2 1/2 ])
+
+(def loop-count 1)
 
 ;; FIXME - the volume is ignored right now
 (def reich-pattern-leg
@@ -26,6 +32,7 @@
    :length :legato
    :volume 80)) ;; later expand these phrase dynamics
 
+
 (def reich-pattern-stac
   (ls/sequence-from-pitches-and-durations
    pitch-pattern
@@ -33,18 +40,24 @@
    :length :staccato
    :volume 90)) ;; later expand these phrase dynamics
 
-(def ps physical-sequence)
+(def ps-agent
+  (let [ns (ps/new-sequence)
+        s1 (ptol/schedule-logical-on-physical
+            ns
+            (ls/loop-sequence reich-pattern-leg loop-count)
+            piano-one
+            clock-one)
+        s2 (ptol/schedule-logical-on-physical
+            ns
+            (ls/loop-sequence reich-pattern-stac loop-count)            
+            piano-two
+            clock-two)]
+    ;; (ps/play s2)
+    s2
+    )
+  )
 
-(ptol/schedule-logical-on-physical
- ps
- (ls/loop-sequence reich-pattern-leg 50)
- piano-one
- clock-one)
+;;(ps/stop ps-agent)
 
-(ptol/schedule-logical
- ps
- (ls/loop-sequence reich-pattern-stac 50)
- piano-two
- clock-two)
+(map :time (:seq ps-agent))
 
-(ps/play ps)
