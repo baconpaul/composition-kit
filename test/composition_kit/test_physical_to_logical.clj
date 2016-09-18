@@ -1,4 +1,4 @@
-(ns composition-kit.test-phys-to-log
+(ns composition-kit.test-physical-to-logical
   (use clojure.test)
   (:require [composition-kit.logical-sequence :as ls])
   (:require [composition-kit.midi-util :as midi])

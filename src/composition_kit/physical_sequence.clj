@@ -41,22 +41,28 @@
   ;; sure we hit the milisecond accuracy. It also allows you to stop the playing as you go
   (let [rnow              (- (System/currentTimeMillis) t0-in-millis)
         to-be-played      (:seq agent-data)
-        curr              (first to-be-played)
+        curr              (take-while #(<= (:time %) rnow) to-be-played)
+        future-item       (drop-while #(<= (:time %) rnow) to-be-played)
         ]
     (cond
-      (nil? curr)              (assoc agent-data :play false)
+      (empty? to-be-played)    (assoc agent-data :play false)
 
       (not (:play agent-data)) agent-data  ;; someone stopped me in another action so just chillax
 
-      (<= (:time curr) rnow)   (let [return-value ((:item curr) rnow)
-                                     return-values (conj (:return-values agent-data) return-value)
-                                     ]
+      (not (empty? curr)   )   (do
                                  (send *agent* play-on-thread t0-in-millis)
-                                 (-> agent-data
-                                     (assoc :seq (rest to-be-played))
-                                     (assoc :return-values return-values)))
+                                 (reduce
+                                  (fn [data curr-el] ;; evaluate the item and glie it onto the return values
+                                    (let [return-value ((:item curr-el) rnow)
+                                          return-values (conj (:return-values data) return-value)
+                                          ]
+                                      (-> data
+                                          (assoc :return-values return-values))))
+                                  (assoc agent-data :seq future-item) ;; onto agent data which has rest attached
+                                  curr) ;; for each one we stripped off
+                                 )
 
-      :else                    (let [time-until  (- (:time curr) rnow)]
+      :else                    (let [time-until  (- (:time (first to-be-played)) rnow)]
                                  ;; spin (with a little backoff sleeping)
                                  (send *agent* play-on-thread t0-in-millis)
                                  (when (> time-until 5) (Thread/sleep (* time-until 0.7)))

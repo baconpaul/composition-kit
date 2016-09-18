@@ -68,6 +68,34 @@
     )
   )
 
+(deftest play-sequence-with-chords-test
+  (let [test-set (-> (ps/new-sequence)
+                     (ps/add-to-sequence (fn [t] {:l "A" :dt t :ct (System/currentTimeMillis)}) 500)
+                     (ps/add-to-sequence (fn [t] {:l "B" :dt t :ct (System/currentTimeMillis)}) 1000)
+                     (ps/add-to-sequence (fn [t] {:l "C" :dt t :ct (System/currentTimeMillis)}) 1000)
+                     (ps/add-to-sequence (fn [t] {:l "D" :dt t :ct (System/currentTimeMillis)}) 1000)
+                     (ps/add-to-sequence (fn [t] {:l "E" :dt t :ct (System/currentTimeMillis)}) 2000)
+                     (ps/add-to-sequence (fn [t] {:l "F" :dt t :ct (System/currentTimeMillis)}) 2000)
+                     (ps/add-to-sequence (fn [t] {:l "G" :dt t :ct (System/currentTimeMillis)}) 2600)
+                     (ps/play)
+                     ;; Now if we wanted this to be a production app we would add a watcher looking
+                     ;; for the play status to flip to false or seq to empty but instead do this
+                     ( (fn [a] (Thread/sleep 3500 ) @a)) )
+        diffed-set   (map (fn [p n] (reduce
+                                     (fn [s k]
+                                       (assoc s (keyword (str (name k) "_diff"))  (- (k n) (k p)))) p [ :dt :ct ]))
+                          (:return-values test-set)
+                          (rest (:return-values test-set)))
+
+        close   (fn [a b] (< (max (- a b) (- b a)) 2))
+        ]
+    (is (every? identity (map #( close (:dt_diff %) (:ct_diff %)) diffed-set)))
+    (is (= (count (:return-values test-set)) 7))
+    (is (= (set (map :l (:return-values test-set))) #{ "A" "B" "C" "D" "E" "F" "G" } ) )
+    (is (every? identity (map #( close (:dt %) %2 ) (:return-values test-set) (list 500 1000 1000 1000 2000 2000 2600))))
+    )
+  )
+
 
 ;; (run-tests)
 
