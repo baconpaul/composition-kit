@@ -10,6 +10,9 @@
 (defmulti item-beat      :itemtype)
 (defmethod item-beat :default [it] (when (music-item? it) ( :beat it )))
 
+(defmulti item-end-beat   :itemtype)
+(defmethod item-end-beat :default [it] (item-beat it))
+
 ;; We define two types of items; one which has a duration (like a note) and one which is simply at a point
 ;; in beat (like, say, a dynamics). The note with a duration has a separate dimension of time which is how long
 ;; it is held for. Since notes can slur, echo, be staccato, be detache and so on, this is a number which
@@ -25,6 +28,7 @@
   )
 
 (defmethod music-item? ::notes-with-duration [it] true)
+(defmethod item-end-beat ::notes-with-duration [it] (+ (:beat it) (:dur (:payload it))))
 
 (defn rest-with-duration [ dur beat ]
   {:itemtype ::rest-with-duration
@@ -32,6 +36,7 @@
    :beat    beat
    })
 (defmethod music-item? ::rest-with-duration [it] true)
+(defmethod item-end-beat ::rest-with-duration [it] (+ (:beat it) (:dur (:payload it))))
 
 (defn music-event [ event beat ]
   {:itemtype ::music-event
@@ -39,6 +44,8 @@
    :beat     beat
    })
 (defmethod music-item? ::music-event [it] true)
+
+
 
 ;; so a logical sequence is simply an object respodning to first and rest where the guarantee is that
 ;; (item-beat first) < (item-beat (first rest)) always. There are lots of ways to make these. Here are a few,
@@ -48,7 +55,7 @@
   (sort-by item-beat items))
 
 ;; Merged sequences are a lazy sequence which makes the earliest one its first. This is actually 
-(defn merged-logical-sequences [sequences]
+(defn merge-sequences [ & sequences]
   (if (empty? sequences)
     []
 
@@ -70,7 +77,7 @@
               :else (recur (rest seqs) (update-in res [ :rest ] conj (first seqs))))
             
             )]
-      (lazy-seq (cons (:headel headel-picked) (merged-logical-sequences (:rest headel-picked))))
+      (lazy-seq (cons (:headel headel-picked) (apply merge-sequences (:rest headel-picked))))
       )
     )
   )
@@ -108,15 +115,26 @@
       (lazy-seq (cons rb (loop-sequence-helper original (rest current-subset) count offset phrase-length ))))
     ))
 
+
+(defn beat-length [ sequence ]
+  (- (apply max (map item-end-beat sequence)) (item-beat (first sequence))))
+
+
+(defn beat-shift [ sequence shift ]
+  (if (empty? sequence) []
+      (let [new-first  (update-in (first sequence) [:beat] (partial + shift))]
+        (lazy-seq (cons new-first (beat-shift (rest sequence) shift))))))
+
 (defn loop-sequence [ original count ]
-  (loop-sequence-helper original original count 0
-                        (reduce
-                         +
-                         (map
-                          (comp :dur item-payload)
-                          (filter (comp not nil? :dur item-payload) original)
-                          )
-                         )
-                        )
+  (loop-sequence-helper original original count 0 (beat-length original))
   )
 
+(defn concat-sequences [ & concat-these ]
+  "string sequences on after another"
+  (let [concat-helper
+        (fn concat-helper [ targets offset ]
+          (if (empty? targets) []
+              (lazy-seq (concat (beat-shift (first targets) offset) (concat-helper (rest targets) (+ offset (beat-length (first targets))))))))]
+    (concat-helper concat-these 0))
+  
+  )

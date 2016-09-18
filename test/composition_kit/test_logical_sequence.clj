@@ -12,28 +12,33 @@
 
     (is (= (ls/item-beat evt) 123))
     (is (= (ls/item-payload evt) "an event"))
-
+    (is (= (ls/item-end-beat evt) 123))
+    
     (is (= (ls/item-beat nwd) 4.2))
     (is (= (ls/item-payload nwd) { :notes [ :c4 ] :dur 1.2 :hold-for 1 }))
+    (is (= (ls/item-end-beat nwd) (+ 1.2 4.2)))
 
     (is (= (ls/item-beat rwd) 5))
     (is (= (ls/item-payload rwd) {:dur 2 }))
+    (is (= (ls/item-end-beat rwd) (+ 2 5)))
     )
   )
 
-(deftest merged-sequences
+(deftest merge-sequences
   (let [cs1 (ls/concrete-logical-sequence
              (map ls/notes-with-duration [ :c4 :d4 :e4 :f4 :g4 ] [ 1 1 1/2 1/2 1 ] [ 0 4 3 2 5 ]))
         cs2 (ls/concrete-logical-sequence (map ls/notes-with-duration [ :c4 :d4 ] [ 1 1 ] [ 1/2 4 ] ))
         cs3 (ls/concrete-logical-sequence (map ls/notes-with-duration [ :c2 :d2 ] [ 1 1  ] [ 0 6 ] ))
         cs4 (ls/concrete-logical-sequence (map ls/notes-with-duration [ :c3 :d3 ] [ 1 1  ] [ 5 7 ] ))
         ]
+    (is (= (ls/beat-length cs1) 6))
     (is (every? identity (map (fn [a b] (<  (ls/item-beat a) (ls/item-beat b))) cs1 (rest cs1))) "Monotonicity in time")
     (is (= (map #(:notes (ls/item-payload %)) cs1) [ :c4 :f4 :e4 :d4 :g4 ]))
-    (is (= (map #(:notes (:payload %)) (ls/merged-logical-sequences [cs2 cs3])) [ :c2 :c4 :d4 :d2 ]))
-    (is (= (map #(:notes (:payload %)) (ls/merged-logical-sequences [cs2 cs4 cs3])) [ :c2 :c4 :d4 :c3 :d2 :d3 ]))
+    (is (= (map #(:notes (:payload %)) (ls/merge-sequences cs2 cs3)) [ :c2 :c4 :d4 :d2 ]))
+    (is (= (map #(:notes (:payload %)) (ls/merge-sequences cs2 cs4 cs3)) [ :c2 :c4 :d4 :c3 :d2 :d3 ]))
     )
   )
+
 
 (deftest from-pitch-dur
   (let [mary-had (ls/sequence-from-pitches-and-durations [ :e4 :d4 :c4 :d4 :e4 :e4 :e4 ] [ 1 1 1 1 1 1 2 ] )
@@ -46,6 +51,7 @@
         delayed-mice (ls/sequence-from-pitches-and-durations [ :e4 :d4 :c4 ] [ 1 1 2 ] :start-beat 3 )
         ]
     (is (= (count mary-had) 7))
+    (is (= (ls/beat-length mary-had) 8))
     (is (ls/music-item? (first mary-had)))
     (is (= (:itemtype (first mary-had)) :composition-kit.logical-sequence/notes-with-duration))
     (is (= (:payload (first mary-had)) { :notes :e4 :dur 1 :hold-for 0.95 }))
@@ -86,3 +92,41 @@
       )
     ))
 
+(deftest length-tests
+  (let [mary   (ls/sequence-from-pitches-and-durations [ :e4 :d4 :c4 :d4 :e4 :e4 :e4 ] [ 1 1 1 1 1 1 2 ] )
+        harm   (ls/sequence-from-pitches-and-durations [ :c2 :g2 :c2 ] [ 2 2 4 ] )
+        song   (ls/merge-sequences mary harm)]
+    (is (= (ls/beat-length mary) (ls/beat-length harm) 8))
+    (is (= (ls/beat-length song) 8))
+    ))
+
+(deftest shifts
+  (let [phrase-short (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
+        one-later    (ls/beat-shift phrase-short 1)
+        zero-later   (ls/beat-shift phrase-short 0)
+        five-later   (ls/beat-shift phrase-short 5)
+        ]
+    (is (= (count phrase-short) (count one-later) (count zero-later) (count five-later)))
+    (is (= (ls/beat-length phrase-short)
+           (ls/beat-length one-later)
+           (ls/beat-length zero-later)
+           (ls/beat-length five-later)))
+    (is (= (map :beat phrase-short) [ 0 1 3/2 ]))
+    (is (= (map :beat zero-later) (map :beat phrase-short)))
+    (is (every? (partial = 1) (map - (map :beat one-later) (map :beat phrase-short))))
+    (is (every? (partial = 5) (map - (map :beat five-later) (map :beat phrase-short))))
+
+    )
+  )
+
+
+(deftest concat-tests
+  (let [mary   (ls/sequence-from-pitches-and-durations [ :e4 :d4 :c4 :d4 :e4 :e4 :e4 ] [ 1 1 1 1 1 1 2 ] )
+        harm   (ls/sequence-from-pitches-and-durations [ :c2 :g2 :c2 ] [ 2 2 4 ] )
+        song   (ls/merge-sequences mary harm)]
+    (is (= (map :beat mary) [ 0 1 2 3 4 5 6 ] ))
+    (is (= (map :beat song) [ 0 0 1 2 2 3 4 4 5 6 ]))
+    (is (= (map :beat (ls/concat-sequences mary mary)) [ 0 1 2 3 4 5 6 8 9 10 11 12 13 14 ] ))
+    (is (= (map :beat (ls/concat-sequences song song))
+           [ 0 0 1 2 2 3 4 4 5 6 8 8 9 10 10 11 12 12 13 14 ] ))
+    ))
