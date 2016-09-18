@@ -11,18 +11,16 @@
 (def piano-one (midi/midi-instrument 0))
 (def piano-two (midi/midi-instrument 1))
 
-(def clock-one (tempo/constant-tempo 3 4 80)) ;; constrant tempo
+(def clock-one (tempo/constant-tempo 3 4 140)) ;; constrant tempo
 (def clock-two (tempo/multi-segment-constant-tempi 3 4
-                                                   1 80
-                                                   2 83)) ;; line seg tempo. For now speed up after 10 repetitions
+                                                   1 140
+                                                   10 143)) ;; line seg tempo. For now speed up after 10 repetitions
 
 ;; Here's the reich pattern, all as 16th notes
-;;(def pitch-pattern [ :e4 :fis4 :b4 :cis5 :d5 :fis4 :e4 :cis5 :b4 :fis4 :d5 :cis5 ] )
-;;(def duration-pattern (repeat 12 1/4))
-(def pitch-pattern [ :c4 :d4 ])
-(def duration-pattern [ 1/2 1/2 ])
+(def pitch-pattern [ :e4 :fis4 :b4 :cis5 :d5 :fis4 :e4 :cis5 :b4 :fis4 :d5 :cis5 ] )
+(def duration-pattern (repeat 12 1/4))
 
-(def loop-count 1)
+(def loop-count 60)
 
 ;; FIXME - the volume is ignored right now
 (def reich-pattern-leg
@@ -48,16 +46,15 @@
             piano-one
             clock-one)
         s2 (ptol/schedule-logical-on-physical
-            ns
+            s1
             (ls/loop-sequence reich-pattern-stac loop-count)            
             piano-two
             clock-two)]
-    ;; (ps/play s2)
-    s2
+    (ps/play s2)
     )
   )
 
-;;(ps/stop ps-agent)
 
-(map :time (:seq ps-agent))
+
+;;(ps/stop ps-agent)
 
