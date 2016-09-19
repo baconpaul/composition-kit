@@ -95,11 +95,12 @@
            curr-beat    start-beat
            res          [] ]
       (if (empty? pitches) res
-          (let [fp       (first pitches)
-                this-hold (case length
-                            :legato    1
-                            :staccato  0.1
-                            :standard  0.95)
+          (let [fp        (first pitches)
+                this-hold (* (first durations)
+                             (case length
+                               :legato    1
+                               :staccato  0.1
+                               :standard  0.95))
                 this-item (notes-with-duration fp (first durations) curr-beat this-hold)]
             (recur (rest pitches) (rest durations) (+ curr-beat (first durations)) (conj res this-item)))))))
 
@@ -119,6 +120,9 @@
 (defn beat-length [ sequence ]
   (- (apply max (map item-end-beat sequence)) (item-beat (first sequence))))
 
+(defn beat-length-from-zero [ sequence ]
+  (apply max (map item-end-beat sequence)))
+
 
 (defn beat-shift [ sequence shift ]
   (if (empty? sequence) []
@@ -134,7 +138,7 @@
   (let [concat-helper
         (fn concat-helper [ targets offset ]
           (if (empty? targets) []
-              (lazy-seq (concat (beat-shift (first targets) offset) (concat-helper (rest targets) (+ offset (beat-length (first targets))))))))]
+              (lazy-seq (concat (beat-shift (first targets) offset) (concat-helper (rest targets) (+ offset (beat-length-from-zero (first targets))))))))]
     (concat-helper concat-these 0))
   
   )

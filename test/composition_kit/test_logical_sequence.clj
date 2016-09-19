@@ -55,6 +55,7 @@
     (is (ls/music-item? (first mary-had)))
     (is (= (:itemtype (first mary-had)) :composition-kit.logical-sequence/notes-with-duration))
     (is (= (:payload (first mary-had)) { :notes :e4 :dur 1 :hold-for 0.95 }))
+    (is (= (:payload (last mary-had)) { :notes :e4 :dur 2 :hold-for 1.9 }))
     (is (= (map :beat mary-had) (list 0 1 2 3 4 5 6)))
 
     (is (= (map :beat bill-tell) (list 0 1/2 1 2 5/2 3 4 9/2 5 6 7 )))
@@ -111,6 +112,8 @@
            (ls/beat-length one-later)
            (ls/beat-length zero-later)
            (ls/beat-length five-later)))
+    (is (= (ls/beat-length-from-zero phrase-short) 2))
+    (is (= (ls/beat-length-from-zero five-later) 7))
     (is (= (map :beat phrase-short) [ 0 1 3/2 ]))
     (is (= (map :beat zero-later) (map :beat phrase-short)))
     (is (every? (partial = 1) (map - (map :beat one-later) (map :beat phrase-short))))
