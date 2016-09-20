@@ -166,20 +166,30 @@
     ))
 
 
-;;(deftest note-dynamics
-(let [note   (ls/notes-with-duration [ :c4 ] 1 1)
-                                        ;note2   (ls/notes-with-duration [ :c4 ] 1 4)
-      ;;loud-note (ls/override-dynamics note 127)
-      
-      ;;louder-later (fn [it] (apply min [ 127 (* 10 (ls/item-beat it))]))
-      ;;f-note  (ls/override-dynamics note louder-later)
-      ;;f-note2  (ls/override-dynamics note2 louder-later)
-      ]
-  (is (ls/item-has-dynamics? note))
-  (is (= (ls/note-dynamics-to-7-bit-volume note) 80))
-  ;;(is (= (ls/note-dynamics-to-7-bit-volume loud-note) 127))
-  ;;(is (= (ls/note-dynamics-to-7-bit-volume f-note) 10))
-  ;;(is (= (ls/note-dynamics-to-7-bit-volume f-note2) 40))
-  ;;(ls/item-dynamics loud-note)
+(deftest note-dynamics
+  (let [note      (ls/notes-with-duration [ :c4 ] 1 1)
+        note2     (ls/notes-with-duration [ :c4 ] 1 4)
+        loud-note (ls/override-dynamics note (constantly 127))
+        soft-note (ls/constant-dynamics note 20)
+        
+        louder-later (fn [it] (apply min [ 127 (* 10 (ls/item-beat it))])) 
+        f-note    (ls/override-dynamics note louder-later)
+        f-note2   (ls/override-dynamics note2 louder-later)
+        
+        volume-up (fn [it dyn] (+ 5 dyn)) 
+        l-note    (ls/compose-dynamics note volume-up)
+
+        ll-note   (ls/louder-by note 10)
+        ss-note   (ls/softer-by note 10)
+        ]
+    (is (ls/item-has-dynamics? note))
+    (is (= (ls/note-dynamics-to-7-bit-volume note) 80))
+    (is (= (ls/note-dynamics-to-7-bit-volume loud-note) 127))
+    (is (= (ls/note-dynamics-to-7-bit-volume soft-note) 20))
+    (is (= (ls/note-dynamics-to-7-bit-volume f-note) 10))
+    (is (= (ls/note-dynamics-to-7-bit-volume f-note2) 40))
+    (is (= (ls/note-dynamics-to-7-bit-volume l-note) 85))
+    (is (= (ls/note-dynamics-to-7-bit-volume ll-note) 90))
+    (is (= (ls/note-dynamics-to-7-bit-volume ss-note) 70))
+    )
   )
-                                        ;)

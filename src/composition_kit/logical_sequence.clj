@@ -74,10 +74,10 @@
 (defn item-transformer [ underlyer payload-xform beat-xform end-beat-xform dynamics-xform ]
   {:itemtype ::item-transformer
    :underlyer  underlyer
-   :payload-xform  (or payload-xform  item-payload)
-   :beat-xform     (or beat-xform     item-beat)
-   :end-beat-xform (or end-beat-xform item-end-beat)
-   :dynamics-xform (or dynamics-xform item-dynamics)
+   :payload-xform  (or payload-xform  item-payload)  ;; under-item -> payload
+   :beat-xform     (or beat-xform     item-beat)     ;; under-item -> beat
+   :end-beat-xform (or end-beat-xform item-end-beat) ;; under-item -> end-beat
+   :dynamics-xform (or dynamics-xform item-dynamics) ;; under-item -> (wrapped-item -> midi-dynamic)
    })
 (defmethod music-item? ::item-transformer [it] true);
 (defmethod item-beat ::item-transformer [it] ((:beat-xform it) (:underlyer it)))
@@ -85,11 +85,40 @@
 (defmethod item-payload ::item-transformer [it] ((:payload-xform it) (:underlyer it)))
 (defmethod item-type ::item-transformer [it] (item-type (:underlyer it)))
 (defmethod item-has-dynamics? ::item-transformer [it] (item-has-dynamics? (:underlyer it)))
-(defmethod item-dynamics ::item-transformer [it] ((:dynamics-xform it) (:underlyer it)))
+(defmethod item-dynamics ::item-transformer [it]  ((:dynamics-xform it) (:underlyer it)))
 
 
 
 ;; Dynamics
+(defn override-dynamics [item f]
+  "A function of one argument (the item) becomes the new dynamics function.
+Note if this function calls note-dynamics-to-7-bit-volume it will recur infinitely
+since it comes back to the dynamics. If you want that, use compose-dynamics"
+  (item-transformer item nil nil nil (constantly f)))
+
+(defn compose-dynamics [item f]
+  "A function of two arguments (the item and the dynamics of the underlyer) becomes
+the new dynamics function. For instance
+
+  (compose-dynamics note (fn [n d] (min 127 (+5 d))))
+
+makes your note louder. (There's a utility function for that below though)"
+  (item-transformer
+   item nil nil nil
+   (fn [outer]
+     (fn [a]
+       (f a (note-dynamics-to-7-bit-volume outer))))
+   ))
+
+(defn louder-by [item a]
+  (compose-dynamics item (fn [n d] (min 127 (+ a d)))))
+
+(defn softer-by [item a]
+  (compose-dynamics item (fn [n d] (min 127 (- d a)))))
+
+
+(defn constant-dynamics [item val] (override-dynamics item (constantly val)))
+
 (defn note-dynamics-to-7-bit-volume [item]
   (when (item-has-dynamics? item)
     ((item-dynamics item) item)))
