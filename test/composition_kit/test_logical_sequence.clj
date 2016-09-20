@@ -17,7 +17,7 @@
     (is (= (ls/item-end-beat evt) 123))
     
     (is (= (ls/item-beat nwd) 4.2))
-    (is (= (ls/item-payload nwd) { :notes [ :c4 ] :dur 1.2 :hold-for 1 }))
+    (is (= (ls/item-payload nwd) { :notes [ :c4 ] :dur 1.2 :hold-for 1 :dynamics nil }))
     (is (= (ls/item-end-beat nwd) (+ 1.2 4.2)))
 
     (is (= (ls/item-beat rwd) 5))
@@ -81,10 +81,9 @@
     (is (= (ls/beat-length mary-had) 8))
     (is (ls/music-item? (first mary-had)))
     (is (= (ls/item-type (first mary-had)) :composition-kit.logical-sequence/notes-with-duration))
-    (is (= (ls/item-payload (first mary-had)) { :notes :e4 :dur 1 :hold-for 0.95 }))
-    (is (= (ls/item-payload (last mary-had)) { :notes :e4 :dur 2 :hold-for 1.9 }))
+    (is (= (ls/item-payload (first mary-had)) { :notes :e4 :dur 1 :hold-for 0.95 :dynamics nil }))
+    (is (= (ls/item-payload (last mary-had)) { :notes :e4 :dur 2 :hold-for 1.9 :dynamics nil }))
     (is (= (map ls/item-beat mary-had) (list 0 1 2 3 4 5 6)))
-
     (is (= (map ls/item-beat bill-tell) (list 0 1/2 1 2 5/2 3 4 9/2 5 6 7 )))
 
     (is (= (count legato-mice) 3))

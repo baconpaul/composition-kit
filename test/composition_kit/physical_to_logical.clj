@@ -17,6 +17,10 @@
                     notecont (:notes payload)
                     notes    (if (coll? notecont) notecont [ notecont ] )
                     resolved-notes (map th/note-by-name notes)
+                    note-on-vol  (let [d (:dynamics payload)]
+                                   (cond
+                                     (nil? d)  80
+                                     :else     (throw (ex-info "Unknown dynamics" payload))))
                     hold-for (:hold-for payload)
                     start-time (* 1000 (tempo/beats-to-time clock (ls/item-beat item)))
                     end-time   (* 1000 (tempo/beats-to-time clock (+ hold-for (ls/item-beat item))))
@@ -29,7 +33,7 @@
                                   (:receiver instrument)
                                   (:channel instrument)
                                   (:midinote e)
-                                  100)
+                                  note-on-vol)
                                  start-time))
                               pseq
                               resolved-notes

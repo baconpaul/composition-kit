@@ -33,7 +33,13 @@
   ([ notes dur beat ] (notes-with-duration notes dur beat 1))
   ([ notes dur beat hold-for]
    {:itemtype ::notes-with-duration
-    :payload-72632  { :notes notes :dur dur :hold-for hold-for }
+    :payload-72632
+    {
+     :notes notes
+     :dur dur
+     :hold-for hold-for
+     :dynamics nil
+     }
     :beat-2314     beat
     })
   )
