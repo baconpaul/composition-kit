@@ -1,17 +1,28 @@
 (ns composition-kit.logical-sequence)
 
-;; so we start with an item which can be sequenced, defined by a pair of multimethods
+;; shower idea
+;; + itemtype is a function
+;; + have a transformer-item with functions inserted for all the methods pointing at an underlyer
+;; + test the transformer
+;; - modify beat shift to use it
+;; - modify loop to use it
+;; + test item-type explicitly
+
+;; so we start with an item which can be sequenced, defined by a set of multimethods
 (defmulti music-item?    :itemtype)
 (defmethod music-item? :default [it] false)
 
 (defmulti item-payload   :itemtype)
-(defmethod item-payload :default [it] (when (music-item? it) ( :payload it )))
+(defmethod item-payload :default [it] (when (music-item? it) ( :payload-72632 it )))
 
 (defmulti item-beat      :itemtype)
-(defmethod item-beat :default [it] (when (music-item? it) ( :beat it )))
+(defmethod item-beat :default [it] (when (music-item? it) ( :beat-2314 it )))
 
 (defmulti item-end-beat   :itemtype)
 (defmethod item-end-beat :default [it] (item-beat it))
+
+(defmulti item-type    :itemtype)
+(defmethod item-type :default [it] (when (music-item? it) (:itemtype it)))
 
 ;; We define two types of items; one which has a duration (like a note) and one which is simply at a point
 ;; in beat (like, say, a dynamics). The note with a duration has a separate dimension of time which is how long
@@ -22,29 +33,42 @@
   ([ notes dur beat ] (notes-with-duration notes dur beat 1))
   ([ notes dur beat hold-for]
    {:itemtype ::notes-with-duration
-    :payload  { :notes notes :dur dur :hold-for hold-for }
-    :beat     beat
+    :payload-72632  { :notes notes :dur dur :hold-for hold-for }
+    :beat-2314     beat
     })
   )
 
 (defmethod music-item? ::notes-with-duration [it] true)
-(defmethod item-end-beat ::notes-with-duration [it] (+ (:beat it) (:dur (:payload it))))
+(defmethod item-end-beat ::notes-with-duration [it] (+ (:beat-2314 it) (:dur (:payload-72632 it))))
 
 (defn rest-with-duration [ dur beat ]
   {:itemtype ::rest-with-duration
-   :payload { :dur dur }
-   :beat    beat
+   :payload-72632 { :dur dur }
+   :beat-2314    beat
    })
 (defmethod music-item? ::rest-with-duration [it] true)
-(defmethod item-end-beat ::rest-with-duration [it] (+ (:beat it) (:dur (:payload it))))
+(defmethod item-end-beat ::rest-with-duration [it] (+ (:beat-2314 it) (:dur (:payload-72632 it))))
 
 (defn music-event [ event beat ]
   {:itemtype ::music-event
-   :payload  event
-   :beat     beat
+   :payload-72632  event
+   :beat-2314     beat
    })
 (defmethod music-item? ::music-event [it] true)
 
+(defn item-transformer [ underlyer payload-xform beat-xform ]
+  {:itemtype ::item-transformer
+   :underlyer  underlyer
+   :payload-xform payload-xform
+   :beat-xform beat-xform })
+(defmethod music-item? ::item-transformer [it] true);
+(defmethod item-beat ::item-transformer [it] ((:beat-xform it) (item-beat (:underlyer it))))
+(defmethod item-end-beat ::item-transformer [it] ((:beat-xform it) (item-end-beat (:underlyer it))))
+(defmethod item-payload ::item-transformer [it] ((:payload-xform it) (item-payload (:underlyer it))))
+(defmethod item-type ::item-transformer [it] (item-type (:underlyer it)))
+
+(defn item-beat-shift [ it shift ]
+  (item-transformer it identity (partial + shift)))
 
 
 ;; so a logical sequence is simply an object respodning to first and rest where the guarantee is that
@@ -104,19 +128,6 @@
                 this-item (notes-with-duration fp (first durations) curr-beat this-hold)]
             (recur (rest pitches) (rest durations) (+ curr-beat (first durations)) (conj res this-item)))))))
 
-(defn ^:private loop-sequence-helper [ original current-subset count offset phrase-length ]
-  (if (empty? current-subset)
-    (if (<= count 1)
-      [] ;; we just finished playing something we want looped once; so we are done
-      (loop-sequence-helper original original (dec count) (+ offset phrase-length) phrase-length))
-    ;; So our current helper is not zero so:
-    (let [fc  (first current-subset)
-          fcb (item-beat fc)
-          rb  (assoc fc :beat (+ fcb offset))]
-      (lazy-seq (cons rb (loop-sequence-helper original (rest current-subset) count offset phrase-length ))))
-    ))
-
-
 (defn beat-length [ sequence ]
   (- (apply max (map item-end-beat sequence)) (item-beat (first sequence))))
 
@@ -125,20 +136,13 @@
 
 
 (defn beat-shift [ sequence shift ]
-  (if (empty? sequence) []
-      (let [new-first  (update-in (first sequence) [:beat] (partial + shift))]
-        (lazy-seq (cons new-first (beat-shift (rest sequence) shift))))))
+  (map #(item-beat-shift % shift) sequence))
 
 (defn loop-sequence [ original count ]
-  (loop-sequence-helper original original count 0 (beat-length original))
-  )
+  (mapcat #(beat-shift original (* % (beat-length original))) (range count)))
+
 
 (defn concat-sequences [ & concat-these ]
   "string sequences on after another"
-  (let [concat-helper
-        (fn concat-helper [ targets offset ]
-          (if (empty? targets) []
-              (lazy-seq (concat (beat-shift (first targets) offset) (concat-helper (rest targets) (+ offset (beat-length-from-zero (first targets))))))))]
-    (concat-helper concat-these 0))
-  
+  (mapcat (fn [se of] (beat-shift se of)) concat-these  (reductions + 0 (map beat-length concat-these)))
   )

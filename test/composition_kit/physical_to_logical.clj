@@ -11,7 +11,7 @@
   ;; This is basically a massive reduce statement on a big switch based on item type which then
   ;; does the magic
   (reduce (fn [pseq item]
-            (case (:itemtype item)
+            (case (ls/item-type item)
               :composition-kit.logical-sequence/notes-with-duration
               (let [payload  (ls/item-payload item)
                     notecont (:notes payload)
