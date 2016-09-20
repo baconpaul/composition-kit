@@ -6,6 +6,7 @@
   (:require [composition-kit.tonal-theory :as th])
   )
 
+
 (defn schedule-logical-on-physical
   [in-seq pattern instrument clock]
   ;; This is basically a massive reduce statement on a big switch based on item type which then
@@ -17,10 +18,6 @@
                     notecont (:notes payload)
                     notes    (if (coll? notecont) notecont [ notecont ] )
                     resolved-notes (map th/note-by-name notes)
-                    note-on-vol  (let [d (:dynamics payload)]
-                                   (cond
-                                     (nil? d)  80
-                                     :else     (throw (ex-info "Unknown dynamics" payload))))
                     hold-for (:hold-for payload)
                     start-time (* 1000 (tempo/beats-to-time clock (ls/item-beat item)))
                     end-time   (* 1000 (tempo/beats-to-time clock (+ hold-for (ls/item-beat item))))
@@ -33,7 +30,7 @@
                                   (:receiver instrument)
                                   (:channel instrument)
                                   (:midinote e)
-                                  note-on-vol)
+                                  (ls/note-dynamics-to-7-bit-volume item))
                                  start-time))
                               pseq
                               resolved-notes

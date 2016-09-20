@@ -10,6 +10,10 @@
     (is (ls/music-item? nwd))
     (is (ls/music-item? rwd))
 
+    (is (not (ls/item-has-dynamics? evt)))
+    (is (not (ls/item-has-dynamics? rwd))) 
+    (is (ls/item-has-dynamics? nwd))
+    
     (is (= (ls/item-type evt) :composition-kit.logical-sequence/music-event))
 
     (is (= (ls/item-beat evt) 123))
@@ -17,7 +21,7 @@
     (is (= (ls/item-end-beat evt) 123))
     
     (is (= (ls/item-beat nwd) 4.2))
-    (is (= (ls/item-payload nwd) { :notes [ :c4 ] :dur 1.2 :hold-for 1 :dynamics nil }))
+    (is (= (ls/item-payload nwd) { :notes [ :c4 ] :dur 1.2 :hold-for 1 }))
     (is (= (ls/item-end-beat nwd) (+ 1.2 4.2)))
 
     (is (= (ls/item-beat rwd) 5))
@@ -30,10 +34,10 @@
   (let [evt (ls/music-event "an event" 12)
         nwd (ls/notes-with-duration [ :c4 ] 1 5)
         rwd (ls/rest-with-duration 2 5)
-        copy-nwd (ls/item-transformer nwd identity identity)
-        upcase-evt (ls/item-transformer evt clojure.string/upper-case identity)
+        copy-nwd (ls/item-transformer nwd nil nil nil nil)
+        upcase-evt (ls/item-transformer evt (comp clojure.string/upper-case ls/item-payload) nil nil nil)
 
-        later-rest (ls/item-transformer rwd identity (partial + 2))
+        later-rest (ls/item-transformer rwd nil (comp (partial + 2) ls/item-beat) nil nil)
         later-note (ls/item-beat-shift nwd 4)
         ]
     (is (= (ls/item-beat nwd) (ls/item-beat copy-nwd)))
@@ -81,8 +85,8 @@
     (is (= (ls/beat-length mary-had) 8))
     (is (ls/music-item? (first mary-had)))
     (is (= (ls/item-type (first mary-had)) :composition-kit.logical-sequence/notes-with-duration))
-    (is (= (ls/item-payload (first mary-had)) { :notes :e4 :dur 1 :hold-for 0.95 :dynamics nil }))
-    (is (= (ls/item-payload (last mary-had)) { :notes :e4 :dur 2 :hold-for 1.9 :dynamics nil }))
+    (is (= (ls/item-payload (first mary-had)) { :notes :e4 :dur 1 :hold-for 0.95 }))
+    (is (= (ls/item-payload (last mary-had)) { :notes :e4 :dur 2 :hold-for 1.9 }))
     (is (= (map ls/item-beat mary-had) (list 0 1 2 3 4 5 6)))
     (is (= (map ls/item-beat bill-tell) (list 0 1/2 1 2 5/2 3 4 9/2 5 6 7 )))
 
@@ -162,3 +166,20 @@
     ))
 
 
+;;(deftest note-dynamics
+(let [note   (ls/notes-with-duration [ :c4 ] 1 1)
+                                        ;note2   (ls/notes-with-duration [ :c4 ] 1 4)
+      ;;loud-note (ls/override-dynamics note 127)
+      
+      ;;louder-later (fn [it] (apply min [ 127 (* 10 (ls/item-beat it))]))
+      ;;f-note  (ls/override-dynamics note louder-later)
+      ;;f-note2  (ls/override-dynamics note2 louder-later)
+      ]
+  (is (ls/item-has-dynamics? note))
+  (is (= (ls/note-dynamics-to-7-bit-volume note) 80))
+  ;;(is (= (ls/note-dynamics-to-7-bit-volume loud-note) 127))
+  ;;(is (= (ls/note-dynamics-to-7-bit-volume f-note) 10))
+  ;;(is (= (ls/note-dynamics-to-7-bit-volume f-note2) 40))
+  ;;(ls/item-dynamics loud-note)
+  )
+                                        ;)
