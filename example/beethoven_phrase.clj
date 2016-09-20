@@ -9,7 +9,7 @@
 ;; The first few measures of the adiago cantabile from beethoven op 13
 
 (def piano (midi/midi-instrument 0))
-(def clock (tempo/constant-tempo 2 4 14)) ;; Will be a bit mechanical
+(def clock (tempo/constant-tempo 4 8 14)) ;; Will be a bit mechanical
 
 (def top-theme
   (ls/sequence-from-pitches-and-durations
@@ -49,3 +49,4 @@
 
 (def ps-agent (ps/play ps))
 
+;;(ps/stop ps-agent)

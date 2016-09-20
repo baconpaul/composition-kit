@@ -90,6 +90,11 @@
 
 
 ;; Dynamics
+(defn note-dynamics-to-7-bit-volume [item]
+  (when (item-has-dynamics? item)
+    ((item-dynamics item) item)))
+
+
 (defn override-dynamics [item f]
   "A function of one argument (the item) becomes the new dynamics function.
 Note if this function calls note-dynamics-to-7-bit-volume it will recur infinitely
@@ -118,10 +123,6 @@ makes your note louder. (There's a utility function for that below though)"
 
 
 (defn constant-dynamics [item val] (override-dynamics item (constantly val)))
-
-(defn note-dynamics-to-7-bit-volume [item]
-  (when (item-has-dynamics? item)
-    ((item-dynamics item) item)))
 
 
 ;; so a logical sequence is simply an object respodning to first and rest where the guarantee is that
@@ -180,6 +181,17 @@ makes your note louder. (There's a utility function for that below though)"
                                :standard  0.95))
                 this-item (notes-with-duration fp (first durations) curr-beat this-hold)]
             (recur (rest pitches) (rest durations) (+ curr-beat (first durations)) (conj res this-item)))))))
+
+(defn sequence-from-pitches-constant-duration [ pitch-pattern duration & options-list ]
+  (apply sequence-from-pitches-and-durations (concat [pitch-pattern
+                                                      (map (constantly duration) pitch-pattern)]
+                                                     options-list)))
+
+(defn repeated-note [ note duration repeats & options ]
+  (apply sequence-from-pitches-and-durations (concat [(repeat repeats note)
+                                                      (repeat repeats duration)]
+                                                     options)))
+
 
 ;; Time manipulation and looping
 (defn beat-length [ sequence ]

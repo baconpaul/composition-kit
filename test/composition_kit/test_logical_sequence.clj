@@ -80,6 +80,9 @@
         regular-mice (ls/sequence-from-pitches-and-durations [ :e4 :d4 :c4 ] [ 1 1 2 ] )
         staccato-mice (ls/sequence-from-pitches-and-durations [ :e4 :d4 :c4 ] [ 1 1 2 ] :length :staccato )
         delayed-mice (ls/sequence-from-pitches-and-durations [ :e4 :d4 :c4 ] [ 1 1 2 ] :start-beat 3 )
+
+        boring  (ls/sequence-from-pitches-constant-duration [ :c4 :e4 :c4 :e4 ] 1/2 :length :legato )
+        very-boring (ls/repeated-note :c4 1/2 4 )
         ]
     (is (= (count mary-had) 7))
     (is (= (ls/beat-length mary-had) 8))
@@ -89,6 +92,11 @@
     (is (= (ls/item-payload (last mary-had)) { :notes :e4 :dur 2 :hold-for 1.9 }))
     (is (= (map ls/item-beat mary-had) (list 0 1 2 3 4 5 6)))
     (is (= (map ls/item-beat bill-tell) (list 0 1/2 1 2 5/2 3 4 9/2 5 6 7 )))
+
+    (is (= (map ls/item-beat boring) (list 0 1/2 1 3/2)))
+    (is (= (:hold-for (ls/item-payload (first boring)))  1/2))
+
+    (is (= (map ls/item-beat very-boring) (list 0 1/2 1 3/2)))
 
     (is (= (count legato-mice) 3))
     (is (= (count staccato-mice) 3))
@@ -103,6 +111,7 @@
     (is (= (map ls/item-beat delayed-mice) (list 3 4 5)))
     )
   )
+
 
 (deftest loops
   (let [phrase  (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 :f4 :e4 :f4 :g4 :c4 ] [ 1 1 1/4 1/4 1/4 1/4 1/2 1/2 ])
@@ -193,3 +202,4 @@
     (is (= (ls/note-dynamics-to-7-bit-volume ss-note) 70))
     )
   )
+
