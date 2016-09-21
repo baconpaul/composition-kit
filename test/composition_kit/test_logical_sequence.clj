@@ -203,3 +203,30 @@
     )
   )
 
+(deftest sequence-dynamics
+  (let [cs    (ls/repeated-note :c4 1/4 33)
+        loud  (ls/override-sequence-dynamics cs (constantly 127))
+        swell (ls/line-segment-dynamics cs 0 40 4 80 8 40)
+
+        ds    (ls/repeated-note :d4 1/4 4)
+        updn  (ls/explicit-segment-dynamics ds '(127 23 78 42))
+        updn2 (ls/explicit-segment-dynamics ds '(127 23)) ;; the 23 should continue
+        dyn   (fn [s] (map ls/note-dynamics-to-7-bit-volume s))
+        ]
+    (is (= (count (dyn cs)) 33))
+    (is (= (distinct (dyn cs)) '(80)))
+    (is (= (count (dyn loud)) 33))
+    (is (= (distinct (dyn loud)) '(127)))
+    (is (= (first (dyn swell)) 40))
+    (is (= (last (dyn swell)) 40))
+    (is (= (apply max (dyn swell)) 80))
+    (is (= (second (dyn swell)) 42))
+    (is (= (take 4 (dyn swell)) '(40 42 45 47)))
+
+    (is (= (count updn) 4))
+    (is (= (count updn2) 4))
+
+    (is (= (dyn updn) '(127 23 78 42)))
+    (is (= (dyn updn2) '(127 23 23 23)))
+    )
+  )

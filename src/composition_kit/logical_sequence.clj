@@ -217,7 +217,18 @@ makes your note louder. (There's a utility function for that below though)"
 
 
 ;; Dynamics applicators
+(defn override-sequence-dynamics [ mseq dfn ]
+  "Replace the dynamics function of every element of the sequence with dfn"
+  (map #(override-dynamics % dfn) mseq))
+
 (defn line-segment-dynamics [ series & dynamics ]
+  "Given a line segment set of beat / level pairs, set the dynamics accordingly.
+Notes in the sequence before the first or after the last beat get the flat value of the
+first or last beat. So
+
+  (line-segment-dynamics notes 0 10 4 20 8 127)
+
+is a slow then fast crescendo"
   (let [beats-n-levels  (partition 2 dynamics)
         vol-fn   (fn [item]
                    (let [beat  (item-beat item)
@@ -228,4 +239,12 @@ makes your note louder. (There's a utility function for that below though)"
                          val   (+ (* frac (second next)) (* (- 1 frac) (second prior)))
                          ]
                      (int val)))]
-    (map #(override-dynamics % vol-fn) series)))
+    (override-sequence-dynamics series vol-fn)))
+
+(defn explicit-segment-dynamics [mseq values]
+  "Set the dynamics for each note. If you don't supply enough dynamics the last one
+repeats for the remainder of the sequence"
+  (let [usevalues (if (> (count mseq) (count values))
+                    (concat values (repeat (last values)))
+                    values)]
+    (map (fn [n d] (override-dynamics n (constantly d))) mseq usevalues)))
