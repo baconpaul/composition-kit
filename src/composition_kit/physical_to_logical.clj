@@ -18,6 +18,7 @@
                     notes    (if (coll? notecont) notecont [ notecont ] )
                     resolved-notes (map th/note-by-name notes)
                     hold-for (:hold-for payload)
+                    lev      (ls/note-dynamics-to-7-bit-volume item)
                     start-time (* 1000 (tempo/beats-to-time clock (ls/item-beat item)))
                     end-time   (* 1000 (tempo/beats-to-time clock (+ hold-for (ls/item-beat item))))
                     ons      (reduce
@@ -29,7 +30,7 @@
                                   (:receiver instrument)
                                   (:channel instrument)
                                   (:midinote e)
-                                  100)
+                                  lev)
                                  start-time))
                               pseq
                               resolved-notes

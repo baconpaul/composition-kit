@@ -88,4 +88,53 @@
     (is (= (map ls/item-beat (:seq pseq)) (map ls/item-beat (:seq shortseq))))
     )
   )
-                  
+
+
+(deftest schedule-dynamics
+  (let [phrase (ls/line-segment-dynamics (ls/loop-sequence (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] ) 10)
+                                         0 10
+                                         20 120)
+        inst   (midi/midi-instrument 0)
+        bpm    200
+        clock  (tempo/constant-tempo 2 4 bpm)
+        pseq   (ptol/schedule-logical-on-physical (ps/new-sequence) phrase inst clock)
+
+        t (midi/get-opened-transmitter)
+        callback-store (atom [])
+        ]
+    (is (not (nil? (midi/register-transmitter-callback
+                    t
+                    (fn [msg time] ;; that time is wierd and useless miditime which I didn't hack in so
+                      (swap! callback-store conj (assoc (midi/message-to-map msg) :time (System/currentTimeMillis))))
+                    ))))
+    
+    ;; OK so lets try and see if we see the messages back
+    (let [play-agent (ps/play pseq)
+          test-midi-notes-sent
+          (do
+            (Thread/sleep 1)
+            (loop [ct 0]
+              (if (or (= (count @callback-store) 60) (== ct 10)) @callback-store
+                  (do
+                    (Thread/sleep 1000)
+                    (recur (inc ct))))))]
+      ;; did we get 6 notes and no errors?
+      (is (= (count test-midi-notes-sent) 60))
+      (is (nil? (agent-error play-agent)))
+
+      ;; Was everything on the channel of the midi instrument
+      (is (every? #(= (:channel %) (:channel inst)) test-midi-notes-sent))
+      ;; Are the notes what we expected
+      (let [ons (filter #(= (:command %) ShortMessage/NOTE_ON) test-midi-notes-sent)
+            offs (filter #(= (:command %) ShortMessage/NOTE_OFF) test-midi-notes-sent)
+            volumes (map :data2 ons)
+            ]
+        (is (= (count ons) (count offs) 30))
+        (is (every? identity (map (fn [a b] (< a b)) volumes (rest volumes))))
+        (is (= (first volumes) 10))
+        )
+
+      )
+    )
+
+  )
