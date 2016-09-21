@@ -214,3 +214,18 @@ makes your note louder. (There's a utility function for that below though)"
   "string sequences on after another"
   (mapcat (fn [se of] (beat-shift se of)) concat-these  (reductions + 0 (map beat-length concat-these)))
   )
+
+
+;; Dynamics applicators
+(defn line-segment-dynamics [ series & dynamics ]
+  (let [beats-n-levels  (partition 2 dynamics)
+        vol-fn   (fn [item]
+                   (let [beat  (item-beat item)
+                         prior (or (last (take-while #(<= (first %) beat) beats-n-levels)) (first beats-n-levels))
+                         next  (or (first (drop-while #(<= (first %) beat) beats-n-levels)) (last beats-n-levels))
+                         
+                         frac  (if (= prior next) 1 (/ (- beat (first prior)) (- (first next) (first prior))))
+                         val   (+ (* frac (second next)) (* (- 1 frac) (second prior)))
+                         ]
+                     (int val)))]
+    (map #(override-dynamics % vol-fn) series)))

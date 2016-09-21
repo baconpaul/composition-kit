@@ -37,6 +37,7 @@
   (is (= (map :pitch (th/scale-to-notes (th/scale :major) (th/note-by-name :c4))) '(:c :d :e :f :g :a :b :c)))
   (is (= (map :pitch (th/scale-to-notes (th/scale :major) (th/note-by-name :dis4))) '(:dis :eis :fiis :gis :ais :bis :ciis :dis)))
   (is (= (map :pitch (th/scale-to-notes (th/scale :major) (th/note-by-name :ees4))) '(:ees :f :g :aes :bes :c :d :ees)))
+  (is (= (th/scale-pitches :c4 :major) '(:c4 :d4 :e4 :f4 :g4 :a4 :b4 :c5)))
 
   )
 

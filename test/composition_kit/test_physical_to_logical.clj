@@ -75,3 +75,17 @@
     )
   )
 
+(deftest shorthand-schedule
+  (let [phrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ])
+        pseq   (ptol/schedule-logical-on-physical
+                (ps/new-sequence)
+                phrase
+                (midi/midi-instrument 0)
+                (tempo/constant-tempo 4 4 120))
+        shortseq (ptol/create-and-schedule phrase (midi/midi-instrument 0)
+                                           (tempo/constant-tempo 4 4 120))]
+    (is (= (count (:seq pseq)) (count (:seq shortseq))))
+    (is (= (map ls/item-beat (:seq pseq)) (map ls/item-beat (:seq shortseq))))
+    )
+  )
+                  

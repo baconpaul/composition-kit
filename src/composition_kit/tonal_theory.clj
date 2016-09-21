@@ -121,6 +121,12 @@
           )))
   )
 
+(defn scale-pitches [ base scale-name  ]
+  "Return a set of pitches for a scale name. So
+(scale-pitches :c4 :major) 
+  gives you a c major scale starting at c4"
+  (map :note (scale-to-notes (scale scale-name) (note-by-name base))))
+
 
 
 
