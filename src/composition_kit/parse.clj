@@ -1,4 +1,5 @@
 (ns composition-kit.parse
+  (require [composition-kit.logical-sequence :as ls])
   (require [composition-kit.tonal-theory :as th]))
 
 
@@ -74,3 +75,9 @@
               (let [ curr  (lily-note-to-data (first n) p) ]
                 (recur (rest n) (conj res curr) curr)))))))
   )
+
+(defn lily-to-logical-sequence
+  [line & optarr ]
+  (let [notes  (apply lily->n (concat [line] optarr))]
+    (map (fn [ln] (ls/notes-with-duration [ (:note (:note ln)) ] (:dur ln) (:starts-at ln)))
+         (sort-by :starts-at (filter (comp not :rest) notes)))))
