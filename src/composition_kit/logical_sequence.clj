@@ -70,6 +70,15 @@
    })
 (defmethod music-item? ::music-event [it] true)
 
+(defn control-event [ control value beat ]
+  {:itemtype ::control-event
+   :payload-72632  { :control control :value value }
+   :beat-2314     beat
+   })
+(defmethod music-item? ::control-event [it] true)
+
+(defn sustain-pedal-event [ value beat ] (control-event 64 value beat ))
+
 ;; Each item of the transfomer gets handed the entire item.
 (defn item-transformer [ underlyer payload-xform beat-xform end-beat-xform dynamics-xform ]
   {:itemtype ::item-transformer

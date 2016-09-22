@@ -52,6 +52,19 @@
                     ]
                 offs
                 )
+              :composition-kit.logical-sequence/control-event
+              (let [payload  (ls/item-payload item)
+                    start-time (* 1000 (tempo/beats-to-time clock (ls/item-beat item)))]
+                (ps/add-to-sequence
+                 pseq
+                 (midi/send-control-change
+                  (:receiver instrument)
+                  (:channel instrument)
+                  (:control payload)
+                  (:value payload))
+                 start-time
+                 ))
+
               )
             )
           in-seq

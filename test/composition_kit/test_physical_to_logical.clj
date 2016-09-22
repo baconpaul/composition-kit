@@ -10,7 +10,9 @@
   )
 
 (deftest simple-conversion
-  (let [phrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
+  (let [mphrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
+        controls (ls/concrete-logical-sequence (map (fn [v t] (ls/control-event 64 v t)) [ 127 64 0] [ 0 1 3/2 ] ))
+        phrase (ls/merge-sequences mphrase controls)
         inst   (midi/midi-instrument 0)
         bpm    140
         clock  (tempo/constant-tempo 2 4 bpm)
@@ -18,8 +20,10 @@
 
         t (midi/get-opened-transmitter)
         callback-store (atom [])
+        expected-length   (+ (count controls) (* 2 (count mphrase))) ;; noteon noteoff
         ]
-    (is (= (count (:seq pseq)) 6)) ;; Note on and note off events
+    (is (= expected-length 9))
+    (is (= (count (:seq pseq)) expected-length)) ;; Note on and note off events
     (is (not (nil? (midi/register-transmitter-callback
                     t
                     (fn [msg time] ;; that time is wierd and useless miditime which I didn't hack in so
@@ -32,12 +36,12 @@
           (do
             (Thread/sleep 1)
             (loop [ct 0]
-              (if (or (= (count @callback-store) 6) (== ct 10)) @callback-store
+              (if (or (= (count @callback-store) expected-length) (== ct 10)) @callback-store
                   (do
                     (Thread/sleep 200)
                     (recur (inc ct))))))]
       ;; did we get 6 notes and no errors?
-      (is (= (count test-midi-notes-sent) 6))
+      (is (= (count test-midi-notes-sent) expected-length))
       (is (nil? (agent-error play-agent)))
 
       ;; Was everything on the channel of the midi instrument
@@ -138,3 +142,4 @@
     )
 
   )
+

@@ -42,6 +42,10 @@
                  (ps/add-to-sequence identity 10)
                  (ps/add-to-sequence partial 10)
                  (ps/add-to-sequence juxt 10))
+
+        s5   (try (-> (ps/new-sequence)
+                      (ps/add-to-sequence identity))
+                  (catch Exception e e))
         
         stimes (fn [s] (map :time (:seq s)))
         disitem (fn [s] (distinct (map :item (:seq s))))
@@ -65,6 +69,8 @@
     (is (:play s2))
     (is (:play s3))
     (is (:play s4))
+
+    (is (not (nil? (ex-data s5))))
     )
   )
 

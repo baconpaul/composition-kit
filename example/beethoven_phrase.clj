@@ -9,7 +9,7 @@
 ;; The first few measures of the adiago cantabile from beethoven op 13
 
 (def piano (midi/midi-instrument 0))
-(def clock (tempo/constant-tempo 2 4 50)) ;; Will be a bit mechanical
+(def clock (tempo/constant-tempo 2 4 47)) ;; Will be a bit mechanical
 
 (def top-theme
   (ls/line-segment-dynamics
@@ -20,8 +20,9 @@
     :length :legato)
    0 90
    4 85
-   6 93
-   8 91) )
+   (- 6 1/2)   93
+   6 85
+   8 88) )
 
 
 (def bottom-theme
@@ -52,9 +53,18 @@
     (alternates :g3 :bes3))
    (flatten (repeat 8 '(60 57 59 54)))))
 
+(def pedal-sequence
+  (ls/concrete-logical-sequence
+   (concat
+    (map #(ls/sustain-pedal-event 127 %) (map (partial + 0.04) (list 0 1 2 4 5 6)))
+    (map #(ls/sustain-pedal-event 0 %) (map (partial + 0.01) (list 1 2 4 5 6 8)))
+    )
+   ))
+
+
 
 (def beethoven
-  (ls/loop-sequence (ls/merge-sequences top-theme bottom-theme middle-theme) 1))
+  (ls/loop-sequence (ls/merge-sequences top-theme bottom-theme middle-theme pedal-sequence) 1))
 
 (def ps (-> (ps/new-sequence)
             (ptol/schedule-logical-on-physical beethoven piano clock)))
