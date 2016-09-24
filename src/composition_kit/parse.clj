@@ -10,7 +10,8 @@
         ;; FIXME: We need to deal with duration parsing (like 4.. and stuff) and have to worry
         ;; about triplets one day
         sdur                   (if (= pdur "") (:sdur prior) pdur)
-        dur                    (/ 4 (Integer/parseInt sdur)) ;; in quarter note beats
+        [m ndur dots]          (re-find (re-pattern "^(\\d+)(\\.*)") sdur)
+        dur                    (* (/ 4 (Integer/parseInt ndur)) (reduce + 1 (take (count dots) (iterate #(/ % 2) 1/2))))
 
         rest                   (if (= spitch "r") true false)
         pitch                  (if rest (:pitch prior) (keyword spitch))

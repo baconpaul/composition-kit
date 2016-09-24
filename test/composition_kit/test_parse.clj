@@ -18,11 +18,11 @@
     (is (= (flatten (map #(:notes (ls/item-payload %)) parse)) '(:a3 :bes3 :a3 :a4 :ges2)))
     (is (= (map ls/item-beat parse) '(0 1 7/4 2 3)))
     )
+
+  (let [parse (p/lily->n "c4 bes ees4. des8")]
+    (is (= (map :starts-at parse) (list 0 1 2 7/2)))
+    (is (= (map :dur parse) (list 1 1 3/2 1/2)))
+    )
+
   )
-
-;;(run-tests)
-
-
-
-
 
