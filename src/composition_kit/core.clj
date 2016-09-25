@@ -22,13 +22,9 @@
                     (if (and (= 1
                                 (count (::pitches by-type))
                                 (count (::durations by-type))))
-                      (do
-                        (println (::pitches by-type))
-                        (println (::durations by-type))
-                        (ls/merge-sequences s (ls/sequence-from-pitches-and-durations
-                                               (:composition-payload (first (::pitches by-type)))
-                                               (:composition-payload (first (::durations by-type)))))
-                        )
+                      (ls/merge-sequences s (ls/sequence-from-pitches-and-durations
+                                             (:composition-payload (first (::pitches by-type)))
+                                             (:composition-payload (first (::durations by-type)))))
                       (throw (ex-info "One and only one pitch and duration statement allowed in a phrase, sorry", { ::pitches (::pitches by-type)
                                                                                                                    ::durations (::durations by-type)})))
                     s))))}
