@@ -56,7 +56,7 @@
 (def pedal-sequence
   (ls/concrete-logical-sequence
    (concat
-    (map #(ls/sustain-pedal-event 127 %) (map (partial + 0.04) (list 0 1 2 4 5 6)))
+    (map #(ls/sustain-pedal-event 90 %) (map (partial + 0.04) (list 0 1 2 4 5 6)))
     (map #(ls/sustain-pedal-event 0 %) (map (partial + 0.01) (list 1 2 4 5 6 8)))
     )
    ))
@@ -68,7 +68,6 @@
 
 (def ps (-> (ps/new-sequence)
             (ptol/schedule-logical-on-physical beethoven piano clock)))
-;;[ middle-theme ] ))
 
 (def ps-agent (ps/play ps))
 

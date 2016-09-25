@@ -230,3 +230,22 @@
     (is (= (dyn updn2) '(127 23 23 23)))
     )
   )
+
+(deftest gotcha-edgecases
+  "A collection of edge cases I didn't catch in the sort of core cases above"
+  (let [c1  (ls/concrete-logical-sequence [])
+        c2  (ls/repeated-note :c4 1/4 4)
+        c3  (ls/merge-sequences c1 c2)
+        c4  (ls/merge-sequences c1 c1)
+        c5  (ls/merge-sequences c2)
+        c6  (ls/merge-sequences c1)]
+    (is (zero? (count c1)))
+    (is (= (count c2) (count c3)))
+    (is (zero? (count c4)))
+    (is (zero? (count c6)))
+    (is (= c2 c5))
+    (is (zero? (ls/beat-length-from-zero c1)))
+    (is (zero? (ls/beat-length c1)))
+    )
+  )
+

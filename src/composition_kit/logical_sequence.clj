@@ -142,29 +142,32 @@ makes your note louder. (There's a utility function for that below though)"
   (sort-by item-beat items))
 
 ;; Merged sequences are a lazy sequence which makes the earliest one its first. This is actually 
-(defn merge-sequences [ & sequences]
-  (if (empty? sequences)
-    []
-
-    (let [first-els      (remove nil? (map first sequences))
-          earliest-beat  (apply min (map item-beat first-els))
-          headel-picked
-          (loop [seqs    sequences
-                 res     { :headel nil :rest [] }]
-            (cond
-              (empty? seqs) res
+(defn merge-sequences [ & in-sequences]
+  (let [sequences      (filter (comp not empty?) in-sequences)]
+    (if (empty? sequences)
+      []
+      
+      (let [
+            first-els      (remove nil? (map first sequences))
+            earliest-beat  (apply min (map item-beat first-els))
+            headel-picked
+            (loop [seqs    sequences
+                   res     { :headel nil :rest [] }]
+              (cond
+                (empty? seqs) res
+                
+                (= earliest-beat (item-beat (ffirst seqs)))
+                (-> res
+                    (assoc :headel (ffirst seqs))
+                    (assoc :rest (concat (:rest res)
+                                         (if (empty? (rest (first seqs))) [] [ (rest (first seqs)) ])
+                                         (rest seqs))))
+                
+                :else (recur (rest seqs) (update-in res [ :rest ] conj (first seqs))))
               
-              (= earliest-beat (item-beat (ffirst seqs)))
-              (-> res
-                  (assoc :headel (ffirst seqs))
-                  (assoc :rest (concat (:rest res)
-                                       (if (empty? (rest (first seqs))) [] [ (rest (first seqs)) ])
-                                       (rest seqs))))
-              
-              :else (recur (rest seqs) (update-in res [ :rest ] conj (first seqs))))
-            
-            )]
-      (lazy-seq (cons (:headel headel-picked) (apply merge-sequences (:rest headel-picked))))
+              )]
+        (lazy-seq (cons (:headel headel-picked) (apply merge-sequences (:rest headel-picked))))
+        )
       )
     )
   )
@@ -204,10 +207,12 @@ makes your note louder. (There's a utility function for that below though)"
 
 ;; Time manipulation and looping
 (defn beat-length [ sequence ]
-  (- (apply max (map item-end-beat sequence)) (item-beat (first sequence))))
+  (if (empty? sequence) 0
+      (- (apply max (map item-end-beat sequence)) (item-beat (first sequence)))))
 
 (defn beat-length-from-zero [ sequence ]
-  (apply max (map item-end-beat sequence)))
+  (if (empty? sequence) 0
+      (apply max (map item-end-beat sequence))))
 
 (defn item-beat-shift [ it shift ]
   (item-transformer it nil (comp (partial + shift) item-beat) (comp (partial + shift) item-end-beat) nil))
