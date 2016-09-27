@@ -13,7 +13,7 @@
   (phrase
    (pitches   p1 p2 p3 p4)
    (apply durations (repeat 4 1/4))
-   (dynamics  60 57 59 54)))
+   (dynamics  70 67 69 64)))
 
 (defn alternates [p1 p2] (sixteenths p1 p2 p1 p2))
 
@@ -49,4 +49,9 @@
 
 
 (midi-play beethoven piano clock)
+
+
+
+
+
 

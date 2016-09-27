@@ -27,12 +27,28 @@
                                              (:composition-payload (first (::durations by-type)))))
                       (throw (ex-info "One and only one pitch and duration statement allowed in a phrase, sorry", { ::pitches (::pitches by-type)
                                                                                                                    ::durations (::durations by-type)})))
-                    s))))}
+                    s)))
+
+         ;; Do we have any dynamics
+         ((fn [s] (if  (::dynamics types)
+                    (do
+                      (when (> (count (::dynamics by-type)) 1)
+                        (throw (ex-info "One and only one dynamics in a phrase, sorry", { ::dynamics (::dynamics by-type)})))
+                      (let [ dyn  (first (::dynamics by-type)) ]
+                        (condp = (:dynamics-type dyn)
+                          ::explicit
+                          (ls/explicit-segment-dynamics s (:composition-payload dyn))
+                          ::function
+                          ((:composition-payload dyn) s)
+                          :else
+                          (throw (ex-info "Unknown dynamics type" { ::dynamics dyn } ))))
+                      )
+                    s)))
+         )
+     }
     
     )
   )
-
-
 
 
 (defn lily [ & arguments ]
@@ -68,7 +84,15 @@ For instance:
   (phrase
     (lily :relative :c4 e2 d4 c e1)
     (dynamics-at  0 -> 120 1 -> 60 3 -> 80))"
-  {:composition-type ::dynamics :dynamics-type ::function :composition-payload arguments }
+  (let [arg-group (partition 3 arguments)]
+    (when-not (every? (fn [ [ b s l ] ] (and (= (type b) (type l) java.lang.Long)  (= s '->))) (partition 3 arguments))
+      (throw (ex-info "Incorrect syntax. Should be b -> l b -> l. You gave me arguments as shown." { :args arguments } )))
+    (let [line-seg (mapcat (fn [ [ b s l ] ] [ b l ] ) arg-group)
+          argname (gensym 'seq_)]
+      `{:composition-type ::dynamics :dynamics-type ::function :composition-payload
+        (fn [ ~argname ] (ls/line-segment-dynamics ~argname ~@line-seg))}
+      )
+    )
   )
 
 (defn concatenate [ & arguments ]
@@ -87,8 +111,24 @@ For instance:
     )
   )
 
-(defmacro pedal-held-and-cleared-at [ & arguments ]
-  {:composition-type ::sequence :composition-payload [] }
+(defn pedal-held-and-cleared-at [ & arguments ]
+  "Given a collection of beats, depress the pedal just a smidge after the beat and then
+hold it until the next beat, where it releases and re-applies. So basically pedal clears are
+at each of the arguments. The last argument ends the pedal."
+  (let [arguments (list 1 2 4 5)
+        shiftarg  (concat (rest arguments) [(last arguments)])
+        fromto    (map (fn [ a b ] (list a b)) arguments shiftarg)
+        ramps     (sort-by first (mapcat (fn [ [ s e ] ]
+                                           (concat
+                                            ;; down
+                                            (if (= s e) []
+                                                (map (fn [v] [ ( + (* v 0.01) s 0.05) (int (* 12.7 v)) ] ) (range 11)))
+                                            ;; up
+                                            (map (fn [v] [ ( + (* v 0.005) e) (int (* 12.7 (- 10 v))) ] ) (range 11))))
+                                         fromto))
+        result    (ls/concrete-logical-sequence (map (fn [[b l]] (ls/sustain-pedal-event l b)) ramps))
+        ]
+    {:composition-type ::sequence :composition-payload result  })
   )
 
 (defn midi-play [ sequence on clock ]
@@ -102,4 +142,3 @@ For instance:
       )
   )
 
-(:d (set (keys (group-by :t (list { :t :a :v 1 } { :t :b :v 1 } {:t :a :v 2 })))))
