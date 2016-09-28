@@ -18,7 +18,7 @@
          ((fn [s] (if (::sequence types) (apply ls/merge-sequences (map :composition-payload (::sequence by-type))) s)))
          
          ;; Do we have a pitch and duration pair? If so merge that on
-         ((fn [s] (if (and (::pitches types) (::durations types))
+         ((fn [s] (if (or (::pitches types) (::durations types))
                     (if (and (= 1
                                 (count (::pitches by-type))
                                 (count (::durations by-type))))
@@ -40,9 +40,9 @@
                           (ls/explicit-segment-dynamics s (:composition-payload dyn))
                           ::function
                           ((:composition-payload dyn) s)
-                          :else
-                          (throw (ex-info "Unknown dynamics type" { ::dynamics dyn } ))))
-                      )
+                          )
+                        ))
+                    ;; else
                     s)))
          )
      }
@@ -131,6 +131,13 @@ at each of the arguments. The last argument ends the pedal."
     {:composition-type ::sequence :composition-payload result  })
   )
 
+(defn on-instrument [ inst seq ]
+  )
+
+(defn with-clock [ clock seq ]
+  )
+
+;; this is wrong; the instrument should bind to the sequence (as should, potentially the clock)
 (defn midi-play [ sequence on clock ]
   (if (not (= (:composition-type sequence) ::sequence)) (throw (ex-info "I can only midi-play a sequence" { :sequence-was sequence }))
       (let [target  (:composition-payload sequence)

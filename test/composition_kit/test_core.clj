@@ -33,8 +33,28 @@
     )
   )
 
-(phrase
- (pitches :a4 :b4 :c4 :a4)
- (durations 1 1 2 4)
- (dynamics 70 80 127 90))
+(deftest phrase-operator
+  ;; This test isn't awesome. It should really look at contents; but other tests make sure the
+  ;; underlying operators work so really test the counts and the exceptions
+  (let [p1   (phrase (lily "c2 d"))
+        p2   (phrase
+              (pitches :a4 :b4 :c4 :a4)
+              (durations 1 1 2 4)
+              (dynamics 70 80 127 90))
+        p3   (phrase
+              (lily "c2 d e f")
+              (dynamics-at 0 -> 127 4 -> 60 8 -> 100))
+        ]
+    (is (= (:composition-type p1) (:composition-type p2) :composition-kit.core/sequence))
+    (is (= (count (:composition-payload p1)) 2))
+    (is (= (count (:composition-payload p2)) 4))
+    (is (= (:notes (ls/item-payload (first (:composition-payload p2)))) :a4))
+    (is (= (count (:composition-payload p3)) 4))
+    )
+  ;; Test the throw case
+  (is (thrown? Exception (phrase (pitches :a4) (pitches :b4))))
+  (is (thrown? Exception (phrase (pitches :a4) (durations 1) (durations 2))))
+  (is (thrown? Exception (phrase (pitches :a4) (durations 1) (dynamics 2) (dynamics 20))))
+  )
+
 
