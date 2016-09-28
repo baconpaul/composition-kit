@@ -1,19 +1,21 @@
 (ns composition-kit.midi-util
   (:import (javax.sound.midi MidiSystem ShortMessage MidiDevice MidiDevice$Info Transmitter Receiver))
   (require [composition-kit.logical-sequence :as ls])
+  ;;(:require [tupelo.core     :as t])
   )
+;;(t/refer-tupelo)
 
 (defn ^{:private true} get-opened-receiver-unmemo
   ([]  (get-opened-receiver-unmemo "Bus 1"))
   ([name]
-   (as-> (MidiSystem/getMidiDeviceInfo) s
-     (filter #(= (.getName ^MidiDevice$Info %) name) s)
-     (map #(MidiSystem/getMidiDevice ^MidDevice$Info %) s)
-     (filter #(>= (.getMaxTransmitters ^MidiDevice %) 0) s)
-     (if (empty? s) (throw (ex-info "No midi devices with recievers" {:name name})) s)
-     (first s)
-     (do (.open ^MidiDevice s) s)
-     (.getReceiver ^MidiDevice s)
+   (as-> (MidiSystem/getMidiDeviceInfo) it
+     (filter #(= (.getName ^MidiDevice$Info %) name) it)
+     (map #(MidiSystem/getMidiDevice ^MidDevice$Info %) it)
+     (filter #(>= (.getMaxTransmitters ^MidiDevice %) 0) it)
+     (if (empty? it) (throw (ex-info "No midi devices with recievers" {:name name})) it)
+     (first it)
+     (do (.open ^MidiDevice it) it)
+     (.getReceiver ^MidiDevice it)
      )
    )
   )
@@ -21,13 +23,13 @@
 (defn ^{:private true} get-opened-transmitter-unmemo
   ([]  (get-opened-transmitter-unmemo "Bus 1"))
   ([name]
-   (as-> (MidiSystem/getMidiDeviceInfo) s
-     (filter #(= (.getName ^MidiDevice$Info %) name) s)
-     (map #(MidiSystem/getMidiDevice ^MidiDevice$Info %) s)
-     (filter #(>= (.getMaxReceivers ^MidiDevice %) 0) s)
-     (first s)
-     (do (.open ^MidiDevice s) s)
-     (.getTransmitter ^MidiDevice s)
+   (as-> (MidiSystem/getMidiDeviceInfo) it
+     (filter #(= (.getName ^MidiDevice$Info %) name) it)
+     (map #(MidiSystem/getMidiDevice ^MidiDevice$Info %) it)
+     (filter #(>= (.getMaxReceivers ^MidiDevice %) 0) it)
+     (first it)
+     (do (.open ^MidiDevice it) it)
+     (.getTransmitter ^MidiDevice it)
      )
    )
   )

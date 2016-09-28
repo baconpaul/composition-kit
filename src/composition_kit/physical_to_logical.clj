@@ -64,7 +64,8 @@
                   (:value payload))
                  start-time
                  ))
-
+              :else
+              (throw (ex-info (str "Unable to map to logical type " (ls/item-type item)) {:item item}))
               )
             )
           in-seq
@@ -76,4 +77,5 @@
   "A utility for when you want just one sequence schedulable"
   (-> (ps/new-sequence)
       (schedule-logical-on-physical pattern instrument clock)))
+
 

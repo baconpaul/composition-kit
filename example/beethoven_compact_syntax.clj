@@ -19,7 +19,7 @@
 
 
 
-(def beethoven
+(def beethoven-phrase
   (overlay
    (phrase
     (lily :relative :c4 "c4 bes ees4. des8 c ees aes bes ees,4. e8")
@@ -48,7 +48,10 @@
   )
 
 
-(midi-play beethoven piano clock)
+(midi-play (on-instrument piano (with-clock clock beethoven-phrase)))
+
+
+
 
 
 

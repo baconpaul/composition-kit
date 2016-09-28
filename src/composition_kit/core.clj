@@ -13,38 +13,43 @@
         types    (set (keys by-type))]
     {:composition-type ::sequence
      :composition-payload 
-     (-> (ls/concrete-logical-sequence [])
-         ;; So do we have any sequences? If so they win
-         ((fn [s] (if (::sequence types) (apply ls/merge-sequences (map :composition-payload (::sequence by-type))) s)))
-         
-         ;; Do we have a pitch and duration pair? If so merge that on
-         ((fn [s] (if (or (::pitches types) (::durations types))
-                    (if (and (= 1
-                                (count (::pitches by-type))
-                                (count (::durations by-type))))
-                      (ls/merge-sequences s (ls/sequence-from-pitches-and-durations
-                                             (:composition-payload (first (::pitches by-type)))
-                                             (:composition-payload (first (::durations by-type)))))
-                      (throw (ex-info "One and only one pitch and duration statement allowed in a phrase, sorry", { ::pitches (::pitches by-type)
-                                                                                                                   ::durations (::durations by-type)})))
-                    s)))
+     (as-> (ls/concrete-logical-sequence []) it
+       
+       ;; So do we have any sequences? If so they win. Clobber 'it' with their value
+       (if (::sequence types) (apply ls/merge-sequences (map :composition-payload (::sequence by-type)))
+           ;; else
+           it)
 
-         ;; Do we have any dynamics
-         ((fn [s] (if  (::dynamics types)
-                    (do
-                      (when (> (count (::dynamics by-type)) 1)
-                        (throw (ex-info "One and only one dynamics in a phrase, sorry", { ::dynamics (::dynamics by-type)})))
-                      (let [ dyn  (first (::dynamics by-type)) ]
-                        (condp = (:dynamics-type dyn)
-                          ::explicit
-                          (ls/explicit-segment-dynamics s (:composition-payload dyn))
-                          ::function
-                          ((:composition-payload dyn) s)
-                          )
-                        ))
-                    ;; else
-                    s)))
-         )
+       ;; Do we have a pitch or a duration?
+       (if (or (::pitches types) (::durations types))
+         (if (and (= 1
+                     (count (::pitches by-type))
+                     (count (::durations by-type))))
+           (ls/merge-sequences it (ls/sequence-from-pitches-and-durations
+                                   (:composition-payload (first (::pitches by-type)))
+                                   (:composition-payload (first (::durations by-type)))))
+           (throw (ex-info "One and only one pitch and duration statement allowed in a phrase, sorry", { ::pitches (::pitches by-type)
+                                                                                                        ::durations (::durations by-type)})))
+         ;; else         
+         it)
+
+       ;; Do we have any dynamics
+       (if  (::dynamics types)
+         (do
+           (when (> (count (::dynamics by-type)) 1)
+             (throw (ex-info "One and only one dynamics in a phrase, sorry", { ::dynamics (::dynamics by-type)})))
+           (let [ dyn  (first (::dynamics by-type)) ]
+             (condp = (:dynamics-type dyn)
+               ::explicit
+               (ls/explicit-segment-dynamics it (:composition-payload dyn))
+               ::function
+               ((:composition-payload dyn) it)
+               )
+             ))
+         ;; else
+         it)
+       
+       )
      }
     
     )
@@ -84,14 +89,13 @@ For instance:
   (phrase
     (lily :relative :c4 e2 d4 c e1)
     (dynamics-at  0 -> 120 1 -> 60 3 -> 80))"
-  (let [arg-group (partition 3 arguments)]
-    (when-not (every? (fn [ [ b s l ] ] (and (= (type b) (type l) java.lang.Long)  (= s '->))) (partition 3 arguments))
-      (throw (ex-info "Incorrect syntax. Should be b -> l b -> l. You gave me arguments as shown." { :args arguments } )))
-    (let [line-seg (mapcat (fn [ [ b s l ] ] [ b l ] ) arg-group)
-          argname (gensym 'seq_)]
-      `{:composition-type ::dynamics :dynamics-type ::function :composition-payload
-        (fn [ ~argname ] (ls/line-segment-dynamics ~argname ~@line-seg))}
-      )
+  (let [arg-group (partition 3 arguments)
+        _         (when-not (every? (fn [ [ b s l ] ] (and (= (type b) (type l) java.lang.Long)  (= s '->))) arg-group)
+                    (throw (ex-info "Incorrect syntax. Should be b -> l b -> l. You gave me arguments as shown." { :args arguments } )))
+        line-seg  (mapcat (fn [ [ b s l ] ] [ b l ] ) arg-group)
+        argname   (gensym 'seq_)]
+    `{:composition-type ::dynamics :dynamics-type ::function :composition-payload
+      (fn [ ~argname ] (ls/line-segment-dynamics ~argname ~@line-seg))}
     )
   )
 
@@ -115,8 +119,7 @@ For instance:
   "Given a collection of beats, depress the pedal just a smidge after the beat and then
 hold it until the next beat, where it releases and re-applies. So basically pedal clears are
 at each of the arguments. The last argument ends the pedal."
-  (let [arguments (list 1 2 4 5)
-        shiftarg  (concat (rest arguments) [(last arguments)])
+  (let [shiftarg  (concat (rest arguments) [(last arguments)])
         fromto    (map (fn [ a b ] (list a b)) arguments shiftarg)
         ramps     (sort-by first (mapcat (fn [ [ s e ] ]
                                            (concat
@@ -132,20 +135,32 @@ at each of the arguments. The last argument ends the pedal."
   )
 
 (defn on-instrument [ inst seq ]
+  (cond
+    (= (:composition-type seq) ::sequence) { :composition-type ::instrument-seq :composition-payload { :instrument inst :seq (:composition-payload seq) } }
+    (= (:composition-type seq) ::clock-seq) { :composition-type ::playable-seq :composition-payload (assoc (:composition-payload seq) :instrument inst) }
+    :else  (throw (ex-info "Don't know how to associate an instrument with sequence type" { :type (:composition-type seq) } ))
+    )
   )
 
 (defn with-clock [ clock seq ]
+  (cond
+    (= (:composition-type seq) ::sequence) { :composition-type ::clock-seq :composition-payload { :clock clock :seq (:composition-payload seq) } }
+    (= (:composition-type seq) ::instrument-seq) { :composition-type ::playable-seq :composition-payload (assoc (:composition-payload seq) :clock clock) }
+    :else  (throw (ex-info "Don't know how to associate an instrument with sequence type" { :type (:composition-type seq) } ))
+    )
   )
 
 ;; this is wrong; the instrument should bind to the sequence (as should, potentially the clock)
-(defn midi-play [ sequence on clock ]
-  (if (not (= (:composition-type sequence) ::sequence)) (throw (ex-info "I can only midi-play a sequence" { :sequence-was sequence }))
-      (let [target  (:composition-payload sequence)
-            ps      (-> (ps/new-sequence)
-                        (ptol/schedule-logical-on-physical target on clock))]
-        (ps/play ps)
-        
-        )
+(defn midi-play [ item ]
+  (cond
+    (= (:composition-type item) ::playable-seq)
+    (let [target  (:composition-payload item)
+          ps      (-> (ps/new-sequence)
+                      (ptol/schedule-logical-on-physical (:seq target) (:instrument target) (:clock target)))]
+      (ps/play ps)
+      
       )
+    :else (throw (ex-info "Can't midi-play type. Did you use with-clock and on-instrument?" {:type (:composition-type item)}))
+    )
   )
 
