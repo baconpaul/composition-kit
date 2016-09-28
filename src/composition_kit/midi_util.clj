@@ -6,28 +6,29 @@
 (defn ^{:private true} get-opened-receiver-unmemo
   ([]  (get-opened-receiver-unmemo "Bus 1"))
   ([name]
-   (->> (MidiSystem/getMidiDeviceInfo)
-        (filter #(= (.getName ^MidiDevice$Info %) name))
-        (map #(MidiSystem/getMidiDevice ^MidDevice$Info %))
-        (filter #(>= (.getMaxTransmitters ^MidiDevice %) 0))
-        first
-        (#(do (.open ^MidiDevice %) %))
-        (#(.getReceiver ^MidiDevice %))
-        )
+   (as-> (MidiSystem/getMidiDeviceInfo) s
+     (filter #(= (.getName ^MidiDevice$Info %) name) s)
+     (map #(MidiSystem/getMidiDevice ^MidDevice$Info %) s)
+     (filter #(>= (.getMaxTransmitters ^MidiDevice %) 0) s)
+     (if (empty? s) (throw (ex-info "No midi devices with recievers" {:name name})) s)
+     (first s)
+     (do (.open ^MidiDevice s) s)
+     (.getReceiver ^MidiDevice s)
+     )
    )
   )
 
 (defn ^{:private true} get-opened-transmitter-unmemo
   ([]  (get-opened-transmitter-unmemo "Bus 1"))
   ([name]
-   (->> (MidiSystem/getMidiDeviceInfo)
-        (filter #(= (.getName ^MidiDevice$Info %) name))
-        (map #(MidiSystem/getMidiDevice ^MidiDevice$Info %))
-        (filter #(>= (.getMaxReceivers ^MidiDevice %) 0))
-        first
-        (#(do (.open ^MidiDevice %) %))
-        (#(.getTransmitter ^MidiDevice %))
-        )
+   (as-> (MidiSystem/getMidiDeviceInfo) s
+     (filter #(= (.getName ^MidiDevice$Info %) name) s)
+     (map #(MidiSystem/getMidiDevice ^MidiDevice$Info %) s)
+     (filter #(>= (.getMaxReceivers ^MidiDevice %) 0) s)
+     (first s)
+     (do (.open ^MidiDevice s) s)
+     (.getTransmitter ^MidiDevice s)
+     )
    )
   )
 
