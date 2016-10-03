@@ -8,15 +8,16 @@
 (defn ^{:private true} get-opened-receiver-unmemo
   ([]  (get-opened-receiver-unmemo "Bus 1"))
   ([name]
-   (as-> (MidiSystem/getMidiDeviceInfo) it
-     (filter #(= (.getName ^MidiDevice$Info %) name) it)
-     (map #(MidiSystem/getMidiDevice ^MidDevice$Info %) it)
-     (filter #(>= (.getMaxTransmitters ^MidiDevice %) 0) it)
-     (if (empty? it) (throw (ex-info "No midi devices with recievers" {:name name})) it)
-     (first it)
-     (do (.open ^MidiDevice it) it)
-     (.getReceiver ^MidiDevice it)
-     )
+   (let [device-info       (MidiSystem/getMidiDeviceInfo) 
+         named-device-info (filter #(= (.getName ^MidiDevice$Info %) name) device-info)
+         devices           (map #(MidiSystem/getMidiDevice ^MidDevice$Info %) named-device-info)
+         receivables       (filter #(>= (.getMaxTransmitters ^MidiDevice %) 0) devices)
+         _                 (when (empty? receivables) (throw (ex-info "No midi devices with recievers" {:name name})))
+         receivable        (first receivables)
+         result            (do 
+                             (.open ^MidiDevice receivable)
+                             (.getReceiver ^MidiDevice receivable))]
+     result)
    )
   )
 
@@ -90,6 +91,4 @@
     :channel  channel
     })
   )
-
-
 

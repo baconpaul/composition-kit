@@ -30,6 +30,12 @@
 (defmulti item-dynamics :itemtype)
 (defmethod item-dynamics :default [it] nil)
 
+(defmulti item-instrument :itemtype)
+(defmethod item-instrument :default [it] nil)
+
+(defmulti item-clock :itemtype)
+(defmethod item-clock :default [it] nil)
+
 ;; We define two types of items; one which has a duration (like a note) and one which is simply at a point
 ;; in beat (like, say, a dynamics). The note with a duration has a separate dimension of time which is how long
 ;; it is held for. Since notes can slur, echo, be staccato, be detache and so on, this is a number which
@@ -80,14 +86,25 @@
 (defn sustain-pedal-event [ value beat ] (control-event 64 value beat ))
 
 ;; Each item of the transfomer gets handed the entire item.
-(defn item-transformer [ underlyer payload-xform beat-xform end-beat-xform dynamics-xform ]
+(defn identity-item-transformer [underlyer]
   {:itemtype ::item-transformer
    :underlyer  underlyer
-   :payload-xform  (or payload-xform  item-payload)  ;; under-item -> payload
-   :beat-xform     (or beat-xform     item-beat)     ;; under-item -> beat
-   :end-beat-xform (or end-beat-xform item-end-beat) ;; under-item -> end-beat
-   :dynamics-xform (or dynamics-xform item-dynamics) ;; under-item -> (wrapped-item -> midi-dynamic)
+   :payload-xform  item-payload  ;; under-item -> payload
+   :beat-xform     item-beat     ;; under-item -> beat
+   :end-beat-xform item-end-beat ;; under-item -> end-beat
+   :dynamics-xform item-dynamics ;; under-item -> (wrapped-item -> midi-dynamic)
+   :clock-xform    item-clock    ;; under-item -> clock
+   :instrument-xform item-instrument ;; under-item -> instrument
    })
+
+(defn add-transform [ transformer type xform ]
+  (let [keyw (keyword (str (name type) "-xform"))]
+    (if (not (contains? transformer keyw)) (throw (ex-info (str "Can't assign transformer to unknown slot '" keyw "' (" type ")")
+                                                           {:type type :slot keyw}))
+        (assoc transformer keyw xform))
+    )
+  )
+
 (defmethod music-item? ::item-transformer [it] true);
 (defmethod item-beat ::item-transformer [it] ((:beat-xform it) (:underlyer it)))
 (defmethod item-end-beat ::item-transformer [it] ((:end-beat-xform it) (:underlyer it)))
@@ -95,7 +112,8 @@
 (defmethod item-type ::item-transformer [it] (item-type (:underlyer it)))
 (defmethod item-has-dynamics? ::item-transformer [it] (item-has-dynamics? (:underlyer it)))
 (defmethod item-dynamics ::item-transformer [it]  ((:dynamics-xform it) (:underlyer it)))
-
+(defmethod item-clock ::item-transformer [it] ((:clock-xform it) (:underlyer it)))
+(defmethod item-instrument ::item-transformer [it] ((:instrument-xform it) (:underlyer it)))
 
 
 ;; Dynamics
@@ -108,7 +126,7 @@
   "A function of one argument (the item) becomes the new dynamics function.
 Note if this function calls note-dynamics-to-7-bit-volume it will recur infinitely
 since it comes back to the dynamics. If you want that, use compose-dynamics"
-  (item-transformer item nil nil nil (constantly f)))
+  (add-transform (identity-item-transformer item) :dynamics (constantly f)))
 
 (defn compose-dynamics [item f]
   "A function of two arguments (the item and the dynamics of the underlyer) becomes
@@ -117,8 +135,9 @@ the new dynamics function. For instance
   (compose-dynamics note (fn [n d] (min 127 (+5 d))))
 
 makes your note louder. (There's a utility function for that below though)"
-  (item-transformer
-   item nil nil nil
+  (add-transform
+   (identity-item-transformer item)
+   :dynamics
    (fn [outer]
      (fn [a]
        (f a (note-dynamics-to-7-bit-volume outer))))
@@ -215,7 +234,9 @@ makes your note louder. (There's a utility function for that below though)"
       (apply max (map item-end-beat sequence))))
 
 (defn item-beat-shift [ it shift ]
-  (item-transformer it nil (comp (partial + shift) item-beat) (comp (partial + shift) item-end-beat) nil))
+  (-> (identity-item-transformer it)
+      (add-transform :beat (comp (partial + shift) item-beat))
+      (add-transform :end-beat (comp (partial + shift) item-end-beat))))
 
 (defn beat-shift [ sequence shift ]
   (map #(item-beat-shift % shift) sequence))
@@ -262,3 +283,4 @@ repeats for the remainder of the sequence"
                     (concat values (repeat (last values)))
                     values)]
     (map (fn [n d] (override-dynamics n (constantly d))) mseq usevalues)))
+

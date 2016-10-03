@@ -34,10 +34,10 @@
   (let [evt (ls/music-event "an event" 12)
         nwd (ls/notes-with-duration [ :c4 ] 1 5)
         rwd (ls/rest-with-duration 2 5)
-        copy-nwd (ls/item-transformer nwd nil nil nil nil)
-        upcase-evt (ls/item-transformer evt (comp clojure.string/upper-case ls/item-payload) nil nil nil)
+        copy-nwd (ls/identity-item-transformer nwd)
+        upcase-evt (ls/add-transform (ls/identity-item-transformer evt) :payload (comp clojure.string/upper-case ls/item-payload))
 
-        later-rest (ls/item-transformer rwd nil (comp (partial + 2) ls/item-beat) nil nil)
+        later-rest (ls/add-transform (ls/identity-item-transformer rwd) :beat (comp (partial + 2) ls/item-beat))
         later-note (ls/item-beat-shift nwd 4)
         ]
     (is (= (ls/item-beat nwd) (ls/item-beat copy-nwd)))

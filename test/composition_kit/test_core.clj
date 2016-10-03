@@ -57,4 +57,17 @@
   (is (thrown? Exception (phrase (pitches :a4) (durations 1) (dynamics 2) (dynamics 20))))
   )
 
+(deftest error-cases
+  ;; this one is a macro exception so shows as a compile error
+  (is (clojure.string/includes? (try (macroexpand `(dynamics-at 0 1 -> 2))
+                                     (catch clojure.lang.ExceptionInfo e (str e)))
+                                "Incorrect syntax"))
+
+  ;; you can only overlay sequences so need the intermediat "phrase" operator
+  (is (thrown? clojure.lang.ExceptionInfo
+               (overlay (lily "c2 d") (dynamics 1 2))))
+  (is (thrown? clojure.lang.ExceptionInfo
+               (concatenate (lily "c2 d") (dynamics 1 2))))
+  )
+
 
