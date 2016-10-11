@@ -67,6 +67,7 @@
                     ]
                 offs
                 )
+              
               :composition-kit.logical-sequence/control-event
               (let [_          (schedulable-item item)
                     payload    (ls/item-payload item)
@@ -83,8 +84,9 @@
                   (:value payload))
                  start-time
                  ))
-              :else
-              (throw (ex-info (str "Unable to map to logical type " (ls/item-type item)) {:item item}))
+              
+              :composition-kit.logical-sequence/rest-with-duration
+              pseq
               )
             )
           in-seq

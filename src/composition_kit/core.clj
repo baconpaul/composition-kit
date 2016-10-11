@@ -60,6 +60,8 @@
     )
   )
 
+(defn raw-sequence [ s]
+  {:composition-type ::sequence :composition-payload s})
 
 (defn lily [ & arguments ]
   "The lily macro allows you to make a component which participates in a phrase based on a simple monophonic lilypond type list
@@ -72,6 +74,26 @@ of symbols. For instance
         control-bits  (filter (comp keyword?) arguments)
         ]
     {:composition-type ::sequence :composition-payload (apply parse/lily-to-logical-sequence (concat [ lily-string ] control-bits))}
+    )
+  )
+
+(defn overlay [ & arguments ]
+  (if (not (every? #(= (:composition-type %) ::sequence) arguments))
+    (throw (ex-info "Can only overlay sequences. You handed me these types"
+                    { :types (map :composition-type arguments) :args arguments }))
+    {:composition-type ::sequence :composition-payload (apply ls/merge-sequences (map :composition-payload arguments))}
+    )
+  )
+
+
+(defn step-strings [ & arguments ]
+  (let [note-str-pairs (partition 2 arguments)
+        _ (if-not (every? #(and (keyword? (first %)) (string? (second %))) note-str-pairs)
+            (throw (ex-info "Arguments need to be note/pattern pairs" { :args arguments } )))
+        ]
+    (apply overlay
+           (map (fn [[note str]]
+                  (raw-sequence (parse/str->n note str))) note-str-pairs))
     )
   )
 
@@ -109,14 +131,6 @@ For instance:
     (throw (ex-info "Can only conctenate sequences. You handed me these types"
                     { :types (map :composition-type arguments) }))
     {:composition-type ::sequence :composition-payload (apply ls/concat-sequences (map :composition-payload arguments))}
-    )
-  )
-
-(defn overlay [ & arguments ]
-  (if (not (every? #(= (:composition-type %) ::sequence) arguments))
-    (throw (ex-info "Can only overlay sequences. You handed me these types"
-                    { :types (map :composition-type arguments) :args arguments }))
-    {:composition-type ::sequence :composition-payload (apply ls/merge-sequences (map :composition-payload arguments))}
     )
   )
 

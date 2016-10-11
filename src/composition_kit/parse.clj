@@ -114,9 +114,9 @@
     :xform (to have a different char-to-range)
     :item-factory (to make something other than notes with duration)
   
-  (str->n \"x...a...x...y.z.\" :dur 1/32) for 32n/d notes
+  (str->n :c2 \"x...a...x...y.z.\" :dur 1/32) for 32n/d notes
   "
-  ([line & restp]
+  ([target line & restp]
    (let [restmap  (apply hash-map restp)
          xform    (or (:xform restmap) char-to-range)
          dur      (or (:dur restmap) 1/4)] ;; 1/4 of a beat is a 16th note generally
@@ -128,13 +128,16 @@
                                :beat     (* idx dur)
                                })
                    (clojure.string/trim line))
-      (filter :note)
+      ;;(filter :note)
       (map (fn [itm]
-             (ls/add-transform
-              (ls/identity-item-transformer
-               (ls/notes-with-duration :c2 (:dur itm) (:beat itm)))
-              :dynamics
-              (constantly (:value itm)))))
+             (if (:note itm)
+               (ls/add-transform
+                (ls/identity-item-transformer
+                 (ls/notes-with-duration target (:dur itm) (:beat itm)))
+                :dynamics
+                (constantly (constantly (:value itm))))
+               (ls/rest-with-duration (:dur itm) (:beat itm))
+               )))
       (ls/concrete-logical-sequence)
       ))))
 
