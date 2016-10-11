@@ -55,6 +55,11 @@
 
     (is (= (ls/item-beat later-note) 9))
     (is (= (ls/item-end-beat later-note) 10))
+
+    ;; and an error case
+    (is (thrown? clojure.lang.ExceptionInfo
+                 (ls/add-transform (ls/identity-item-transformer evt)
+                                   :nonsense 1)))
     )
   )
 

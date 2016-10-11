@@ -6,14 +6,22 @@
   (:require [composition-kit.tempo :as tempo])
   )
 
-(deftest lily-macro
+(deftest parse-macros
   (let  [l1 (:composition-payload (lily :relative :c4 "c4 d e"))
          l2 (:composition-payload (lily :relative :c4 "c4 d e r2 c c'"))]
     (is (= (count l1) 3))
-    (is (= (count l2) 5)) ;; we can drop the rest
-    (is (= (mapcat (comp :notes ls/item-payload) l2) [ :c4 :d4 :e4 :c4 :c5 ] ))
-    (is (= (map ls/item-beat l2) [ 0 1 2 5 7 ] ))
+    (is (= (count l2) 6)) 
+    (is (= (mapcat (comp :notes ls/item-payload) l2) [ :c4 :d4 :e4 :c4 :c5 ] )) ;; the mapcat kills nil
+    (is (= (map ls/item-beat l2) [ 0 1 2 3 5 7 ] ))
     (is (= (:composition-type (lily "c2")) :composition-kit.core/sequence))
+    )
+
+  (let [ss (step-strings
+            :c2  "X...X...X.X.X..."
+            :d2  ".A....A.......A."
+            )]
+    (is (= (count (:composition-payload ss)) 32))
+    (is (= (count (filter #(= (ls/item-type %) :composition-kit.logical-sequence/notes-with-duration) (:composition-payload ss))) 8))
     )
   )
 
@@ -87,7 +95,7 @@
   (is (thrown? Exception (phrase (pitches :a4) (durations 1) (dynamics 2) (dynamics 20))))
   )
 
-(deftest on-blah-operators
+(deftest other-operators
   ;;(do
   (let [p1 (phrase (lily "c2 d"))
         inst   (midi/midi-instrument 0)
@@ -98,17 +106,21 @@
         pf  (-> p1 (on-instrument inst) (with-clock clock))
 
         fnt  #(first (:composition-payload %))
+
+        phr  (ls/repeated-note :c4 1/4 16)
+        rph  (raw-sequence phr)
         ]
     (is (= inst (ls/item-instrument (fnt pin)) (ls/item-instrument (fnt pf))))
     (is (= clock (ls/item-clock (fnt pcl)) (ls/item-clock (fnt pf))))
     (is (nil? (ls/item-clock (fnt pin))))
     (is (nil? (ls/item-instrument (fnt pcl))))
+    (is (= (:composition-payload rph) phr))
     )
   )
 
 
 
-(deftest error-cases
+(deftest test-error-cases
   ;; this one is a macro exception so shows as a compile error
   (is (clojure.string/includes? (try (macroexpand `(dynamics-at 0 1 -> 2))
                                      (catch clojure.lang.ExceptionInfo e (str e)))
@@ -119,6 +131,11 @@
                (overlay (lily "c2 d") (dynamics 1 2))))
   (is (thrown? clojure.lang.ExceptionInfo
                (concatenate (lily "c2 d") (dynamics 1 2))))
+  (is (thrown? clojure.lang.ExceptionInfo (midi-play (dynamics 1 2))))
+
+  (is (thrown? clojure.lang.ExceptionInfo  (step-strings :c2 "x" :d2 2)))
+  (is (thrown? clojure.lang.ExceptionInfo  (step-strings :c2 "x" "d" "x")))
+  (is (thrown? clojure.lang.ExceptionInfo  (step-strings :c2 "x" :d2)))
   )
 
 

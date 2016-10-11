@@ -80,8 +80,11 @@
 (defn lily-to-logical-sequence
   [line & optarr ]
   (let [notes  (apply lily->n (concat [line] optarr))]
-    (map (fn [ln] (ls/notes-with-duration [ (:note (:note ln)) ] (:dur ln) (:starts-at ln)))
-         (sort-by :starts-at (filter (comp not :rest) notes)))))
+    (map
+     (fn [ln]
+       (if (:rest ln) (ls/rest-with-duration (:dur ln) (:starts-at ln))
+           (ls/notes-with-duration [ (:note (:note ln)) ] (:dur ln) (:starts-at ln))))
+     (sort-by :starts-at notes))))
 
 
 (defn char-to-range

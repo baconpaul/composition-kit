@@ -88,7 +88,10 @@ of symbols. For instance
 
 (defn step-strings [ & arguments ]
   (let [note-str-pairs (partition 2 arguments)
-        _ (if-not (every? #(and (keyword? (first %)) (string? (second %))) note-str-pairs)
+        _ (if-not
+              (and
+               (every? #(and (keyword? (first %)) (string? (second %))) note-str-pairs)
+               (= (mod (count arguments) 2) 0))
             (throw (ex-info "Arguments need to be note/pattern pairs" { :args arguments } )))
         ]
     (apply overlay

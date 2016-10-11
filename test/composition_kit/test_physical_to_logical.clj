@@ -11,11 +11,12 @@
 
 (deftest simple-conversion
   (let [mphrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
+        rphrase (ls/concrete-logical-sequence [(ls/rest-with-duration 1 0)])
         controls (ls/concrete-logical-sequence (map (fn [v t] (ls/control-event 64 v t)) [ 127 64 0] [ 0 1 3/2 ] ))
         inst   (midi/midi-instrument 0)
         bpm    140
         clock  (tempo/constant-tempo 2 4 bpm)
-        phrase (-> (ls/merge-sequences mphrase controls)
+        phrase (-> (ls/merge-sequences mphrase rphrase controls)
                    (ls/assign-clock clock)
                    (ls/assign-instrument inst))
         pseq   (ptol/schedule-logical-on-physical (ps/new-sequence) phrase)
