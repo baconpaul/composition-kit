@@ -8,6 +8,11 @@
   )
 
 
+(defn ^:private lift-to-seq-payload [item f & args ]
+  "basically return the sequence with f (orig) args repacing the sequence"
+  {:composition-type (:composition-type item)
+   :composition-payload (apply f (cons (:composition-payload item) args))})
+
 (defn phrase [ & arguments ]
   (let [by-type  (group-by :composition-type arguments)
         types    (set (keys by-type))]
@@ -134,33 +139,29 @@ at each of the arguments. The last argument ends the pedal."
     {:composition-type ::sequence :composition-payload result  })
   )
 
-(defn on-instrument [ inst seq ]
-  (cond
-    (= (:composition-type seq) ::sequence) { :composition-type ::instrument-seq :composition-payload { :instrument inst :seq (:composition-payload seq) } }
-    (= (:composition-type seq) ::clock-seq) { :composition-type ::playable-seq :composition-payload (assoc (:composition-payload seq) :instrument inst) }
-    :else  (throw (ex-info "Don't know how to associate an instrument with sequence type" { :type (:composition-type seq) } ))
-    )
+(defn on-instrument [ seq inst ]
+  (lift-to-seq-payload seq ls/assign-instrument inst)
   )
 
-(defn with-clock [ clock seq ]
-  (cond
-    (= (:composition-type seq) ::sequence) { :composition-type ::clock-seq :composition-payload { :clock clock :seq (:composition-payload seq) } }
-    (= (:composition-type seq) ::instrument-seq) { :composition-type ::playable-seq :composition-payload (assoc (:composition-payload seq) :clock clock) }
-    :else  (throw (ex-info "Don't know how to associate an instrument with sequence type" { :type (:composition-type seq) } ))
-    )
+(defn with-clock [ seq clock ]
+  (lift-to-seq-payload seq ls/assign-clock clock)
+  )
+
+(defn loop-n [ seq count ]
+  (lift-to-seq-payload seq ls/loop-sequence count)
   )
 
 ;; this is wrong; the instrument should bind to the sequence (as should, potentially the clock)
 (defn midi-play [ item ]
   (cond
-    (= (:composition-type item) ::playable-seq)
+    (= (:composition-type item) ::sequence)
     (let [target  (:composition-payload item)
           ps      (-> (ps/new-sequence)
-                      (ptol/schedule-logical-on-physical (:seq target) (:instrument target) (:clock target)))]
+                      (ptol/schedule-logical-on-physical (:composition-payload item)))]
       (ps/play ps)
       
       )
-    :else (throw (ex-info "Can't midi-play type. Did you use with-clock and on-instrument?" {:type (:composition-type item)}))
+    :else (throw (ex-info "Can't midi-play type. Make a sequence please." {:type (:composition-type item)}))
     )
   )
 

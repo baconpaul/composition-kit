@@ -12,11 +12,13 @@
 (deftest simple-conversion
   (let [mphrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
         controls (ls/concrete-logical-sequence (map (fn [v t] (ls/control-event 64 v t)) [ 127 64 0] [ 0 1 3/2 ] ))
-        phrase (ls/merge-sequences mphrase controls)
         inst   (midi/midi-instrument 0)
         bpm    140
         clock  (tempo/constant-tempo 2 4 bpm)
-        pseq   (ptol/schedule-logical-on-physical (ps/new-sequence) phrase inst clock)
+        phrase (-> (ls/merge-sequences mphrase controls)
+                   (ls/assign-clock clock)
+                   (ls/assign-instrument inst))
+        pseq   (ptol/schedule-logical-on-physical (ps/new-sequence) phrase)
 
         t (midi/get-opened-transmitter)
         callback-store (atom [])
@@ -72,9 +74,9 @@
         loop   (ls/loop-sequence phrase 10)
         pseq   (ptol/schedule-logical-on-physical
                 (ps/new-sequence)
-                loop
-                (midi/midi-instrument 0)
-                (tempo/constant-tempo 4 4 120))]
+                (-> loop
+                    (ls/assign-instrument (midi/midi-instrument 0))
+                    (ls/assign-clock (tempo/constant-tempo 4 4 120))))]
     (is (= (count (:seq pseq)) 60))
     )
   )
@@ -83,11 +85,13 @@
   (let [phrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ])
         pseq   (ptol/schedule-logical-on-physical
                 (ps/new-sequence)
-                phrase
-                (midi/midi-instrument 0)
-                (tempo/constant-tempo 4 4 120))
-        shortseq (ptol/create-and-schedule phrase (midi/midi-instrument 0)
-                                           (tempo/constant-tempo 4 4 120))]
+                (-> phrase
+                    (ls/assign-instrument (midi/midi-instrument 0))
+                    (ls/assign-clock (tempo/constant-tempo 4 4 120))))
+        shortseq (ptol/create-and-schedule
+                  (-> phrase
+                      (ls/assign-instrument (midi/midi-instrument 0))
+                      (ls/assign-clock (tempo/constant-tempo 4 4 120))))]
     (is (= (count (:seq pseq)) (count (:seq shortseq))))
     (is (= (map ls/item-beat (:seq pseq)) (map ls/item-beat (:seq shortseq))))
     )
@@ -101,7 +105,11 @@
         inst   (midi/midi-instrument 0)
         bpm    200
         clock  (tempo/constant-tempo 2 4 bpm)
-        pseq   (ptol/schedule-logical-on-physical (ps/new-sequence) phrase inst clock)
+        pseq   (ptol/schedule-logical-on-physical
+                (ps/new-sequence)
+                (-> phrase
+                    (ls/assign-instrument inst)
+                    (ls/assign-clock clock)))
 
         t (midi/get-opened-transmitter)
         callback-store (atom [])
@@ -143,3 +151,26 @@
 
   )
 
+
+(deftest error-cases
+  (let [phrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 ] [ 1 1 ] )
+        inst   (midi/midi-instrument 0)
+        clock  (tempo/constant-tempo 2 4 200)
+        ]
+    (is (thrown? clojure.lang.ExceptionInfo (ptol/schedule-logical-on-physical (ps/new-sequence) phrase)))
+    (is (thrown? clojure.lang.ExceptionInfo (ptol/schedule-logical-on-physical
+                                             (ps/new-sequence)
+                                             (ls/assign-instrument phrase inst)))) ;; no clock
+
+    (is (thrown? clojure.lang.ExceptionInfo (ptol/schedule-logical-on-physical
+                                             (ps/new-sequence)
+                                             (ls/assign-clock phrase clock)))) ;; no instrument
+
+    (is (not
+         (nil? (ptol/schedule-logical-on-physical
+                (ps/new-sequence)
+                (ls/assign-instrument
+                 (ls/assign-clock phrase clock)
+                 inst))))) ;; no instrument
+    )
+  )

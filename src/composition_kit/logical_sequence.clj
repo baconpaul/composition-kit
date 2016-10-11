@@ -250,6 +250,13 @@ makes your note louder. (There's a utility function for that below though)"
   (mapcat (fn [se of] (beat-shift se of)) concat-these  (reductions + 0 (map beat-length concat-these)))
   )
 
+(defn assign-clock [ sequence clock ]
+  (map #(-> (identity-item-transformer %)
+            (add-transform :clock (constantly clock))) sequence))
+
+(defn assign-instrument [ sequence instrument ]
+  (map #(-> (identity-item-transformer %)
+            (add-transform :instrument (constantly instrument))) sequence))
 
 ;; Dynamics applicators
 (defn override-sequence-dynamics [ mseq dfn ]

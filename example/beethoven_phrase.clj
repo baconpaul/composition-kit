@@ -67,7 +67,10 @@
   (ls/loop-sequence (ls/merge-sequences top-theme bottom-theme middle-theme pedal-sequence) 1))
 
 (def ps (-> (ps/new-sequence)
-            (ptol/schedule-logical-on-physical beethoven piano clock)))
+            (ptol/schedule-logical-on-physical
+             (-> beethoven
+                 (ls/assign-instrument piano)
+                 (ls/assign-clock clock)))))
 
 (def ps-agent (ps/play ps))
 

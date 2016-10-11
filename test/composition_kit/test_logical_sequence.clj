@@ -1,6 +1,9 @@
 (ns composition-kit.test-logical-sequence
   (use clojure.test)
-  (require [composition-kit.logical-sequence :as ls]))
+  (:require [composition-kit.logical-sequence :as ls])
+  (:require [composition-kit.tempo :as tempo])
+  (:require [composition-kit.midi-util :as midi])
+  )
 
 (deftest items-basics
   (let [evt (ls/music-event "an event" 123)
@@ -228,6 +231,32 @@
 
     (is (= (dyn updn) '(127 23 78 42)))
     (is (= (dyn updn2) '(127 23 23 23)))
+    )
+  )
+
+(deftest inst-and-clock
+  (let [ph     (ls/repeated-note :c4 1/4 5)
+        inst   (midi/midi-instrument 0)
+        clock  (tempo/constant-tempo 2 4 140)
+        phin   (ls/assign-instrument ph inst)
+        phcl   (ls/assign-clock ph clock)
+        phall  (-> ph
+                   (ls/assign-clock clock)
+                   (ls/assign-instrument inst))
+
+        not-nil? (comp not nil?)
+        ]
+    (is (every? nil? (map ls/item-instrument ph)))
+    (is (every? nil? (map ls/item-clock  ph)))
+
+    (is (every? not-nil? (map ls/item-instrument phin)))
+    (is (every? nil? (map ls/item-clock  phin)))
+
+    (is (every? nil? (map ls/item-instrument phcl)))
+    (is (every? not-nil? (map ls/item-clock  phcl)))
+
+    (is (every? not-nil? (map ls/item-instrument phall)))
+    (is (every? not-nil? (map ls/item-clock phall)))
     )
   )
 

@@ -82,3 +82,62 @@
   (let [notes  (apply lily->n (concat [line] optarr))]
     (map (fn [ln] (ls/notes-with-duration [ (:note (:note ln)) ] (:dur ln) (:starts-at ln)))
          (sort-by :starts-at (filter (comp not :rest) notes)))))
+
+
+(defn char-to-range
+  "given a character make a midi range with semantic that 0-9 and
+  a-z both map to min to max accordingly"
+  ([c]  (char-to-range c 0 127))
+  ([c min max]
+   (let  [within  (fn [l h] (and (>= 0 (compare l c)) (>= 0 (compare c h))))
+          spread  (* 1.0 (- max min))
+          val     (fn [z r]
+                    (let [cz   (- (int c) (int z))
+                          delt (/ spread (dec r))]
+                      (int (+ (* cz delt) min))))
+          ]
+     (cond
+       (within \0 \9) (val \0 10)
+       (within \a \z) (val \a 26)
+       (within \A \Z) (val \A 26)
+       true           (int (+ (/ spread 2) min))))))
+
+(defn str->n
+  "Given a single line of a sequence like
+
+   'X...X...X.X.X...'
+
+  and a note name (like :c1) return a logical sequence with the pattern inserted.
+
+  Additional arguments include  
+    :dur   (to have a different note duration; the default is 1/16)
+    :xform (to have a different char-to-range)
+    :item-factory (to make something other than notes with duration)
+  
+  (str->n \"x...a...x...y.z.\" :dur 1/32) for 32n/d notes
+  "
+  ([line & restp]
+   (let [restmap  (apply hash-map restp)
+         xform    (or (:xform restmap) char-to-range)
+         dur      (or (:dur restmap) 1/4)] ;; 1/4 of a beat is a 16th note generally
+     (->>
+      (map-indexed (fn[idx c] {:char      c
+                               :note     (not (= c \.))
+                               :value    (if (= c \.) 0 (xform c))
+                               :dur      dur
+                               :beat     (* idx dur)
+                               })
+                   (clojure.string/trim line))
+      (filter :note)
+      (map (fn [itm]
+             (ls/add-transform
+              (ls/identity-item-transformer
+               (ls/notes-with-duration :c2 (:dur itm) (:beat itm)))
+              :dynamics
+              (constantly (:value itm)))))
+      (ls/concrete-logical-sequence)
+      ))))
+
+
+
+
