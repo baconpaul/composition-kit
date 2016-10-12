@@ -19,9 +19,16 @@
   (let [ss (step-strings
             :c2  "X...X...X.X.X..."
             :d2  ".A....A.......A."
-            )]
+            )
+        ss2 (step-strings
+             [:c2  "X...X...X.X.X..."
+              :d2  ".A....A.......A."]
+             )
+        ]
     (is (= (count (:composition-payload ss)) 32))
     (is (= (count (filter #(= (ls/item-type %) :composition-kit.logical-sequence/notes-with-duration) (:composition-payload ss))) 8))
+    (is (= (count (:composition-payload ss2)) 32))
+    (is (= (count (filter #(= (ls/item-type %) :composition-kit.logical-sequence/notes-with-duration) (:composition-payload ss2))) 8))
     )
   )
 
