@@ -1,4 +1,4 @@
-(ns composition-kit.logical-sequence)
+(ns composition-kit.music-lib.logical-sequence)
 
 ;; shower idea
 ;; + itemtype is a function

@@ -1,6 +1,6 @@
-(ns composition-kit.midi-util
+(ns composition-kit.music-lib.midi-util
   (:import (javax.sound.midi MidiSystem ShortMessage MidiDevice MidiDevice$Info Transmitter Receiver))
-  (require [composition-kit.logical-sequence :as ls])
+  (require [composition-kit.music-lib.logical-sequence :as ls])
   ;;(:require [tupelo.core     :as t])
   )
 ;;(t/refer-tupelo)

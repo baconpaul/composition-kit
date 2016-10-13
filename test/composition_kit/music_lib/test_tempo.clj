@@ -1,6 +1,6 @@
-(ns composition-kit.test-tempo
+(ns composition-kit.music-lib.test-tempo
   (use clojure.test)
-  (require [composition-kit.tempo :as t]))
+  (require [composition-kit.music-lib.tempo :as t]))
 
 (deftest test-constant-tempo
   (let [c1  (t/constant-tempo 3 4 150)

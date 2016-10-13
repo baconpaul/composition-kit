@@ -1,6 +1,6 @@
-(ns composition-kit.test-midi-util
+(ns composition-kit.music-lib.test-midi-util
   (use clojure.test)
-  (require [composition-kit.midi-util :as m])
+  (require [composition-kit.music-lib.midi-util :as m])
   )
 
 (deftest midi-messages

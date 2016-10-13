@@ -1,10 +1,10 @@
 (ns composition-kit.core
-  (:require [composition-kit.midi-util :as midi])
-  (:require [composition-kit.tempo :as tempo])
-  (:require [composition-kit.logical-sequence :as ls])
-  (:require [composition-kit.physical-sequence :as ps])
-  (:require [composition-kit.parse :as parse])
-  (:require [composition-kit.physical-to-logical :as ptol])
+  (:require [composition-kit.music-lib.midi-util :as midi])
+  (:require [composition-kit.music-lib.tempo :as tempo])
+  (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.events.physical-sequence :as ps])
+  (:require [composition-kit.music-lib.parse :as parse])
+  (:require [composition-kit.music-lib.logical-to-physical :as ltop])
   )
 
 
@@ -175,7 +175,7 @@ at each of the arguments. The last argument ends the pedal."
     (= (:composition-type item) ::sequence)
     (let [target  (:composition-payload item)
           ps      (-> (ps/new-sequence)
-                      (ptol/schedule-logical-on-physical (:composition-payload item)))]
+                      (ltop/schedule-logical-on-physical (:composition-payload item)))]
       (ps/play ps)
       
       )

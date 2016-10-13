@@ -1,6 +1,6 @@
-(ns composition-kit.parse
-  (require [composition-kit.logical-sequence :as ls])
-  (require [composition-kit.tonal-theory :as th]))
+(ns composition-kit.music-lib.parse
+  (require [composition-kit.music-lib.logical-sequence :as ls])
+  (require [composition-kit.music-lib.tonal-theory :as th]))
 
 
 (defn ^:private lily-note-to-data [n prior]

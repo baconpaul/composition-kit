@@ -1,10 +1,12 @@
 (ns piano-phase
-  (:require [composition-kit.midi-util :as midi])
-  (:require [composition-kit.tempo :as tempo])
-  (:require [composition-kit.logical-sequence :as ls])
-  (:require [composition-kit.physical-sequence :as ps])
-  (:require [composition-kit.physical-to-logical :as ptol])
+  (:require [composition-kit.music-lib.midi-util :as midi])
+  (:require [composition-kit.music-lib.tempo :as tempo])
+  (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.physical-sequence :as ps])
+  (:require [composition-kit.music-lib.logical-to-physical :as ptol])
   )
+
+;; FIXME - redo with compact notation and dynamics
 
 ;; An implementation of the first section of Reich's piano phase.
 

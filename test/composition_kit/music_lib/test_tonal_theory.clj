@@ -1,6 +1,6 @@
-(ns composition-kit.test-tonal-theory
+(ns composition-kit.music-lib.test-tonal-theory
   (use clojure.test)
-  (require [composition-kit.tonal-theory :as th]))
+  (require [composition-kit.music-lib.tonal-theory :as th]))
 
 (deftest notes
   (is (= (:note (th/note-by-name :c4)) :c4) "Identity of notes")

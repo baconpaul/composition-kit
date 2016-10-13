@@ -1,4 +1,4 @@
-(ns composition-kit.tempo)
+(ns composition-kit.music-lib.tempo)
 
 ;; We have a few key operations we can do on a tempo clock. Define them as multimethods switched on :clocktype
 (defmulti metronome?           :clocktype)

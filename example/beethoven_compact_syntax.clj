@@ -1,6 +1,6 @@
 (ns beethoven-compact
-  (:require [composition-kit.midi-util :as midi])
-  (:require [composition-kit.tempo :as tempo])
+  (:require [composition-kit.music-lib.midi-util :as midi])
+  (:require [composition-kit.music-lib.tempo :as tempo])
 
   (use composition-kit.core))
 

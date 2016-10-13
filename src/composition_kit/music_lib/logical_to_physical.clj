@@ -1,9 +1,9 @@
-(ns composition-kit.physical-to-logical
-  (:require [composition-kit.midi-util :as midi])
-  (:require [composition-kit.tempo :as tempo])
-  (:require [composition-kit.physical-sequence :as ps])
-  (:require [composition-kit.logical-sequence :as ls])
-  (:require [composition-kit.tonal-theory :as th])
+(ns composition-kit.music-lib.logical-to-physical
+  (:require [composition-kit.music-lib.midi-util :as midi])
+  (:require [composition-kit.music-lib.tempo :as tempo])
+  (:require [composition-kit.events.physical-sequence :as ps])
+  (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.tonal-theory :as th])
   )
 
 (defn ^:private schedulable-item [item]
@@ -23,7 +23,7 @@
   ;; does the magic
   (reduce (fn [pseq item]
             (case (ls/item-type item)
-              :composition-kit.logical-sequence/notes-with-duration
+              :composition-kit.music-lib.logical-sequence/notes-with-duration
               (let [_          (schedulable-item item)
                     payload    (ls/item-payload item)
                     instrument (ls/item-instrument item)
@@ -68,7 +68,7 @@
                 offs
                 )
               
-              :composition-kit.logical-sequence/control-event
+              :composition-kit.music-lib.logical-sequence/control-event
               (let [_          (schedulable-item item)
                     payload    (ls/item-payload item)
                     clock      (ls/item-clock item)
@@ -85,7 +85,7 @@
                  start-time
                  ))
               
-              :composition-kit.logical-sequence/rest-with-duration
+              :composition-kit.music-lib.logical-sequence/rest-with-duration
               pseq
               )
             )

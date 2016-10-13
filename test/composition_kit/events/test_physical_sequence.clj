@@ -1,6 +1,6 @@
-(ns composition-kit.test-physical-sequence
+(ns composition-kit.events.test-physical-sequence
   (use clojure.test)
-  (require [composition-kit.physical-sequence :as ps])
+  (require [composition-kit.events.physical-sequence :as ps])
   )
 
 ;; Run a set of functions recording return values and see how they do

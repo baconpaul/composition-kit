@@ -1,9 +1,9 @@
 (ns composition-kit.test-core
   (use clojure.test)
   (use composition-kit.core)
-  (:require [composition-kit.logical-sequence :as ls])
-  (:require [composition-kit.midi-util :as midi])
-  (:require [composition-kit.tempo :as tempo])
+  (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.midi-util :as midi])
+  (:require [composition-kit.music-lib.tempo :as tempo])
   )
 
 (deftest parse-macros
@@ -26,9 +26,9 @@
              )
         ]
     (is (= (count (:composition-payload ss)) 32))
-    (is (= (count (filter #(= (ls/item-type %) :composition-kit.logical-sequence/notes-with-duration) (:composition-payload ss))) 8))
+    (is (= (count (filter #(= (ls/item-type %) :composition-kit.music-lib.logical-sequence/notes-with-duration) (:composition-payload ss))) 8))
     (is (= (count (:composition-payload ss2)) 32))
-    (is (= (count (filter #(= (ls/item-type %) :composition-kit.logical-sequence/notes-with-duration) (:composition-payload ss2))) 8))
+    (is (= (count (filter #(= (ls/item-type %) :composition-kit.music-lib.logical-sequence/notes-with-duration) (:composition-payload ss2))) 8))
     )
   )
 

@@ -1,11 +1,11 @@
-(ns composition-kit.test-physical-to-logical
+(ns composition-kit.music-lib.test-logical-to-physical
   (use clojure.test)
-  (:require [composition-kit.logical-sequence :as ls])
-  (:require [composition-kit.midi-util :as midi])
-  (:require [composition-kit.tempo :as tempo])
-  (:require [composition-kit.physical-sequence :as ps])
-  (:require [composition-kit.tonal-theory :as th])
-  (:require [composition-kit.physical-to-logical :as ptol])
+  (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.midi-util :as midi])
+  (:require [composition-kit.music-lib.tempo :as tempo])
+  (:require [composition-kit.events.physical-sequence :as ps])
+  (:require [composition-kit.music-lib.tonal-theory :as th])
+  (:require [composition-kit.music-lib.logical-to-physical :as ltop])
   (:import (javax.sound.midi MidiSystem ShortMessage))
   )
 
@@ -19,7 +19,7 @@
         phrase (-> (ls/merge-sequences mphrase rphrase controls)
                    (ls/assign-clock clock)
                    (ls/assign-instrument inst))
-        pseq   (ptol/schedule-logical-on-physical (ps/new-sequence) phrase)
+        pseq   (ltop/schedule-logical-on-physical (ps/new-sequence) phrase)
 
         t (midi/get-opened-transmitter)
         callback-store (atom [])
@@ -73,7 +73,7 @@
 (deftest schedule-a-loop
   (let [phrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
         loop   (ls/loop-sequence phrase 10)
-        pseq   (ptol/schedule-logical-on-physical
+        pseq   (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
                 (-> loop
                     (ls/assign-instrument (midi/midi-instrument 0))
@@ -84,12 +84,12 @@
 
 (deftest shorthand-schedule
   (let [phrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ])
-        pseq   (ptol/schedule-logical-on-physical
+        pseq   (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
                 (-> phrase
                     (ls/assign-instrument (midi/midi-instrument 0))
                     (ls/assign-clock (tempo/constant-tempo 4 4 120))))
-        shortseq (ptol/create-and-schedule
+        shortseq (ltop/create-and-schedule
                   (-> phrase
                       (ls/assign-instrument (midi/midi-instrument 0))
                       (ls/assign-clock (tempo/constant-tempo 4 4 120))))]
@@ -106,7 +106,7 @@
         inst   (midi/midi-instrument 0)
         bpm    200
         clock  (tempo/constant-tempo 2 4 bpm)
-        pseq   (ptol/schedule-logical-on-physical
+        pseq   (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
                 (-> phrase
                     (ls/assign-instrument inst)
@@ -158,17 +158,17 @@
         inst   (midi/midi-instrument 0)
         clock  (tempo/constant-tempo 2 4 200)
         ]
-    (is (thrown? clojure.lang.ExceptionInfo (ptol/schedule-logical-on-physical (ps/new-sequence) phrase)))
-    (is (thrown? clojure.lang.ExceptionInfo (ptol/schedule-logical-on-physical
+    (is (thrown? clojure.lang.ExceptionInfo (ltop/schedule-logical-on-physical (ps/new-sequence) phrase)))
+    (is (thrown? clojure.lang.ExceptionInfo (ltop/schedule-logical-on-physical
                                              (ps/new-sequence)
                                              (ls/assign-instrument phrase inst)))) ;; no clock
 
-    (is (thrown? clojure.lang.ExceptionInfo (ptol/schedule-logical-on-physical
+    (is (thrown? clojure.lang.ExceptionInfo (ltop/schedule-logical-on-physical
                                              (ps/new-sequence)
                                              (ls/assign-clock phrase clock)))) ;; no instrument
 
     (is (not
-         (nil? (ptol/schedule-logical-on-physical
+         (nil? (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
                 (ls/assign-instrument
                  (ls/assign-clock phrase clock)

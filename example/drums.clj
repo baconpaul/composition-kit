@@ -1,7 +1,6 @@
-(ns beethoven-phrase
-  (:require [composition-kit.midi-util :as midi])
-  (:require [composition-kit.tempo :as tempo])
-  (:require [composition-kit.parse :as parse])
+(ns drums-example
+  (:require [composition-kit.music-lib.midi-util :as midi])
+  (:require [composition-kit.music-lib.tempo :as tempo])
 
   (:use composition-kit.core)
   )
@@ -18,7 +17,7 @@
                 :gis2  "..Q...Q...Q....."
                 :ais2  "..............W." ])
 
-(def fill-beat [:c2    "X.....S.X...X.Z."
+(def fill-beat [:c2    "X.F...S.X...X.Z."
                 :d2    "....Y.....GJMPWZ"
                 :fis2  "PR.FYR.HPR.....M"
                 :gis2  "..Q...Q........."
@@ -37,7 +36,7 @@
   (-> (concatenate 
        (-> (phrase (lily "a2 c8 d b4 a1" :relative :c3))
            (loop-n 2))
-       (-> (phrase (lily "b2 d8 e cis4 b1" :relative :c3))
+       (-> (phrase (lily "b2 d8 e cis16 d cis d b1" :relative :c3))
            (loop-n 2)))
       (on-instrument bass)))
 

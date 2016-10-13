@@ -1,4 +1,4 @@
-(ns composition-kit.tonal-theory)
+(ns composition-kit.music-lib.tonal-theory)
 
 (def ^:priave notes-data
   ;;(sorted-set-by (map-comparator :octave :notebase :accidental)

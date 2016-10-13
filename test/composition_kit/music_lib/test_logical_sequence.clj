@@ -1,8 +1,8 @@
-(ns composition-kit.test-logical-sequence
+(ns composition-kit.music-lib.test-logical-sequence
   (use clojure.test)
-  (:require [composition-kit.logical-sequence :as ls])
-  (:require [composition-kit.tempo :as tempo])
-  (:require [composition-kit.midi-util :as midi])
+  (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.tempo :as tempo])
+  (:require [composition-kit.music-lib.midi-util :as midi])
   )
 
 (deftest items-basics
@@ -17,7 +17,7 @@
     (is (not (ls/item-has-dynamics? rwd))) 
     (is (ls/item-has-dynamics? nwd))
     
-    (is (= (ls/item-type evt) :composition-kit.logical-sequence/music-event))
+    (is (= (ls/item-type evt) :composition-kit.music-lib.logical-sequence/music-event))
 
     (is (= (ls/item-beat evt) 123))
     (is (= (ls/item-payload evt) "an event"))
@@ -46,7 +46,7 @@
     (is (= (ls/item-beat nwd) (ls/item-beat copy-nwd)))
     (is (= (ls/item-payload nwd) (ls/item-payload copy-nwd)))
     (is (= (ls/item-type nwd) (ls/item-type copy-nwd)))
-    (is (= (:itemtype copy-nwd) :composition-kit.logical-sequence/item-transformer))
+    (is (= (:itemtype copy-nwd) :composition-kit.music-lib.logical-sequence/item-transformer))
     (is (not (= (:itemtype copy-nwd) (ls/item-type copy-nwd))))
 
     (is (= (ls/item-payload upcase-evt) "AN EVENT"))
@@ -95,7 +95,7 @@
     (is (= (count mary-had) 7))
     (is (= (ls/beat-length mary-had) 8))
     (is (ls/music-item? (first mary-had)))
-    (is (= (ls/item-type (first mary-had)) :composition-kit.logical-sequence/notes-with-duration))
+    (is (= (ls/item-type (first mary-had)) :composition-kit.music-lib.logical-sequence/notes-with-duration))
     (is (= (ls/item-payload (first mary-had)) { :notes :e4 :dur 1 :hold-for 0.95 }))
     (is (= (ls/item-payload (last mary-had)) { :notes :e4 :dur 2 :hold-for 1.9 }))
     (is (= (map ls/item-beat mary-had) (list 0 1 2 3 4 5 6)))
