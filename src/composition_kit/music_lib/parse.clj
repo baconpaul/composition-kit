@@ -1,91 +1,176 @@
 (ns composition-kit.music-lib.parse
-  (require [composition-kit.music-lib.logical-sequence :as ls])
-  (require [composition-kit.music-lib.tonal-theory :as th]))
+  (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.tonal-theory :as th])
+  (:require [instaparse.core :as insta]))
 
+(def lily-phrase-grammar
+  "
+  l-expression = <whitespace*> ( l-voice | l-voices ) 
+                (<whitespace>  ( l-voice | l-voices ))*
+  l-voice = (l-braces | l-tuplet | l-note-item)
 
-(defn ^:private lily-note-to-data [n prior]
-  (let [[m1 spitch prel pdur]   (re-find (re-pattern "^([a-z]+)([^\\d]*)(\\d*.*)") n)
-        
-        ;; Duration carries over from prior if not specified
-        ;; FIXME: We need to deal with duration parsing (like 4.. and stuff) and have to worry
-        ;; about triplets one day
-        sdur                   (if (= pdur "") (:sdur prior) pdur)
-        [m ndur dots]          (re-find (re-pattern "^(\\d+)(\\.*)") sdur)
-        dur                    (* (/ 4 (Integer/parseInt ndur)) (reduce + 1 (take (count dots) (iterate #(/ % 2) 1/2))))
+  l-voices = <'<<'> <whitespace*> l-voice+ <whitespace*> 
+                 ( <'\\\\\\\\'> <whitespace+> l-voice+ <whitespace*> )* <'>>'>
 
-        rest                   (if (= spitch "r") true false)
-        pitch                  (if rest (:pitch prior) (keyword spitch))
+  l-braces = <'{'> <whitespace?> l-expression <whitespace?> <'}'>
 
-        prior-oct              (:octave (:note prior))
-        prior-pitch            (or (:pitch (:note prior)) (:pitch  prior))
+  l-tuplet = <'\\\\tuplet'> <whitespace?> l-fraction <whitespace?> l-braces
+  l-fraction = #\"\\d+\" <'/'> #\"\\d+\"
 
-        ninterval              (let [i (th/interval-between prior-pitch pitch)]
-                                 (if (<= i 7) i (- i 12)))
+  l-note-item = l-note-with-duration | l-chord
+  
+  l-note-with-duration = l-note l-duration?
 
-        starts-at              (or (:ends-at prior) 0)
-        
-        roctavediff            (cond
-                                 (= prel ",") -1
-                                 (= prel ",,") -2
-                                 (= prel ",,,") -3
-                                 (= prel ",,,,") -4
-                                 (= prel "'" ) 1
-                                 (= prel "''" ) 2
-                                 (= prel "'''" ) 3
-                                 (= prel "''''" ) 4
-                                 true 0)
+  l-note = l-note-name l-accidental? l-octave-modifier?
 
-        interval               ( + ( * 12 roctavediff) ninterval )
-        notes                  (th/notes-by-midinote (+ interval (:midinote (:note prior))))
-        note                   (first (filter #(= (:pitch %) pitch) notes))
-        ]
-    {
-     :lily  n
-     :pitch pitch
-     :dur   dur
-     :sdur  sdur
-     :interval interval
-     :prior (dissoc prior :prior)
-     :note note
-     :rest rest
-     :starts-at  starts-at
-     :ends-at    (+ dur starts-at)
-     
-     }
-    ))
+  l-note-name = ('a'|'b'|'c'|'d'|'e'|'f'|'g'|'r') (* l-rest)
+  l-rest = 'r' *)
+  l-accidental = ('is'|'iis'|'es'|'ees')
+  l-octave-modifier = (','+|'\\''+)
 
+  l-chord = <'<'> <whitespace*> l-note (<whitespace> l-note)+ <whitespace*> <'>'> l-duration?
 
-(defn lily->n
-  "Given a subset of the lilypond melody format generate a data structure
-  which play ascii can play as notes. For instance
-   :bassline   (lily->n  \"a4 b8 a c4 a'4 r8 a,8\" :relative :c4)"
-  ([line & optsarr]
-   (let [opt    (apply hash-map optsarr)
-         notes  (clojure.string/split line #" ")
-         rel    (or (:relative opt) :c4)
-         fprior { :note (th/note-by-name rel) }]
-     (map (fn[ el ]
-            (-> (dissoc el :prior)
-                ((fn [x] (assoc x :note (when-not (:rest x) (:note x)))))
-                ((fn [x] (assoc x :note-name (:note (:note x)))))))
-          (loop  [n    notes
-                  res  []
-                  p    fprior ]
-            (if (empty? n)
-              res
-              (let [ curr  (lily-note-to-data (first n) p) ]
-                (recur (rest n) (conj res curr) curr)))))))
+  l-duration = #\"\\d+\" l-duration-modifier*
+  l-duration-modifier = '.' | '..' | '...'
+
+  whitespace = #'\\s+'
+
+  "
   )
+
+(def lily-phrase-parser (insta/parser lily-phrase-grammar))
+
+(defn duration-list-to-beats [ ld ]
+  (let [ndur (first ld)
+        rval (rest ld)
+        _    (when (and (not (empty? rval)) (not (= (ffirst rval) :l-duration-modifier)))
+               (throw (ex-info "Malformed parse tree in duration"
+                               {:d ld})))
+        dots (if (empty? rval) "" (second (first rval)))
+        ]
+    (* (/ 4 (Integer/parseInt ndur))
+       (reduce + 1 (take (count dots) (iterate #(/ % 2) 1/2))))
+    )
+  )
+
+(defn note-with-duration-to-note [[tag & data] prior]
+  "item is a parse tree item for a note-with-duration; prior is a note like :c4"
+  ;; TODO: Handle accidentals!!
+  
+  (when-not (= tag :l-note-with-duration)
+    (throw (ex-info "Can only convert notes with duration, not this" { :tag tag })))
+  (let [prior-note   (th/note-by-name prior)
+        prior-pitch  (:pitch prior-note)
+        kl-to-m      #(reduce (fn [m el] (assoc m (first el) (rest el))) {} %)
+        dat-map      (-> (kl-to-m data)
+                         (update-in [:l-note] kl-to-m))
+
+        dur          (when (:l-duration dat-map)
+                       (duration-list-to-beats (:l-duration dat-map)))
+        l-note        (:l-note dat-map)
+        nn            (first (:l-note-name l-note))
+        ;; a "rest" has the same pitch
+        is-rest       (= nn "r")
+        pitch         (if is-rest prior-pitch (keyword (str nn (or (first (:l-accidental l-note)) ""))))
+
+        ac            (or (first (:l-accidental l-note)) "")
+        om            (apply str (or (:l-octave-modifier l-note) ""))
+
+        ninterval     (let [i (th/interval-between prior-pitch pitch)]
+                        (if (<= i 7) i (- i 12)))
+
+        roctavediff   (* (count om) (if (= (first om) \,) -1 1))
+
+        interval      ( + ( * 12 roctavediff) ninterval )
+        notes         (th/notes-by-midinote (+ interval (:midinote prior-note)))
+        note          (first (filter #(= (:pitch %) pitch) notes))
+        ;; TODO: Rests
+        
+        ]
+    {:is-rest is-rest :note note :dur dur}
+    )
+  )
+
+(def lily-blank-state   {:raw-music []
+                         :notes     []
+                         :durations []
+                         :logical-sequence []
+                         :starts-at  0
+                         :prior-dur   0
+                         :prior-root :c4})
+
+(defn conj-on [m k i] (update-in m [k] conj i))
+
+(defn lily-phrase-traverse
+  ([parse-item] (lily-phrase-traverse parse-item lily-blank-state))
+  ([parse-item state]
+   (let [[key & nodes] parse-item]
+     (case key
+       :l-expression    (reduce (fn [s v] (lily-phrase-traverse v s)) state nodes)
+       :l-voice         (lily-phrase-traverse (first nodes) state) ;; simple passthrough
+       :l-note-item     (lily-phrase-traverse (first nodes) state)
+       :l-note-with-duration
+       (let [new-note  (note-with-duration-to-note parse-item (:prior-root state))
+             dur       (or (:dur new-note) (:prior-dur state))
+             ]
+         (-> state
+             (conj-on :raw-music parse-item)
+             (conj-on :notes     (when-not (:is-rest new-note) (:note new-note)))
+             (conj-on :durations (:dur new-note))
+             (conj-on :logical-sequence
+                      (if (:is-rest new-note)
+                        (ls/rest-with-duration dur (:starts-at state))
+                        (ls/notes-with-duration (:note (:note new-note)) dur (:starts-at state))))
+             (update-in [:starts-at] #(+ % dur))
+             (assoc   :prior-root (:note (:note new-note)))
+             (assoc   :prior-dur  dur)
+             ))
+
+       :l-chord
+       (let [notes  (filter #(= (first %) :l-note) nodes)
+             kl-to-m      #(reduce (fn [m el] (assoc m (first el) (rest el))) {} %)
+             other  (kl-to-m (filter #(not (= (first %) :l-note)) nodes))
+
+             resolved-chord-notes
+             (loop [[n & rst] notes
+                    p         (:prior-root state)
+                    res       [] ]
+               (if (nil? n) res
+                   (let [new-note (note-with-duration-to-note [ :l-note-with-duration n ] p)]
+                     (recur rst (:note (:note new-note)) (conj res (:note new-note))))))
+             
+             dur
+             (if (:l-duration other)
+               (duration-list-to-beats (:l-duration other))
+               (:prior-dur state))
+             
+             ]
+         (-> state
+             (conj-on :raw-music parse-item)
+             (conj-on :notes     resolved-chord-notes)
+             (conj-on :durations dur)
+             (conj-on :logical-sequence
+                      (ls/notes-with-duration (map :note resolved-chord-notes) dur (:starts-at state)))
+             (update-in [:starts-at] #(+ % dur))
+             (assoc :prior-root (:note (first resolved-chord-notes)))
+             (assoc   :prior-dur  dur)))
+
+       )
+     )
+   )
+  )
+
 
 (defn lily-to-logical-sequence
   [line & optarr ]
-  (let [notes  (apply lily->n (concat [line] optarr))]
-    (map
-     (fn [ln]
-       (if (:rest ln) (ls/rest-with-duration (:dur ln) (:starts-at ln))
-           (ls/notes-with-duration [ (:note (:note ln)) ] (:dur ln) (:starts-at ln))))
-     (sort-by :starts-at notes))))
-
+  (let [opt    (apply hash-map optarr)
+        state  (-> lily-blank-state
+                   (assoc :prior-root (or (:relative opt) (:prior-root lily-blank-state))))
+        parse  (lily-phrase-parser line)
+        res    (lily-phrase-traverse parse state)]
+    (:logical-sequence res)
+    )
+  )
 
 (defn char-to-range
   "given a character make a midi range with semantic that 0-9 and

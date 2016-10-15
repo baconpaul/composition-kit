@@ -6,12 +6,19 @@
   (:require [composition-kit.music-lib.tempo :as tempo])
   )
 
+(map (comp :notes ls/item-payload) (:composition-payload (lily :relative :c4 "c4 d e r2 c c'")))
+
 (deftest parse-macros
   (let  [l1 (:composition-payload (lily :relative :c4 "c4 d e"))
-         l2 (:composition-payload (lily :relative :c4 "c4 d e r2 c c'"))]
+         l2 (:composition-payload (lily :relative :c4 "c4 d e r2 c c'"))
+         l3 (:composition-payload (lily :relative :c2 "c4 d e r2 c c'"))
+         l4 (:composition-payload (lily :relative :c4 "c4 d <e g> r2 c c'"))
+         ]
     (is (= (count l1) 3))
     (is (= (count l2) 6)) 
-    (is (= (mapcat (comp :notes ls/item-payload) l2) [ :c4 :d4 :e4 :c4 :c5 ] )) ;; the mapcat kills nil
+    (is (= (map (comp :notes ls/item-payload) l2) [ :c4 :d4 :e4 nil :c4 :c5 ] ))
+    (is (= (map (comp :notes ls/item-payload) l3) [ :c2 :d2 :e2 nil :c2 :c3 ] ))
+    (is (= (map (comp :notes ls/item-payload) l4) [ :c4 :d4 [ :e4 :g4 ] nil :c4 :c5 ] ))
     (is (= (map ls/item-beat l2) [ 0 1 2 3 5 7 ] ))
     (is (= (:composition-type (lily "c2")) :composition-kit.core/sequence))
     )

@@ -3,16 +3,7 @@
   (require [composition-kit.music-lib.parse :as p])
   (require [composition-kit.music-lib.logical-sequence :as ls]))
 
-(deftest lily-parse
-  (let [parse (p/lily->n "a4 bes8 r16 a a'4 ges,," )]
-    (is (= (count parse) 6))
-    (is (= (map :rest parse) (list false false true false false false)))
-    (is (= (:note-name (first parse)) :a3))
-    (is (nil? (:note (nth parse 2))))
-    (is (= (map :note-name parse) (list :a3 :bes3 nil :a3 :a4 :ges2)))
-    (is (= (map :starts-at parse) (list 0 1 3/2 7/4 2 3)))
-    (is (= (map :dur parse) (list 1 1/2 1/4 1/4 1 1)))
-    )
+(deftest lily-parse  
   (let [parse (p/lily-to-logical-sequence "a4 bes8 r16 a a'4 ges,,")
         by-t  (group-by ls/item-type parse)
         notes (:composition-kit.music-lib.logical-sequence/notes-with-duration by-t)
@@ -25,11 +16,6 @@
     (is (= (map ls/item-beat parse) '(0 1 3/2 7/4 2 3)))
     (is (= (map ls/item-beat notes) '(0 1 7/4 2 3)))
     (is (= (map ls/item-beat rests) '(3/2)))
-    )
-
-  (let [parse (p/lily->n "c4 bes ees4. des8")]
-    (is (= (map :starts-at parse) (list 0 1 2 7/2)))
-    (is (= (map :dur parse) (list 1 1 3/2 1/2)))
     )
 
   )
