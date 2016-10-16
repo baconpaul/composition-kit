@@ -17,7 +17,15 @@
     (is (= (map ls/item-beat notes) '(0 1 7/4 2 3)))
     (is (= (map ls/item-beat rests) '(3/2)))
     )
+  (let [parse (p/lily-to-logical-sequence "< c  bes'>4. <c bes'>4 <d e>" )]
+    (is (= (count parse) 3))
+    (is (= (map ls/item-beat parse) '(0 3/2 5/2)))
+    )
 
+  (let [parse (p/lily-to-logical-sequence "c4 << { d8 e f4 } \\\\ { c4. d} >> c1")]
+    (is (= (count parse) 7))
+    (is (= (map ls/item-beat parse) '(0 1 1 3/2 2 5/2 4)))
+    )
   )
 
 (deftest step-parse

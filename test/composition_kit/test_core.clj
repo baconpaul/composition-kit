@@ -12,7 +12,7 @@
   (let  [l1 (:composition-payload (lily :relative :c4 "c4 d e"))
          l2 (:composition-payload (lily :relative :c4 "c4 d e r2 c c'"))
          l3 (:composition-payload (lily :relative :c2 "c4 d e r2 c c'"))
-         l4 (:composition-payload (lily :relative :c4 "c4 d <e g> r2 c c'"))
+         l4 (:composition-payload (lily :relative :c4 "c4 d <e g>2 r4 c c'"))
          ]
     (is (= (count l1) 3))
     (is (= (count l2) 6)) 

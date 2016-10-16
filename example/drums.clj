@@ -25,7 +25,7 @@
 
 
 ;; So here's some basic drums. I mean, duh.
-(def drum-pattern
+(def drum-pattern 
   (-> (concatenate
        (loop-n (step-strings base-beat) 3)
        (step-strings fill-beat))
@@ -34,9 +34,9 @@
 
 (def bass-line
   (-> (concatenate 
-       (-> (phrase (lily "a2 c8 d b4 a1" :relative :c3))
+       (-> (phrase (lily "a2 c8 d b4 a1" :relative :c2))
            (loop-n 2))
-       (-> (phrase (lily "b2 d8 e cis16 d cis d b1" :relative :c3))
+       (-> (phrase (lily "b2 d8 e cis16 d cis d b1" :relative :c2))
            (loop-n 2)))
       (on-instrument bass)))
 
