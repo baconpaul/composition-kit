@@ -26,9 +26,10 @@
                     lily
                     ;; make those notes stacatto when...
                     (transform-note-payload
-                     (fn [i p] (if (>= (:dur p) 1) p
-                                   (assoc p :hold-for 0.1))))
-                    )
+                     (fn [i p] (if (>= (:dur p) 1)
+                                 (assoc p :hold-for 0.99)
+                                 (assoc p :hold-for 0.1)))))
+
         theme-b     (-> (phrase
                          (lily " bes8 aes g16 f bes4
       ees,8 f g16 ees aes4
@@ -64,8 +65,6 @@
   )
 
 
-
-
 (def first-piano-mid
   (let [chord-dyn (dynamics-at 0 -> 70 3/2 -> 60 5/2 -> 80 5 -> 70 15/2 -> 65)
         chord-ped (pedal-held-and-cleared-at 0 5 9.5)
@@ -95,7 +94,7 @@
      (loop-n
       (phrase
        (lily (rstr 5 "<ees f bes>8"))
-       (dynamics 80 66 64 81 65)) 6)
+       (dynamics 70 62 54 71 61)) 6)
      
      (overlay
       phrase-a
@@ -104,15 +103,24 @@
      (loop-n
       (phrase
        (lily (rstr 5 "<ees f bes>8"))
-       (dynamics 80 66 64 81 65)) 5)
+       (dynamics 70 62 55 72 62)) 5)
 
-     (phrase
-      (lily (rstr 5 "<d g bes>8"))
-      (dynamics 72 68 74 92 81))
-
+     (overlay
+      (phrase
+       (lily (rstr 5 "<d g bes>8"))
+       (dynamics 72 68 74 82 78))
+      (-> (phrase
+           (lily "g8 a bes16 c d8 fis" :relative :c3))
+          (lift-to-seq ls/overlay-octave-below))
+      )
      )
+
     )
   )
+
+
+
+(first (:composition-payload (lily "g8 a bes16 c d8 fis" :relative :c3)))
 
 
 (def first-bass
@@ -127,14 +135,16 @@
                          (lily  "f8 ges g aes4 aes4. aes4" :relative :c2)
                          (dynamics-at 0 -> 80 3/2 -> 120 1.6 80)) 2))
         bass-b   (concatenate
-                  (phrase
-                   (lily "bes8 aes g16 f bes4
+                  (-> (phrase
+                       (lily "bes8 aes g16 f bes4
                           ees,8 f g16 ees aes4
                           bes8 aes g16 f bes4
                           ees,8 f g16 ees aes4
       
                           ees'8 des c16 bes aes8 g
-                          c8 bes aes16 g d8 f" :relative :c3)))
+                          c8 bes aes16 g d8 f" :relative :c3))
+                      (hold-for 0.3)
+                      ))
         bass-a-alt (loop-n (concatenate
                             (phrase
                              (lily "c8 des ees f g aes bes c des ees ees,4. ees'4 ees,4. ees'4" :relative :c2)
@@ -175,10 +185,9 @@
     (phrase 
      (apply pitches (map #(keyword (str (name (get note-map (first %))) (inc (second %)))) arp))
      (apply durations (repeat (count arp) 1/4))
-     (dynamics 87 60 62 63 65 64 81 72 65 62)
-     )
-    
-    ))
+     (dynamics 87 60 62 63 65 64 82 72 65 62)))
+  )
+
 
 (def first-marimba
   (concatenate
@@ -201,6 +210,8 @@
    )
   )
 
+
+
 (def play-it true)
 (def player
   (when play-it
@@ -218,6 +229,6 @@
          )
         ;;(loop-n 4)
         (with-clock clock)
-        (midi-play :beat-zero 0))))
+        (midi-play :beat-zero 90))))
 
 ;;(def sss (composition-kit.events.physical-sequence/stop player))

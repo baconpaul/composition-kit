@@ -1,4 +1,6 @@
-(ns composition-kit.music-lib.logical-sequence)
+(ns composition-kit.music-lib.logical-sequence
+  (:require [composition-kit.music-lib.tonal-theory :as th])
+  )
 
 ;; shower idea
 ;; + itemtype is a function
@@ -267,6 +269,24 @@ makes your note louder. (There's a utility function for that below though)"
 (defn apply-transform-to [sequence xform value]
   (map #(-> (identity-item-transformer %)
             (add-transform xform value)) sequence))
+
+(defn apply-transpose [sequence amt]
+  (apply-note-payload-transform
+   sequence
+   (fn [i p]
+     (let [no   (:notes p)
+           ns   (if (seq? no) no [no])
+           nns  (map #(-> %
+                          (th/note-by-name)
+                          (th/transpose amt)
+                          :note) ns)]
+       (assoc p :notes nns)))))
+
+(defn overlay-transpose [sequence amt]
+  (merge-sequences sequence (apply-transpose sequence amt)))
+
+(defn overlay-octave-below [sequence]
+  (merge-sequences sequence (apply-transpose sequence -12)))
 
 (defn assign-clock [ sequence clock ]
   (apply-transform-to sequence :clock (constantly clock)))

@@ -41,6 +41,13 @@
 
   )
 
+(deftest various-ops
+  (let [bn (th/note-by-name :cis2)
+        up3 (th/transpose bn 3)
+        ]
+    (is (= (:midinote up3) (+ 3 (:midinote bn))))
+    (is (th/enharmonic-equal? up3 (th/note-by-name :e2)))))
+    
 
 ;; (run-tests)
 

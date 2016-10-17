@@ -40,7 +40,14 @@
 (defn name-to-midinote [name]
   (:midinote (get notes-data name)))
 
+(defn transpose [note amt]
+  "Transpose a note by an amount; but this may not give the best enhmarnoic match (so transpose b 1 may give bis, not c)"
+  (let [nmn (+ (:midinote note) amt)
+        mn  (notes-by-midinote nmn)]
+    (first mn)))
 
+(defn enharmonic-equal? [n1 n2]
+  (= (:midinote n1) (:midinote n2)))
 
 (defn interval-from-c [note]
   "Return a positive interval from c. So
