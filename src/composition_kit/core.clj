@@ -130,6 +130,16 @@ For instance:
     )
   )
 
+(defn hold-for [seqn amt]
+  (lift-to-seq seqn
+               ls/apply-note-payload-transform
+               (fn [i p] (assoc p :hold-for amt))))
+
+(defn transform-note-payload [seqn f]
+  (lift-to-seq seqn
+               ls/apply-note-payload-transform f))
+
+
 (defn concatenate [ & arguments ]
   (if (not (every? #(= (:composition-type %) ::sequence) arguments))
     (throw (ex-info "Can only conctenate sequences. You handed me these types"
@@ -170,12 +180,14 @@ at each of the arguments. The last argument ends the pedal."
   )
 
 ;; this is wrong; the instrument should bind to the sequence (as should, potentially the clock)
-(defn midi-play [ item ]
+(defn midi-play [ item & opt-arr ]
   (cond
     (= (:composition-type item) ::sequence)
     (let [target  (:composition-payload item)
           ps      (-> (ps/new-sequence)
-                      (ltop/schedule-logical-on-physical (:composition-payload item)))]
+                      (as-> s
+                          ;;(ltop/schedule-logical-on-physical (:composition-payload item)))]
+                          (apply ltop/schedule-logical-on-physical (concat [ s (:composition-payload item) ] opt-arr))))]
       (ps/play ps)
       
       )

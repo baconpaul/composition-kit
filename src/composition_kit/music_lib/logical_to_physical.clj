@@ -18,80 +18,88 @@
     true))
 
 (defn schedule-logical-on-physical
-  [in-seq pattern]
+  [in-seq in-pattern & opt-arr]
   ;; This is basically a massive reduce statement on a big switch based on item type which then
   ;; does the magic
-  (reduce (fn [pseq item]
-            (case (ls/item-type item)
-              :composition-kit.music-lib.logical-sequence/notes-with-duration
-              (let [_          (schedulable-item item)
-                    payload    (ls/item-payload item)
-                    instrument (ls/item-instrument item)
-                    clock      (ls/item-clock item)
-                    
-                    notecont (:notes payload)
-                    notes    (if (coll? notecont) notecont [ notecont ] )
-                    resolved-notes (map th/note-by-name notes)
-                    hold-for (:hold-for payload)
-                    lev      (ls/note-dynamics-to-7-bit-volume item)
-                    start-time (* 1000 (tempo/beats-to-time clock (ls/item-beat item)))
-                    end-time   (* 1000 (tempo/beats-to-time clock (+ hold-for (ls/item-beat item))))
-                    ons      (reduce
-                              (fn [s e]
-                                (ps/add-to-sequence
-                                 s
-                                 ;;(partial println "NOTE ON" e)
-                                 (midi/send-note-on
-                                  (:receiver instrument)
-                                  (:channel instrument)
-                                  (:midinote e)
-                                  lev)
-                                 start-time))
-                              pseq
-                              resolved-notes
-                              )
-
-                    offs     (reduce
-                              (fn [s e]
-                                (ps/add-to-sequence
-                                 s
-                                 ;;(partial println "NOTE Off" e)
-                                 (midi/send-note-off
-                                  (:receiver instrument)
-                                  (:channel instrument)
-                                  (:midinote e))
-                                 end-time)
+  (let [opts (apply hash-map opt-arr)
+        beat-zero (get opts :beat-zero 0)
+        pattern  (drop-while #(< (ls/item-beat %) beat-zero) in-pattern)
+        ]
+    (reduce (fn [pseq item]
+              (case (ls/item-type item)
+                :composition-kit.music-lib.logical-sequence/notes-with-duration
+                (let [_          (schedulable-item item)
+                      payload    (ls/item-payload item)
+                      instrument (ls/item-instrument item)
+                      clock      (ls/item-clock item)
+                      t0         (tempo/beats-to-time clock beat-zero)
+                      
+                      notecont (:notes payload)
+                      notes    (if (coll? notecont) notecont [ notecont ] )
+                      resolved-notes (map th/note-by-name notes)
+                      hold-for (:hold-for payload)
+                      lev      (ls/note-dynamics-to-7-bit-volume item)
+                      start-time (* 1000 (- (tempo/beats-to-time clock (ls/item-beat item)) t0))
+                      end-time   (* 1000 (- (tempo/beats-to-time clock (+ hold-for (ls/item-beat item))) t0))
+                      ons      (reduce
+                                (fn [s e]
+                                  (ps/add-to-sequence
+                                   s
+                                   ;;(partial println "NOTE ON" e)
+                                   (midi/send-note-on
+                                    (:receiver instrument)
+                                    (:channel instrument)
+                                    (:midinote e)
+                                    lev)
+                                   start-time))
+                                pseq
+                                resolved-notes
                                 )
-                              ons
-                              resolved-notes)
-                    ]
-                offs
+                      
+                      offs     (reduce
+                                (fn [s e]
+                                  (ps/add-to-sequence
+                                   s
+                                   ;;(partial println "NOTE Off" e)
+                                   (midi/send-note-off
+                                    (:receiver instrument)
+                                    (:channel instrument)
+                                    (:midinote e))
+                                   end-time)
+                                  )
+                                ons
+                                resolved-notes)
+                      ]
+                  offs
+                  )
+                
+                :composition-kit.music-lib.logical-sequence/control-event
+                (let [_          (schedulable-item item)
+                      payload    (ls/item-payload item)
+                      clock      (ls/item-clock item)
+                      t0         (tempo/beats-to-time clock beat-zero)
+                      instrument (ls/item-instrument item)
+                      
+                      start-time (* 1000 (- (tempo/beats-to-time clock (ls/item-beat item)) t0))]
+                  (ps/add-to-sequence
+                   pseq
+                   (midi/send-control-change
+                    (:receiver instrument)
+                    (:channel instrument)
+                    (:control payload)
+                    (:value payload))
+                   start-time
+                   ))
+                
+                :composition-kit.music-lib.logical-sequence/rest-with-duration
+                pseq
                 )
-              
-              :composition-kit.music-lib.logical-sequence/control-event
-              (let [_          (schedulable-item item)
-                    payload    (ls/item-payload item)
-                    clock      (ls/item-clock item)
-                    instrument (ls/item-instrument item)
-
-                    start-time (* 1000 (tempo/beats-to-time clock (ls/item-beat item)))]
-                (ps/add-to-sequence
-                 pseq
-                 (midi/send-control-change
-                  (:receiver instrument)
-                  (:channel instrument)
-                  (:control payload)
-                  (:value payload))
-                 start-time
-                 ))
-              
-              :composition-kit.music-lib.logical-sequence/rest-with-duration
-              pseq
               )
-            )
-          in-seq
-          pattern)
+            in-seq
+            pattern)
+    )
   )
+
 
 
 (defn create-and-schedule [pattern]

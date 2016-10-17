@@ -48,7 +48,7 @@
   )
 
 
-(midi-play (on-instrument (with-clock beethoven-phrase clock) piano))
+(def p (midi-play (on-instrument (with-clock beethoven-phrase clock) piano) :beat-zero 3))
 
 
 
