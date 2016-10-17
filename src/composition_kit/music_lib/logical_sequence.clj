@@ -56,6 +56,10 @@
     })
   )
 
+;; A utility predicate
+(defn is-notes-with-duration? [item]
+  (= (item-type item) ::notes-with-duration))
+
 (defmethod music-item? ::notes-with-duration [it] true)
 (defmethod item-end-beat ::notes-with-duration [it] (+ (:beat-2314 it) (:dur (:payload-72632 it))))
 (defmethod item-has-dynamics? ::notes-with-duration [it] true)
@@ -250,13 +254,26 @@ makes your note louder. (There's a utility function for that below though)"
   (mapcat (fn [se of] (beat-shift se of)) concat-these  (reductions + 0 (map beat-length concat-these)))
   )
 
-(defn assign-clock [ sequence clock ]
+(defn apply-transform-when [sequence pred xform value]
+  (map #(if (pred %)
+          (-> (identity-item-transformer %)
+              (add-transform xform value))
+          %) sequence))
+
+(defn apply-note-payload-transform [sequence value]
+  (apply-transform-when sequence is-notes-with-duration? :payload
+                        #(let [p (item-payload %)] (value % p))))
+
+(defn apply-transform-to [sequence xform value]
   (map #(-> (identity-item-transformer %)
-            (add-transform :clock (constantly clock))) sequence))
+            (add-transform xform value)) sequence))
+
+(defn assign-clock [ sequence clock ]
+  (apply-transform-to sequence :clock (constantly clock)))
 
 (defn assign-instrument [ sequence instrument ]
-  (map #(-> (identity-item-transformer %)
-            (add-transform :instrument (constantly instrument))) sequence))
+  (apply-transform-to sequence :instrument (constantly instrument)))
+
 
 ;; Dynamics applicators
 (defn override-sequence-dynamics [ mseq dfn ]

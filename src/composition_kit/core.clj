@@ -8,7 +8,7 @@
   )
 
 
-(defn ^:private lift-to-seq-payload [item f & args ]
+(defn lift-to-seq [item f & args ]
   "basically return the sequence with f (orig) args repacing the sequence"
   {:composition-type (:composition-type item)
    :composition-payload (apply f (cons (:composition-payload item) args))})
@@ -121,7 +121,7 @@ For instance:
     (lily :relative :c4 e2 d4 c e1)
     (dynamics-at  0 -> 120 1 -> 60 3 -> 80))"
   (let [arg-group (partition 3 arguments)
-        _         (when-not (every? (fn [ [ b s l ] ] (and (= (type b) (type l) java.lang.Long)  (= s '->))) arg-group)
+        _         (when-not (every? (fn [ [ b s l ] ] (and (= (type l) java.lang.Long)  (= s '->))) arg-group)
                     (throw (ex-info "Incorrect syntax. Should be b -> l b -> l. You gave me arguments as shown." { :args arguments } )))
         line-seg  (mapcat (fn [ [ b s l ] ] [ b l ] ) arg-group)
         argname   (gensym 'seq_)]
@@ -158,15 +158,15 @@ at each of the arguments. The last argument ends the pedal."
   )
 
 (defn on-instrument [ seq inst ]
-  (lift-to-seq-payload seq ls/assign-instrument inst)
+  (lift-to-seq seq ls/assign-instrument inst)
   )
 
 (defn with-clock [ seq clock ]
-  (lift-to-seq-payload seq ls/assign-clock clock)
+  (lift-to-seq seq ls/assign-clock clock)
   )
 
 (defn loop-n [ seq count ]
-  (lift-to-seq-payload seq ls/loop-sequence count)
+  (lift-to-seq seq ls/loop-sequence count)
   )
 
 ;; this is wrong; the instrument should bind to the sequence (as should, potentially the clock)

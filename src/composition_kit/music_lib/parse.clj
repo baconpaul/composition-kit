@@ -125,7 +125,7 @@
             (conj-on :logical-sequence
                      (if (:is-rest new-note)
                        (ls/rest-with-duration dur (:starts-at state))
-                       (ls/notes-with-duration (:note (:note new-note)) dur (:starts-at state))))
+                       (ls/notes-with-duration (:note (:note new-note)) dur (:starts-at state) 0.95)))
             (update-in [:starts-at] #(+ % dur))
             (assoc   :prior-root (:note (:note new-note)))
             (assoc   :prior-dur  dur)
