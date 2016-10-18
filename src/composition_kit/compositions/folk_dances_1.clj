@@ -10,10 +10,14 @@
 (def piano (midi/midi-instrument 1))
 (def synth-bass (midi/midi-instrument 2))
 (def marimba (midi/midi-instrument 3))
+(def bells (midi/midi-instrument 4))
 
 (def clock (tempo/constant-tempo 5 8 130))
 
 (defn rstr [n s] (str (apply str (interpose " " (repeat n s))) " "))
+
+
+;;;;;; FIRST SECTION
 
 (def first-lead
   (let [theme-a    (-> 
@@ -43,16 +47,18 @@
                         (hold-for 0.15)
                         )
 
-        theme-b-alt  (-> phrase
-                         (lily "bes8 aes g16 f ees8 d
+        theme-b-alt  (concatenate
+                      (-> phrase
+                          (lily "bes8 aes g16 f ees8 d
 	                        g f ees16 d c8 bes
 
                             	bes'8 aes g16 f ees8 d
 	                        g f ees16 d c8 bes
 	                        ees d c16 bes f8 bes
 	                        g8 a bes16 c d8 fis"
-                               :relative :c5)
-                         (hold-for 0.15))
+                                :relative :c5)
+                          (hold-for 0.15))
+                      (phrase (pitches :g4) (durations 5))) ;; to keep it out of the hold
         
         ]
     (concatenate
@@ -84,7 +90,7 @@
           (lily "c8 des ees f g aes bes c des ees ees4. ees,4 ees'4. ees,4" :relative :c3)
           (dynamics-at 0 -> 60 10/2 -> 110 15/2 -> 80))
          (phrase
-          (lily "f8 g aes bes c des ees f ges aes aes4. aes,4 aes'4. aes,4" :relative :c3)
+          (lily "f8 ges aes bes c des ees f ges aes aes4. aes,4 aes'4. aes,4" :relative :c3)
           (dynamics-at 0 -> 60 10/2 -> 110 15/2 -> 80)))
 
         ]
@@ -106,21 +112,20 @@
        (dynamics 70 62 55 72 62)) 5)
 
      (overlay
-      (phrase
-       (lily (rstr 5 "<d g bes>8"))
-       (dynamics 72 68 74 82 78))
       (-> (phrase
-           (lily "g8 a bes16 c d8 fis" :relative :c3))
-          (lift-to-seq ls/overlay-octave-below))
+           (lily (rstr 5 "<d g bes>8"))
+           (dynamics 72 68 74 82 78))
+          (loop-n 5)) ;; 1 + 4
+      (-> (phrase
+           (lily "g8 a bes16 c d8 fis g4. g,4 g'4. fis,4 g'4. g,4 g'4. fis4" :relative :c3)
+           (dynamics-at 0 -> 20 2.5 -> 80))
+          ;;(lift-to-seq ls/overlay-octave-below))
+          )
       )
      )
-
     )
-  )
+  ) 
 
-
-
-(first (:composition-payload (lily "g8 a bes16 c d8 fis" :relative :c3)))
 
 
 (def first-bass
@@ -162,7 +167,8 @@
                             	bes'8 aes g16 f ees8 d
 	                        g f ees16 d c8 bes
 	                        ees d c16 bes f8 bes
-	                        g8 a bes16 c d8 fis"
+	                        g8 a bes16 c d8 fis
+                                g4. g,4 g4. fis'4 g4. g,4 g4. fis4"
                               :relative :c3)
                         (hold-for 0.5)
                         )
@@ -177,16 +183,19 @@
   )
 
 
-(defn mar-arp [& notes]
+(defn mar-arp-pat [pat & notes]
   "make that marimba arpeggio from the three note pattern, starting at octave 3"
   (let [note-map (apply hash-map (flatten (map-indexed vector notes)))
-        arp  [ [ 0 3 ] [ 1 3 ] [ 2 3 ] [ 1 4 ] [ 0 3 ] [ 2 3 ] [ 0 4 ] [ 1 3 ] [ 2 4 ] [ 0 4 ] ]
+        arp  pat
         ]
     (phrase 
      (apply pitches (map #(keyword (str (name (get note-map (first %))) (inc (second %)))) arp))
      (apply durations (repeat (count arp) 1/4))
      (dynamics 87 60 62 63 65 64 82 72 65 62)))
   )
+
+(defn mar-arp [& notes]
+  (apply (partial mar-arp-pat [ [ 0 3 ] [ 1 3 ] [ 2 3 ] [ 1 4 ] [ 0 3 ] [ 2 3 ] [ 0 4 ] [ 1 3 ] [ 2 4 ] [ 0 4 ] ]) notes))
 
 
 (def first-marimba
@@ -207,28 +216,86 @@
    (loop-n (mar-arp :f :ees :bes) 2)
    (loop-n (mar-arp :g :d :bes) 1)
 
+   (loop-n (mar-arp :g :d :bes) 2)
+   (loop-n (mar-arp :d :g :bes) 2)
+
    )
   )
 
+;;;; SECOND SECTION
+
+(def second-piano-mid
+  (let [phrase-alt  (overlay
+                     (->
+                      (phrase (lily " <d g bes>4. <d fis bes>4" :relative :c4)
+                              (dynamics 70 64))
+                      (loop-n 8))
+                     (pedal-held-and-cleared-at 0 20))]
+    (concatenate
+     phrase-alt
+     )
+    )
+  )
+
+(defn mar-arp-b [& notes]
+  (apply (partial mar-arp-pat [ [ 0 2 ] [ 1 2 ] [ 2 3 ] [ 1 2 ] [ 0 3 ] [ 2 4 ] [ 0 3 ] [ 3 3 ] [ 2 3 ] [ 0 2 ] ]) notes))
+
+(def second-marimba
+  (concatenate
+   (loop-n (mar-arp-b :d :g :bes :fis) 8)))
+
+(def second-bass
+  (phrase (pitches [ :g2 :g1 ]) (durations 21)))
+
+(def bell-lead
+  (let [lp   (lily "bes''8 a g fis d
+                   bes'8 a g fis d
+                   c d ees a,4
+                   c4. d4" :relative :c3)
+        ]
+    ;; this is messier than it needs to be
+    (-> (loop-n lp 2)
+        (as-> ls
+            (overlay
+             ls
+             (-> ls
+                 (lift-to-seq ls/apply-amplify 0.4)
+                 (lift-to-seq ls/apply-transpose 7)
+                 (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.125)))
+                 )
+             (-> ls
+                 (lift-to-seq ls/apply-amplify 0.5)
+                 (lift-to-seq ls/apply-transpose 12)
+                 (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.25)))
+                 )
+             )))
+    )
+  )
 
 
 (def play-it true)
 (def player
   (when play-it
-    (-> (overlay
-         (-> first-lead
-             (on-instrument synth-lead))
-         (-> first-piano-mid
-             (on-instrument piano))
-         (-> first-marimba
-             (on-instrument marimba))
-         (-> first-bass
-             (on-instrument synth-bass))
-         (-> (mar-arp :ees :c :des)
-             (on-instrument marimba))
+    (-> (concatenate
+         (overlay
+          (-> first-lead
+              (on-instrument synth-lead))
+          (-> first-piano-mid
+              (on-instrument piano))
+          (-> first-marimba
+              (on-instrument marimba))
+          (-> first-bass
+              (on-instrument synth-bass))
+          )
+         (overlay
+          (-> second-piano-mid (on-instrument piano))
+          (-> bell-lead (on-instrument bells))
+          (-> second-marimba (on-instrument marimba))
+          (-> second-bass (on-instrument synth-bass))
+          )
          )
-        ;;(loop-n 4)
+
         (with-clock clock)
-        (midi-play :beat-zero 90))))
+        (midi-play :beat-zero 100)))) ;; 120 is second bit
 
 ;;(def sss (composition-kit.events.physical-sequence/stop player))

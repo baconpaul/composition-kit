@@ -155,6 +155,9 @@ makes your note louder. (There's a utility function for that below though)"
 (defn softer-by [item a]
   (compose-dynamics item (fn [n d] (min 127 (- d a)))))
 
+(defn amplify-by [item a]
+  (compose-dynamics item (fn [n d] (min 127 (* d a)))))
+
 
 (defn constant-dynamics [item val] (override-dynamics item (constantly val)))
 
@@ -299,6 +302,9 @@ makes your note louder. (There's a utility function for that below though)"
 (defn override-sequence-dynamics [ mseq dfn ]
   "Replace the dynamics function of every element of the sequence with dfn"
   (map #(override-dynamics % dfn) mseq))
+
+(defn apply-amplify [ mseq pct ]
+  (map #(amplify-by % pct) mseq))
 
 (defn line-segment-dynamics [ series & dynamics ]
   "Given a line segment set of beat / level pairs, set the dynamics accordingly.
