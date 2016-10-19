@@ -135,6 +135,11 @@ For instance:
                ls/apply-note-payload-transform
                (fn [i p] (assoc p :hold-for amt))))
 
+(defn hold-for-pct [seqn amt]
+  (lift-to-seq seqn
+               ls/apply-note-payload-transform
+               (fn [i p] (assoc p :hold-for (* amt (:dur p))))))
+
 (defn transform-note-payload [seqn f]
   (lift-to-seq seqn
                ls/apply-note-payload-transform f))

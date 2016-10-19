@@ -1,4 +1,4 @@
-(ns composition-kit.compositions.folk-dances-2
+(ns composition-kit.compositions.folk-dances.folk-dances-2
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.music-lib.logical-sequence :as ls])
@@ -100,13 +100,14 @@
   <ees, ees'>1")
 
 (def player
-  (->
-   (-> (overlay
-        (lily piano-rh-as-written :relative :c4)
-        (lily piano-lh-as-written :relative :c3))
-       (on-instrument piano))
-   (with-clock clock)
-   (midi-play)))
+  (when false
+    (->
+     (-> (overlay
+          (lily piano-rh-as-written :relative :c4)
+          (lily piano-lh-as-written :relative :c3))
+         (on-instrument piano))
+     (with-clock clock)
+     (midi-play))))
 
-(def x (composition-kit.events.physical-sequence/stop player))
+;;(def x (composition-kit.events.physical-sequence/stop player))
 

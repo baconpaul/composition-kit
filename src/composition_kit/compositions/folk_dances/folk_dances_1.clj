@@ -1,4 +1,4 @@
-(ns composition-kit.compositions.folk-dances-1
+(ns composition-kit.compositions.folk-dances.folk-dances-1
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.music-lib.logical-sequence :as ls])
@@ -230,9 +230,14 @@
                       (phrase (lily " <d g bes>4. <d fis bes>4" :relative :c4)
                               (dynamics 70 64))
                       (loop-n 8))
-                     (pedal-held-and-cleared-at 0 20))]
+                     (pedal-held-and-cleared-at 0 20))
+        phrase-two (lily "<g bes d>4. <g bes ees>4
+                   <g bes d>4 <g bes ees>8 <fis a d>4
+                   <g bes d>4. <g bes ees>4
+                   <g bes d>4 <fis a d>8 <g bes d>4")]
     (concatenate
      phrase-alt
+     phrase-two
      )
     )
   )
@@ -240,35 +245,77 @@
 (defn mar-arp-b [& notes]
   (apply (partial mar-arp-pat [ [ 0 2 ] [ 1 2 ] [ 2 3 ] [ 1 2 ] [ 0 3 ] [ 2 4 ] [ 0 3 ] [ 3 3 ] [ 2 3 ] [ 0 2 ] ]) notes))
 
+
 (def second-marimba
   (concatenate
-   (loop-n (mar-arp-b :d :g :bes :fis) 8)))
+   (loop-n (mar-arp-b :d :g :bes :fis) 8)
+   (mar-arp :d :g :bes)
+   (mar-arp-b :d :g :bes :fis)
+   (mar-arp-b :d :g :bes :d)
+   (phrase
+    (pitches :bes4 :a4 :g4 :d4 :fis4 :d4 :g4 :d5 :bes3 :g3)
+    (apply durations (repeat 10 1/4))
+    (dynamics 87 60 62 63 65 64 82 72 65 62))
+   )
+  )
 
 (def second-bass
-  (phrase (pitches [ :g2 :g1 ]) (durations 21)))
+  (-> (concatenate 
+       (phrase (pitches [ :g2 :g1 ]) (durations 20))
+       (phrase (pitches [ :g2 :g1 ] [ :fis2 :fis1 ] ) (durations 4 1))
+       (phrase (pitches [ :g2 :g1 ] [ :fis2 :fis1 ] [ :g2 :g1 ] ) (durations 7/2 1/2 1)))
+      (hold-for-pct 0.9999))
+
+  )
+
 
 (def bell-lead
-  (let [lp   (lily "bes''8 a g fis d
-                   bes'8 a g fis d
-                   c d ees a,4
-                   c4. d4" :relative :c3)
+  (let [lp   (phrase
+              (loop-n
+               (lily "bes''8 a g fis d
+                      bes'8 a g fis d
+                      c d ees a,4
+                      c4. d4" :relative :c3) 2)
+              (dynamics-at 0 -> 100 2.45 -> 70 2.5 -> 98 4.95 -> 65
+                           5 -> 110 7.5 -> 90 9.85 -> 40
+                           10 -> 100 15 -> 90 16 -> 92 20 -> 60
+                           )
+              )
+        sp (phrase
+            (lily "d4. ees4 bes8 c ees d4 d4. ees4 bes16 a g8 fis g4" :relative :c4))
         ]
     ;; this is messier than it needs to be
-    (-> (loop-n lp 2)
-        (as-> ls
-            (overlay
-             ls
-             (-> ls
-                 (lift-to-seq ls/apply-amplify 0.4)
-                 (lift-to-seq ls/apply-transpose 7)
-                 (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.125)))
-                 )
-             (-> ls
-                 (lift-to-seq ls/apply-amplify 0.5)
-                 (lift-to-seq ls/apply-transpose 12)
-                 (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.25)))
-                 )
-             )))
+    (concatenate 
+     (-> lp
+         (as-> ls
+             (overlay
+              ls
+              (-> ls
+                  (lift-to-seq ls/apply-amplify 0.2)
+                  (lift-to-seq ls/apply-transpose 7)
+                  (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.125)))
+                  )
+              (-> ls
+                  (lift-to-seq ls/apply-amplify 0.4)
+                  (lift-to-seq ls/apply-transpose 12)
+                  (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.25)))
+                  )
+              )))
+     (-> sp
+         (as-> ls
+             (overlay
+              ls
+              (-> ls
+                  (lift-to-seq ls/apply-amplify 0.2)
+                  (lift-to-seq ls/apply-transpose 7)
+                  (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.125)))
+                  )
+              (-> ls
+                  (lift-to-seq ls/apply-amplify 0.4)
+                  (lift-to-seq ls/apply-transpose 12)
+                  (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.25)))))))
+     
+     )
     )
   )
 
@@ -296,6 +343,8 @@
          )
 
         (with-clock clock)
-        (midi-play :beat-zero 100)))) ;; 120 is second bit
+        (midi-play :beat-zero -1)))) ;; 120 is second bit
 
 ;;(def sss (composition-kit.events.physical-sequence/stop player))
+
+
