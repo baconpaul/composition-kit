@@ -9,7 +9,7 @@
 
 (def drums (midi/midi-instrument 2))
 (def bass  (midi/midi-instrument 3))
-(def clock (tempo/constant-tempo 4 4 110)) 
+(def clock (tempo/constant-tempo 4 4 115)) 
 
 (def base-beat [:c2    "X.....S.X......."
                 :d2    "....Y......RY..."
@@ -23,24 +23,24 @@
                 :gis2  "..Q...Q........."
                 :ais2  "..........Z....." ])
 
+(def fill-beat-alt [:c2    "X..O..S.X...Z.Z."
+                    :d2    "....Y........XBP"
+                    :fis2  "PR.FYR.HPR.....A"
+                    :gis2  "..Q...Q...QQ...."
+                    :ais2  "............Y..." ])
+
 
 ;; So here's some basic drums. I mean, duh.
 (def drum-pattern 
   (-> (concatenate
        (loop-n (step-strings base-beat) 3)
-       (step-strings fill-beat))
-      (loop-n 2)
+       (step-strings fill-beat)
+       (loop-n (step-strings base-beat) 3)
+       (step-strings fill-beat-alt))
+
       (on-instrument drums)))
 
-(def bass-line
-  (-> (concatenate 
-       (-> (phrase (lily "a2 c8 d b4 a1" :relative :c2))
-           (loop-n 2))
-       (-> (phrase (lily "b2 d8 e cis16 d cis d b1" :relative :c2))
-           (loop-n 2)))
-      (on-instrument bass)))
-
-(-> (overlay drum-pattern bass-line)
+(-> drum-pattern
     (with-clock clock)
     (midi-play))
 
