@@ -113,6 +113,8 @@ of symbols. For instance
     )
   )
 
+(def <*> overlay)
+
 
 (defn step-strings [ & arguments ]
   (let [args           (if (keyword? (first arguments)) arguments (first arguments))
@@ -166,6 +168,7 @@ For instance:
     {:composition-type ::sequence :composition-payload (apply ls/concat-sequences (map :composition-payload arguments))}
     )
   )
+(def >>> concatenate)
 
 (defn pedal-held-and-cleared-at [ & arguments ]
   "Given a collection of beats, depress the pedal just a smidge after the beat and then
