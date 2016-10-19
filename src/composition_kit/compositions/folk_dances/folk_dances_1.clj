@@ -2,6 +2,7 @@
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.logical-item :as i])
 
   (:use composition-kit.core))
 
@@ -20,44 +21,44 @@
 ;;;;;; FIRST SECTION
 
 (def first-lead
-  (let [theme-a    (-> 
-                    (str
-                     (rstr 2 "bes'4. bes4 bes16 aes g8 f c ees")
-                     (rstr 2 "ees'4. ees4 ees16 des c8 bes ges aes")
-                     "bes4. bes4 bes16 aes g8 f c ees "
-                     "bes'4. bes4 bes16 aes g8 f c ees "
-                     (rstr 2 "ees'4. ees4 ees16 des c8 bes ges aes"))
-                    lily
+  (let [theme-a    (-*>
+                    (lily
+                     (str
+                      (rstr 2 "bes'4. bes4 bes16 aes g8 f c ees")
+                      (rstr 2 "ees'4. ees4 ees16 des c8 bes ges aes")
+                      "bes4. bes4 bes16 aes g8 f c ees "
+                      "bes'4. bes4 bes16 aes g8 f c ees "
+                      (rstr 2 "ees'4. ees4 ees16 des c8 bes ges aes")))
                     ;; make those notes stacatto when...
-                    (transform-note-payload
+                    (ls/transform-note-payload
                      (fn [i p] (if (>= (:dur p) 1)
                                  (assoc p :hold-for 0.99)
                                  (assoc p :hold-for 0.1)))))
 
-        theme-b     (-> (phrase
-                         (lily " bes8 aes g16 f bes4
+        theme-b     (-*> (phrase
+                          (lily " bes8 aes g16 f bes4
       ees,8 f g16 ees aes4
       bes8 aes g16 f bes4
       ees,8 f g16 ees aes4
       
       ees'8 des c16 bes aes8 g
       c8 bes aes16 g d8 f" :relative :c5)
-                         (dynamics-at 0 -> 90 2.4 -> 80
-                                      2.5 -> 100 4.9 -> 80))
-                        (hold-for 0.15)
-                        )
+                          (dynamics-at 0 -> 90 2.4 -> 80
+                                       2.5 -> 100 4.9 -> 80))
+                         (ls/hold-for-pct 0.15)
+                         )
 
         theme-b-alt  (concatenate
-                      (-> phrase
-                          (lily "bes8 aes g16 f ees8 d
+                      (-*> (phrase
+                            (lily "bes8 aes g16 f ees8 d
 	                        g f ees16 d c8 bes
 
                             	bes'8 aes g16 f ees8 d
 	                        g f ees16 d c8 bes
 	                        ees d c16 bes f8 bes
 	                        g8 a bes16 c d8 fis"
-                                :relative :c5)
-                          (hold-for 0.15))
+                                  :relative :c5))
+                           (ls/hold-for-pct 0.15))
                       (phrase (pitches :g4) (durations 5))) ;; to keep it out of the hold
         
         ]
@@ -140,16 +141,16 @@
                          (lily  "f8 ges g aes4 aes4. aes4" :relative :c2)
                          (dynamics-at 0 -> 80 3/2 -> 120 1.6 80)) 2))
         bass-b   (concatenate
-                  (-> (phrase
-                       (lily "bes8 aes g16 f bes4
+                  (-*> (phrase
+                        (lily "bes8 aes g16 f bes4
                           ees,8 f g16 ees aes4
                           bes8 aes g16 f bes4
                           ees,8 f g16 ees aes4
       
                           ees'8 des c16 bes aes8 g
                           c8 bes aes16 g d8 f" :relative :c3))
-                      (hold-for 0.3)
-                      ))
+                       (ls/hold-for-pct 0.3)
+                       ))
         bass-a-alt (loop-n (concatenate
                             (phrase
                              (lily "c8 des ees f g aes bes c des ees ees,4. ees'4 ees,4. ees'4" :relative :c2)
@@ -160,8 +161,7 @@
                              (lily "f8 ges aes bes c des ees f ges aes aes,4. aes'4 aes,4. aes'4" :relative :c2)
                              (dynamics-at 0 -> 60 10/2 -> 90)
                              ) ) 2)
-        bass-b-alt  (-> phrase
-                        (lily "bes8 aes g16 f ees8 d
+        bass-b-alt  (-*>(lily "bes8 aes g16 f ees8 d
 	                        g f ees16 d c8 bes
 
                             	bes'8 aes g16 f ees8 d
@@ -170,7 +170,7 @@
 	                        g8 a bes16 c d8 fis
                                 g4. g,4 g4. fis'4 g4. g,4 g4. fis4"
                               :relative :c3)
-                        (hold-for 0.5)
+                        (ls/hold-for-pct 0.5)
                         )
         ;;_ (-> bass-b-alt (on-instrument synth-bass) (with-clock clock) (midi-play))
         ]
@@ -260,11 +260,11 @@
   )
 
 (def second-bass
-  (-> (concatenate 
-       (phrase (pitches [ :g2 :g1 ]) (durations 20))
-       (phrase (pitches [ :g2 :g1 ] [ :fis2 :fis1 ] ) (durations 4 1))
-       (phrase (pitches [ :g2 :g1 ] [ :fis2 :fis1 ] [ :g2 :g1 ] ) (durations 7/2 1/2 1)))
-      (hold-for-pct 0.9999))
+  (-*> (concatenate 
+        (phrase (pitches [ :g2 :g1 ]) (durations 20))
+        (phrase (pitches [ :g2 :g1 ] [ :fis2 :fis1 ] ) (durations 4 1))
+        (phrase (pitches [ :g2 :g1 ] [ :fis2 :fis1 ] [ :g2 :g1 ] ) (durations 7/2 1/2 1)))
+       (ls/hold-for-pct 0.9999))
 
   )
 
@@ -290,30 +290,30 @@
          (as-> ls
              (overlay
               ls
-              (-> ls
-                  (lift-to-seq ls/apply-amplify 0.2)
-                  (lift-to-seq ls/apply-transpose 7)
-                  (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.125)))
-                  )
-              (-> ls
-                  (lift-to-seq ls/apply-amplify 0.4)
-                  (lift-to-seq ls/apply-transpose 12)
-                  (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.25)))
-                  )
+              (-*> ls
+                   (ls/amplify 0.2)
+                   (ls/transpose 7)
+                   (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.125)))
+                   )
+              (-*> ls
+                   (ls/amplify 0.4)
+                   (ls/transpose 12)
+                   (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.25)))
+                   )
               )))
      (-> sp
          (as-> ls
              (overlay
               ls
-              (-> ls
-                  (lift-to-seq ls/apply-amplify 0.2)
-                  (lift-to-seq ls/apply-transpose 7)
-                  (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.125)))
-                  )
-              (-> ls
-                  (lift-to-seq ls/apply-amplify 0.4)
-                  (lift-to-seq ls/apply-transpose 12)
-                  (lift-to-seq ls/apply-transform-to :beat (fn [i] (+ (ls/item-beat i) 0.25)))))))
+              (-*> ls
+                   (ls/amplify 0.2)
+                   (ls/transpose 7)
+                   (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.125)))
+                   )
+              (-*> ls
+                   (ls/amplify 0.4)
+                   (ls/transpose 12)
+                   (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.25)))))))
      
      )
     )
@@ -343,8 +343,9 @@
          )
 
         (with-clock clock)
-        (midi-play :beat-zero -1)))) ;; 120 is second bit
+        (midi-play :beat-zero 0)))) ;; 120 is second bit
 
 ;;(def sss (composition-kit.events.physical-sequence/stop player))
+
 
 

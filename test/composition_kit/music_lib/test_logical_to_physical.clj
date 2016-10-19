@@ -1,6 +1,7 @@
 (ns composition-kit.music-lib.test-logical-to-physical
   (use clojure.test)
   (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.logical-item :as i])
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.events.physical-sequence :as ps])
@@ -11,8 +12,8 @@
 
 (deftest simple-conversion
   (let [mphrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
-        rphrase (ls/concrete-logical-sequence [(ls/rest-with-duration 1 0)])
-        controls (ls/concrete-logical-sequence (map (fn [v t] (ls/control-event 64 v t)) [ 127 64 0] [ 0 1 3/2 ] ))
+        rphrase (ls/concrete-logical-sequence [(i/rest-with-duration 1 0)])
+        controls (ls/concrete-logical-sequence (map (fn [v t] (i/control-event 64 v t)) [ 127 64 0] [ 0 1 3/2 ] ))
         inst   (midi/midi-instrument 0)
         bpm    140
         clock  (tempo/constant-tempo 2 4 bpm)
@@ -94,7 +95,7 @@
                       (ls/assign-instrument (midi/midi-instrument 0))
                       (ls/assign-clock (tempo/constant-tempo 4 4 120))))]
     (is (= (count (:seq pseq)) (count (:seq shortseq))))
-    (is (= (map ls/item-beat (:seq pseq)) (map ls/item-beat (:seq shortseq))))
+    (is (= (map i/item-beat (:seq pseq)) (map i/item-beat (:seq shortseq))))
     )
   )
 

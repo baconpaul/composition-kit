@@ -2,6 +2,7 @@
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.logical-item :as i])
   (:require [composition-kit.events.physical-sequence :as ps])
   (:require [composition-kit.music-lib.parse :as parse])
   (:require [composition-kit.music-lib.logical-to-physical :as ltop])
@@ -12,6 +13,33 @@
   "basically return the sequence with f (orig) args repacing the sequence"
   {:composition-type (:composition-type item)
    :composition-payload (apply f (cons (:composition-payload item) args))})
+
+(defmacro -*>
+  "Starting with a sequence, apply the subsequent functions to the sequence
+   by threading (lift-to-sequence argument ...) in. 
+
+   (-*> s
+       (ls/apply-amplify 0.2)
+       (ls/apply-transpose 7))
+
+   is
+
+   (-> s 
+       (lift-to-sequence ls/apply-amplify 0.2)
+       (lift-to-sequence ls/apply-transpose 7))
+
+   which stops us from having to alias every logical sequence item into here.
+   The code is just a modified copy of ->
+  "
+  [x & forms]
+  (loop [x x, forms forms]
+    (if forms
+      (let [form (first forms)
+            threaded (if (seq? form)
+                       (with-meta `(lift-to-seq ~x ~@form) (meta form))
+                       (list form x))]
+        (recur threaded (next forms)))
+      x)))
 
 (defn phrase [ & arguments ]
   (let [by-type  (group-by :composition-type arguments)
@@ -130,20 +158,6 @@ For instance:
     )
   )
 
-(defn hold-for [seqn amt]
-  (lift-to-seq seqn
-               ls/apply-note-payload-transform
-               (fn [i p] (assoc p :hold-for amt))))
-
-(defn hold-for-pct [seqn amt]
-  (lift-to-seq seqn
-               ls/apply-note-payload-transform
-               (fn [i p] (assoc p :hold-for (* amt (:dur p))))))
-
-(defn transform-note-payload [seqn f]
-  (lift-to-seq seqn
-               ls/apply-note-payload-transform f))
-
 
 (defn concatenate [ & arguments ]
   (if (not (every? #(= (:composition-type %) ::sequence) arguments))
@@ -167,7 +181,7 @@ at each of the arguments. The last argument ends the pedal."
                                             ;; up
                                             (map (fn [v] [ ( + (* v 0.005) e) (int (* 12.7 (- 10 v))) ] ) (range 11))))
                                          fromto))
-        result    (ls/concrete-logical-sequence (map (fn [[b l]] (ls/sustain-pedal-event l b)) ramps))
+        result    (ls/concrete-logical-sequence (map (fn [[b l]] (i/sustain-pedal-event l b)) ramps))
         ]
     {:composition-type ::sequence :composition-payload result  })
   )

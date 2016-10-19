@@ -1,5 +1,6 @@
 (ns composition-kit.music-lib.parse
   (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.logical-item :as i])
   (:require [composition-kit.music-lib.tonal-theory :as th])
   (:require [instaparse.core :as insta])
   (:require [instaparse.failure :as instafail]))
@@ -124,8 +125,8 @@
             (conj-on :durations (:dur new-note))
             (conj-on :logical-sequence
                      (if (:is-rest new-note)
-                       (ls/rest-with-duration dur (:starts-at state))
-                       (ls/notes-with-duration (:note (:note new-note)) dur (:starts-at state) 0.95)))
+                       (i/rest-with-duration dur (:starts-at state))
+                       (i/notes-with-duration (:note (:note new-note)) dur (:starts-at state) 0.95)))
             (update-in [:starts-at] #(+ % dur))
             (assoc   :prior-root (:note (:note new-note)))
             (assoc   :prior-dur  dur)
@@ -155,7 +156,7 @@
             (conj-on :notes     resolved-chord-notes)
             (conj-on :durations dur)
             (conj-on :logical-sequence
-                     (ls/notes-with-duration (map :note resolved-chord-notes) dur (:starts-at state)))
+                     (i/notes-with-duration (map :note resolved-chord-notes) dur (:starts-at state)))
             (update-in [:starts-at] #(+ % dur))
             (assoc :prior-root (:note (first resolved-chord-notes)))
             (assoc   :prior-dur  dur)))
@@ -250,12 +251,12 @@
       ;;(filter :note)
       (map (fn [itm]
              (if (:note itm)
-               (ls/add-transform
-                (ls/identity-item-transformer
-                 (ls/notes-with-duration target (:dur itm) (:beat itm)))
+               (i/add-transform
+                (i/identity-item-transformer
+                 (i/notes-with-duration target (:dur itm) (:beat itm)))
                 :dynamics
                 (constantly (constantly (:value itm))))
-               (ls/rest-with-duration (:dur itm) (:beat itm))
+               (i/rest-with-duration (:dur itm) (:beat itm))
                )))
       (ls/concrete-logical-sequence)
       ))))

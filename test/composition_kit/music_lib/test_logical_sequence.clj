@@ -1,80 +1,23 @@
 (ns composition-kit.music-lib.test-logical-sequence
   (use clojure.test)
   (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.logical-item :as i])
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.music-lib.midi-util :as midi])
   )
 
-(deftest items-basics
-  (let [evt (ls/music-event "an event" 123)
-        nwd (ls/notes-with-duration [ :c4 ] 1.2 4.2)
-        rwd (ls/rest-with-duration 2 5)]
-    (is (ls/music-item? evt))
-    (is (ls/music-item? nwd))
-    (is (ls/music-item? rwd))
-
-    (is (not (ls/item-has-dynamics? evt)))
-    (is (not (ls/item-has-dynamics? rwd))) 
-    (is (ls/item-has-dynamics? nwd))
-    
-    (is (= (ls/item-type evt) :composition-kit.music-lib.logical-sequence/music-event))
-
-    (is (= (ls/item-beat evt) 123))
-    (is (= (ls/item-payload evt) "an event"))
-    (is (= (ls/item-end-beat evt) 123))
-    
-    (is (= (ls/item-beat nwd) 4.2))
-    (is (= (ls/item-payload nwd) { :notes [ :c4 ] :dur 1.2 :hold-for 1 }))
-    (is (= (ls/item-end-beat nwd) (+ 1.2 4.2)))
-
-    (is (= (ls/item-beat rwd) 5))
-    (is (= (ls/item-payload rwd) {:dur 2 }))
-    (is (= (ls/item-end-beat rwd) (+ 2 5)))
-    )
-  )
-
-(deftest item-transformer
-  (let [evt (ls/music-event "an event" 12)
-        nwd (ls/notes-with-duration [ :c4 ] 1 5)
-        rwd (ls/rest-with-duration 2 5)
-        copy-nwd (ls/identity-item-transformer nwd)
-        upcase-evt (ls/add-transform (ls/identity-item-transformer evt) :payload (comp clojure.string/upper-case ls/item-payload))
-
-        later-rest (ls/add-transform (ls/identity-item-transformer rwd) :beat (comp (partial + 2) ls/item-beat))
-        later-note (ls/item-beat-shift nwd 4)
-        ]
-    (is (= (ls/item-beat nwd) (ls/item-beat copy-nwd)))
-    (is (= (ls/item-payload nwd) (ls/item-payload copy-nwd)))
-    (is (= (ls/item-type nwd) (ls/item-type copy-nwd)))
-    (is (= (:itemtype copy-nwd) :composition-kit.music-lib.logical-sequence/item-transformer))
-    (is (not (= (:itemtype copy-nwd) (ls/item-type copy-nwd))))
-
-    (is (= (ls/item-payload upcase-evt) "AN EVENT"))
-
-    (is (= (ls/item-beat later-rest) 7))
-
-    (is (= (ls/item-beat later-note) 9))
-    (is (= (ls/item-end-beat later-note) 10))
-
-    ;; and an error case
-    (is (thrown? clojure.lang.ExceptionInfo
-                 (ls/add-transform (ls/identity-item-transformer evt)
-                                   :nonsense 1)))
-    )
-  )
-
 (deftest merge-sequences
   (let [cs1 (ls/concrete-logical-sequence
-             (map ls/notes-with-duration [ :c4 :d4 :e4 :f4 :g4 ] [ 1 1 1/2 1/2 1 ] [ 0 4 3 2 5 ]))
-        cs2 (ls/concrete-logical-sequence (map ls/notes-with-duration [ :c4 :d4 ] [ 1 1 ] [ 1/2 4 ] ))
-        cs3 (ls/concrete-logical-sequence (map ls/notes-with-duration [ :c2 :d2 ] [ 1 1  ] [ 0 6 ] ))
-        cs4 (ls/concrete-logical-sequence (map ls/notes-with-duration [ :c3 :d3 ] [ 1 1  ] [ 5 7 ] ))
+             (map i/notes-with-duration [ :c4 :d4 :e4 :f4 :g4 ] [ 1 1 1/2 1/2 1 ] [ 0 4 3 2 5 ]))
+        cs2 (ls/concrete-logical-sequence (map i/notes-with-duration [ :c4 :d4 ] [ 1 1 ] [ 1/2 4 ] ))
+        cs3 (ls/concrete-logical-sequence (map i/notes-with-duration [ :c2 :d2 ] [ 1 1  ] [ 0 6 ] ))
+        cs4 (ls/concrete-logical-sequence (map i/notes-with-duration [ :c3 :d3 ] [ 1 1  ] [ 5 7 ] ))
         ]
     (is (= (ls/beat-length cs1) 6))
-    (is (every? identity (map (fn [a b] (<  (ls/item-beat a) (ls/item-beat b))) cs1 (rest cs1))) "Monotonicity in time")
-    (is (= (map #(:notes (ls/item-payload %)) cs1) [ :c4 :f4 :e4 :d4 :g4 ]))
-    (is (= (map #(:notes (ls/item-payload %)) (ls/merge-sequences cs2 cs3)) [ :c2 :c4 :d4 :d2 ]))
-    (is (= (map #(:notes (ls/item-payload %)) (ls/merge-sequences cs2 cs4 cs3)) [ :c2 :c4 :d4 :c3 :d2 :d3 ]))
+    (is (every? identity (map (fn [a b] (<  (i/item-beat a) (i/item-beat b))) cs1 (rest cs1))) "Monotonicity in time")
+    (is (= (map #(:notes (i/item-payload %)) cs1) [ :c4 :f4 :e4 :d4 :g4 ]))
+    (is (= (map #(:notes (i/item-payload %)) (ls/merge-sequences cs2 cs3)) [ :c2 :c4 :d4 :d2 ]))
+    (is (= (map #(:notes (i/item-payload %)) (ls/merge-sequences cs2 cs4 cs3)) [ :c2 :c4 :d4 :c3 :d2 :d3 ]))
     )
   )
 
@@ -94,29 +37,29 @@
         ]
     (is (= (count mary-had) 7))
     (is (= (ls/beat-length mary-had) 8))
-    (is (ls/music-item? (first mary-had)))
-    (is (= (ls/item-type (first mary-had)) :composition-kit.music-lib.logical-sequence/notes-with-duration))
-    (is (= (ls/item-payload (first mary-had)) { :notes :e4 :dur 1 :hold-for 0.95 }))
-    (is (= (ls/item-payload (last mary-had)) { :notes :e4 :dur 2 :hold-for 1.9 }))
-    (is (= (map ls/item-beat mary-had) (list 0 1 2 3 4 5 6)))
-    (is (= (map ls/item-beat bill-tell) (list 0 1/2 1 2 5/2 3 4 9/2 5 6 7 )))
+    (is (i/music-item? (first mary-had)))
+    (is (= (i/item-type (first mary-had)) :composition-kit.music-lib.logical-item/notes-with-duration))
+    (is (= (i/item-payload (first mary-had)) { :notes :e4 :dur 1 :hold-for 0.95 }))
+    (is (= (i/item-payload (last mary-had)) { :notes :e4 :dur 2 :hold-for 1.9 }))
+    (is (= (map i/item-beat mary-had) (list 0 1 2 3 4 5 6)))
+    (is (= (map i/item-beat bill-tell) (list 0 1/2 1 2 5/2 3 4 9/2 5 6 7 )))
 
-    (is (= (map ls/item-beat boring) (list 0 1/2 1 3/2)))
-    (is (= (:hold-for (ls/item-payload (first boring)))  1/2))
+    (is (= (map i/item-beat boring) (list 0 1/2 1 3/2)))
+    (is (= (:hold-for (i/item-payload (first boring)))  1/2))
 
-    (is (= (map ls/item-beat very-boring) (list 0 1/2 1 3/2)))
+    (is (= (map i/item-beat very-boring) (list 0 1/2 1 3/2)))
 
     (is (= (count legato-mice) 3))
     (is (= (count staccato-mice) 3))
     (is (= (count regular-mice) 3))
     (is (= (count delayed-mice) 3))
 
-    (is (every? identity (map (fn [a b c] (> (:hold-for (ls/item-payload a))
-                                             (:hold-for (ls/item-payload b))
-                                             (:hold-for (ls/item-payload c))))
+    (is (every? identity (map (fn [a b c] (> (:hold-for (i/item-payload a))
+                                             (:hold-for (i/item-payload b))
+                                             (:hold-for (i/item-payload c))))
                               legato-mice regular-mice staccato-mice)))
 
-    (is (= (map ls/item-beat delayed-mice) (list 3 4 5)))
+    (is (= (map i/item-beat delayed-mice) (list 3 4 5)))
     )
   )
 
@@ -125,19 +68,19 @@
   (let [phrase  (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 :f4 :e4 :f4 :g4 :c4 ] [ 1 1 1/4 1/4 1/4 1/4 1/2 1/2 ])
         phrase-short (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )]
     (is (= (count phrase) 8))
-    (is (= (reduce + (map (comp :dur ls/item-payload) phrase)) 4))
-    (is (= (map ls/item-payload (ls/loop-sequence phrase 1)) (map ls/item-payload phrase)))
-    (is (= (map ls/item-beat (ls/loop-sequence phrase 1)) (map ls/item-beat phrase)))
+    (is (= (reduce + (map (comp :dur i/item-payload) phrase)) 4))
+    (is (= (map i/item-payload (ls/loop-sequence phrase 1)) (map i/item-payload phrase)))
+    (is (= (map i/item-beat (ls/loop-sequence phrase 1)) (map i/item-beat phrase)))
     (is (= (count (ls/loop-sequence phrase 2)) 16))
     (let [loop-4 (ls/loop-sequence phrase 4)]
       (is (= (count loop-4) (* (count phrase) 4)))
-      (is (every? identity (map (fn [a b] (<  (ls/item-beat a) (ls/item-beat b))) loop-4 (rest loop-4))) "Monotonicity in time")
+      (is (every? identity (map (fn [a b] (<  (i/item-beat a) (i/item-beat b))) loop-4 (rest loop-4))) "Monotonicity in time")
       )
     (let [loop-3 (ls/loop-sequence phrase-short 3)]
       (is (= (count loop-3) (* 3 (count phrase-short))))
-      (is (= (map (comp :notes ls/item-payload) loop-3) (list :c4 :d4 :e4 :c4 :d4 :e4 :c4 :d4 :e4)))
-      (is (= (map (comp :dur ls/item-payload) loop-3 ) (list 1 1/2 1/2 1 1/2 1/2 1 1/2 1/2)))
-      (is (= (map ls/item-beat loop-3) (list 0 1 3/2 2 3 7/2 4 5 11/2 )))
+      (is (= (map (comp :notes i/item-payload) loop-3) (list :c4 :d4 :e4 :c4 :d4 :e4 :c4 :d4 :e4)))
+      (is (= (map (comp :dur i/item-payload) loop-3 ) (list 1 1/2 1/2 1 1/2 1/2 1 1/2 1/2)))
+      (is (= (map i/item-beat loop-3) (list 0 1 3/2 2 3 7/2 4 5 11/2 )))
       )
     ))
 
@@ -162,10 +105,10 @@
            (ls/beat-length five-later)))
     (is (= (ls/beat-length-from-zero phrase-short) 2))
     (is (= (ls/beat-length-from-zero five-later) 7))
-    (is (= (map ls/item-beat phrase-short) [ 0 1 3/2 ]))
-    (is (= (map ls/item-beat zero-later) (map ls/item-beat phrase-short)))
-    (is (every? (partial = 1) (map - (map ls/item-beat one-later) (map ls/item-beat phrase-short))))
-    (is (every? (partial = 5) (map - (map ls/item-beat five-later) (map ls/item-beat phrase-short))))
+    (is (= (map i/item-beat phrase-short) [ 0 1 3/2 ]))
+    (is (= (map i/item-beat zero-later) (map i/item-beat phrase-short)))
+    (is (every? (partial = 1) (map - (map i/item-beat one-later) (map i/item-beat phrase-short))))
+    (is (every? (partial = 5) (map - (map i/item-beat five-later) (map i/item-beat phrase-short))))
 
     )
   )
@@ -175,39 +118,39 @@
   (let [mary   (ls/sequence-from-pitches-and-durations [ :e4 :d4 :c4 :d4 :e4 :e4 :e4 ] [ 1 1 1 1 1 1 2 ] )
         harm   (ls/sequence-from-pitches-and-durations [ :c2 :g2 :c2 ] [ 2 2 4 ] )
         song   (ls/merge-sequences mary harm)]
-    (is (= (map ls/item-beat mary) [ 0 1 2 3 4 5 6 ] ))
-    (is (= (map ls/item-beat song) [ 0 0 1 2 2 3 4 4 5 6 ]))
-    (is (= (map ls/item-beat (ls/concat-sequences mary mary)) [ 0 1 2 3 4 5 6 8 9 10 11 12 13 14 ] ))
-    (is (= (map ls/item-beat (ls/concat-sequences song song))
+    (is (= (map i/item-beat mary) [ 0 1 2 3 4 5 6 ] ))
+    (is (= (map i/item-beat song) [ 0 0 1 2 2 3 4 4 5 6 ]))
+    (is (= (map i/item-beat (ls/concat-sequences mary mary)) [ 0 1 2 3 4 5 6 8 9 10 11 12 13 14 ] ))
+    (is (= (map i/item-beat (ls/concat-sequences song song))
            [ 0 0 1 2 2 3 4 4 5 6 8 8 9 10 10 11 12 12 13 14 ] ))
     ))
 
 
 (deftest note-dynamics
-  (let [note      (ls/notes-with-duration [ :c4 ] 1 1)
-        note2     (ls/notes-with-duration [ :c4 ] 1 4)
-        loud-note (ls/override-dynamics note (constantly 127))
-        soft-note (ls/constant-dynamics note 20)
+  (let [note      (i/notes-with-duration [ :c4 ] 1 1)
+        note2     (i/notes-with-duration [ :c4 ] 1 4)
+        loud-note (i/override-dynamics note (constantly 127))
+        soft-note (i/constant-dynamics note 20)
         
-        louder-later (fn [it] (apply min [ 127 (* 10 (ls/item-beat it))])) 
-        f-note    (ls/override-dynamics note louder-later)
-        f-note2   (ls/override-dynamics note2 louder-later)
+        louder-later (fn [it] (apply min [ 127 (* 10 (i/item-beat it))])) 
+        f-note    (i/override-dynamics note louder-later)
+        f-note2   (i/override-dynamics note2 louder-later)
         
         volume-up (fn [it dyn] (+ 5 dyn)) 
-        l-note    (ls/compose-dynamics note volume-up)
+        l-note    (i/compose-dynamics note volume-up)
 
-        ll-note   (ls/louder-by note 10)
-        ss-note   (ls/softer-by note 10)
+        ll-note   (i/louder-by note 10)
+        ss-note   (i/softer-by note 10)
         ]
-    (is (ls/item-has-dynamics? note))
-    (is (= (ls/note-dynamics-to-7-bit-volume note) 80))
-    (is (= (ls/note-dynamics-to-7-bit-volume loud-note) 127))
-    (is (= (ls/note-dynamics-to-7-bit-volume soft-note) 20))
-    (is (= (ls/note-dynamics-to-7-bit-volume f-note) 10))
-    (is (= (ls/note-dynamics-to-7-bit-volume f-note2) 40))
-    (is (= (ls/note-dynamics-to-7-bit-volume l-note) 85))
-    (is (= (ls/note-dynamics-to-7-bit-volume ll-note) 90))
-    (is (= (ls/note-dynamics-to-7-bit-volume ss-note) 70))
+    (is (i/item-has-dynamics? note))
+    (is (= (i/note-dynamics-to-7-bit-volume note) 80))
+    (is (= (i/note-dynamics-to-7-bit-volume loud-note) 127))
+    (is (= (i/note-dynamics-to-7-bit-volume soft-note) 20))
+    (is (= (i/note-dynamics-to-7-bit-volume f-note) 10))
+    (is (= (i/note-dynamics-to-7-bit-volume f-note2) 40))
+    (is (= (i/note-dynamics-to-7-bit-volume l-note) 85))
+    (is (= (i/note-dynamics-to-7-bit-volume ll-note) 90))
+    (is (= (i/note-dynamics-to-7-bit-volume ss-note) 70))
     )
   )
 
@@ -219,7 +162,7 @@
         ds    (ls/repeated-note :d4 1/4 4)
         updn  (ls/explicit-segment-dynamics ds '(127 23 78 42))
         updn2 (ls/explicit-segment-dynamics ds '(127 23)) ;; the 23 should continue
-        dyn   (fn [s] (map ls/note-dynamics-to-7-bit-volume s))
+        dyn   (fn [s] (map i/note-dynamics-to-7-bit-volume s))
         ]
     (is (= (count (dyn cs)) 33))
     (is (= (distinct (dyn cs)) '(80)))
@@ -251,17 +194,17 @@
 
         not-nil? (comp not nil?)
         ]
-    (is (every? nil? (map ls/item-instrument ph)))
-    (is (every? nil? (map ls/item-clock  ph)))
+    (is (every? nil? (map i/item-instrument ph)))
+    (is (every? nil? (map i/item-clock  ph)))
 
-    (is (every? not-nil? (map ls/item-instrument phin)))
-    (is (every? nil? (map ls/item-clock  phin)))
+    (is (every? not-nil? (map i/item-instrument phin)))
+    (is (every? nil? (map i/item-clock  phin)))
 
-    (is (every? nil? (map ls/item-instrument phcl)))
-    (is (every? not-nil? (map ls/item-clock  phcl)))
+    (is (every? nil? (map i/item-instrument phcl)))
+    (is (every? not-nil? (map i/item-clock  phcl)))
 
-    (is (every? not-nil? (map ls/item-instrument phall)))
-    (is (every? not-nil? (map ls/item-clock phall)))
+    (is (every? not-nil? (map i/item-instrument phall)))
+    (is (every? not-nil? (map i/item-clock phall)))
     )
   )
 
