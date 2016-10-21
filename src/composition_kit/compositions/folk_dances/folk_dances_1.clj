@@ -7,6 +7,9 @@
 
   (:use composition-kit.core))
 
+;; TO DO
+;;   Dynamics on the synth lead
+;;   Add Bells to third synth
 
 (def synth-lead (midi/midi-instrument 0))
 (def piano (midi/midi-instrument 1))
@@ -90,10 +93,10 @@
         (>>>
          (phrase
           (lily "c8 des ees f g aes bes c des ees ees4. ees,4 ees'4. ees,4" :relative :c3)
-          (dynamics-at 0 -> 70 10/2 -> 100 15/2 -> 80))
+          (dynamics-at 0 -> 70 10/2 -> 90 15/2 -> 80))
          (phrase
           (lily "f8 ges aes bes c des ees f ges aes aes4. aes,4 aes'4. aes,4" :relative :c3)
-          (dynamics-at 0 -> 60 10/2 -> 100 15/2 -> 80)))
+          (dynamics-at 0 -> 60 10/2 -> 90 15/2 -> 80)))
 
         ]
     (>>>
@@ -335,32 +338,229 @@
     )
   )
 
+(def third-piano
+  "This is the big leaping eflat aflat bflat combo"
+  (let [lh-p124
+        (-*>
+         (lily "<ees ees'>8 <g' bes ees> <g, g'> <aes aes> <c' ees bes>
+                 <bes, bes'>8 <f' bes c> <f, f'> <ees ees'> <g' ees bes>" :relative :c2)
+         (ls/hold-for-pct 0.7)
+         (ls/explicit-segment-dynamics '(90 70 85 92 72
+                                            92 70 84 87 73))
+         )
 
-(def play-it false)
+        lh-p124-end
+        (-*>
+         (lily "<ees ees'>8 <g' bes ees> <g, g'> <aes aes> <c' ees bes>
+                 <bes, bes'>8 <f' bes c> <f, f'> <ees ees'>8 ees" :relative :c2)
+         (ls/hold-for-pct 0.7)
+         (ls/explicit-segment-dynamics '(90 70 85 92 72
+                                            92 70 84 92 101))
+         )
+        lh-p3
+        (-*>
+         (lily "<ees ees'>8 <g' bes ees> <g, g'> <aes aes> <c' ees bes>
+                 <bes, bes'>8 <f' bes c> <b, b'> <c c'> <g' c ees>" :relative :c2)
+         (ls/hold-for-pct 0.7)
+         (ls/explicit-segment-dynamics '(90 70 85 92 72
+                                            92 70 84 87 73))
+         )
+        lh-p3-alt
+        (-*>
+         (lily "<ees ees'>8 <g' bes ees> <g, g'> <aes aes> <c' ees bes>
+                 <bes, bes'>8 <f' bes c> <d d'> <c c'> <g' c ees>" :relative :c2)
+         (ls/hold-for-pct 0.7)
+         (ls/explicit-segment-dynamics '(90 70 85 92 72
+                                            92 70 84 87 73))
+         )
+
+        rh-p124
+        (-*>
+         (lily "<bes ees f>8 <ees f g> r4 <g aes d>8
+                <bes, d f> <bes c f> r4."
+               :relative :c5)
+         (ls/hold-for-pct 0.4)
+         (ls/explicit-segment-dynamics '(90 70 0 80 82 70 0)) ;; remember the rests are in explicit
+         )
+
+        rh-p124-end
+        (-*>
+         (lily "<bes ees f>8 <ees f g> r4 <g aes d>8
+                <bes, d f> <bes c f> r8 <ees g bes>8 <ees aes bes>"
+               :relative :c5)
+         (ls/hold-for-pct 0.4)
+         (ls/explicit-segment-dynamics '(90 70 0 80 82 70 0 98 103)) ;; remember the rests are in explicit
+         )
+
+        rh-p3
+        (-*>
+         (lily "<bes ees f>8 <ees f g> r4 <g aes d>8
+                <bes, d f> <c d f> r4."
+               :relative :c5)
+         (ls/hold-for-pct 0.4)
+         (ls/explicit-segment-dynamics '(90 70 0 80 82 70 0)) ;; remember the rests are in explicit
+         )
+
+        rh-p3-alt
+        (-*>
+         (lily "<bes ees f>8 <ees f g> r4 <g aes d>8
+                <f f'>8 <fis f'> <g f'> g'16 f g8"
+               :relative :c5)
+         (ls/hold-for-pct 0.4)
+         (ls/explicit-segment-dynamics '(90 70 0 80 82 88 88 88 92 87 92)) ;; remember the rests are in explicit
+         )
+
+        ]
+    (<*>
+     (>>>
+      lh-p124
+      lh-p124
+      lh-p3
+      lh-p124
+      
+      lh-p124
+      lh-p124
+      lh-p3-alt
+      lh-p124-end
+
+      )
+     (>>>
+      rh-p124
+      rh-p124
+      rh-p3
+      rh-p124
+
+      rh-p124
+      rh-p124
+      rh-p3-alt
+      rh-p124-end
+      )
+     )
+    ))
+
+(def third-bass
+  (let [ph (-*>
+            (lily "ees4 g8 aes4 bes4 f8 ees4
+                     ees4 g8 aes4 bes4 d,8 ees4
+                     ees4 g8 aes4 bes4 b8 c4
+                     ees,4 g8 aes4 bes4 f8 ees4
+
+                     ees4 g8 aes4 bes4 f8 ees4
+                     ees4 g8 aes4 bes4 d,8 ees4
+                     ees4 g8 aes4 bes4 d8 c4
+                     ees,4 g8 aes4 bes4 f8 ees8 ees'
+"
+                  :relative :c2)
+            (ls/hold-for-pct 0.99)
+            (ls/line-segment-dynamics 0 75 5/2 88 5 77 15/2 88 10 77 14.99 94 
+                                      15 75 35/2 88 20 77 45/2 88 30 77 35 94 )
+            )
+        ]
+    (<*> ph (lift-to-seq ph ls/transpose -12))
+    ))
+
+(def third-marimba
+  (let [p-124 (lily "ees32 d ees d ees16 f g g, g' g, aes8
+                       r4. r4
+                       ees'32 d ees d ees16 f g g, g' g, aes8
+                       r4. r4
+                       bes32 a bes a bes16 f b f c des c'8
+                       r4. r4
+                       ees,32 d ees d ees16 f g g, g' g, aes8
+                       r4. r4
+                      " :relative :c5 )]
+    (>>> p-124 p-124)
+    ))
+
+                                        ;(do
+(def third-lead
+  (let [p-1 (-*>
+             (lily "g4. bes4 aes16 g f8 d ees4
+                    g4. bes4 aes16 g f8 d ees4
+                    g4. bes4 aes16 g f8 d' c4
+                    g4. bes4 aes16 g f8 d ees4" :relative :c5)
+             (ls/line-segment-dynamics 0 90 5 92 10 94 15 92)
+             (ls/transform-note-payload
+              (fn [i p] (if (>= (:dur p) 1)
+                          (assoc p :hold-for 0.99)
+                          (assoc p :hold-for 0.1)))))
+        ]
+    (>>>
+     p-1
+     (<*>
+      p-1
+      (-*>
+       p-1
+       (ls/transpose 12)
+       (ls/amplify 0.6)
+       )
+      ))
+    )
+  )
+
+(def third-bell
+  (let [p-1 (-*>
+             (lily "g4. bes4 r4. r4" :relative :c5)
+             (ls/loop-sequence 8))
+        p-ech (<*>
+               p-1
+               (-*> p-1
+                    (ls/amplify 0.2)
+                    (ls/transpose 7)
+                    (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.125)))
+                    )
+               (-*> p-1
+                    (ls/amplify 0.4)
+                    (ls/transpose 12)
+                    (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.25)))))
+        ;;_ (try-out p-ech bells)
+        ]
+    p-1))
+
+(def final-song
+  (-> (>>>
+       (<*>
+        (-> first-lead
+            (on-instrument synth-lead))
+        (-> first-piano-mid
+            (on-instrument piano))
+        (-> first-marimba
+            (on-instrument marimba))
+        (-> first-bass
+            (on-instrument synth-bass))
+        )
+       (<*>
+        (-> second-piano-mid (on-instrument piano))
+        (-> bell-lead (on-instrument bells))
+        (-> second-marimba (on-instrument marimba))
+        (-> second-bass (on-instrument synth-bass))
+        )
+       (<*>
+        (-> third-piano (on-instrument piano))
+        (-> third-bass (on-instrument synth-bass))
+        (-> third-marimba (on-instrument marimba))
+        (-> third-lead (on-instrument synth-lead))
+        (-> third-bell (on-instrument bells))
+        )
+       )
+      
+      (with-clock clock) 
+      ))
+
+(defn try-out [p i]
+  (-> p (on-instrument i) (with-clock clock) (midi-play)))
+
+
+;;(try-out third-piano piano)
+
+(def play-it true)
 (def player
   (when play-it
-    (-> (>>>
-         (<*>
-          (-> first-lead
-              (on-instrument synth-lead))
-          (-> first-piano-mid
-              (on-instrument piano))
-          (-> first-marimba
-              (on-instrument marimba))
-          (-> first-bass
-              (on-instrument synth-bass))
-          )
-         (<*>
-          (-> second-piano-mid (on-instrument piano))
-          (-> bell-lead (on-instrument bells))
-          (-> second-marimba (on-instrument marimba))
-          (-> second-bass (on-instrument synth-bass))
-          )
-         )
-        
-        (with-clock clock)
-        (midi-play :beat-zero 120))
-    )) ;; 120 is second bit
+    (midi-play final-song :beat-zero 0))
+  ;; 120 is second bit; 150 is third bit
+  )
+
+
 
 ;;(def sss (composition-kit.events.physical-sequence/stop player))
 
