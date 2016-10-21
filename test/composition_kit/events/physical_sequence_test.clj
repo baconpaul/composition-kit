@@ -1,4 +1,4 @@
-(ns composition-kit.events.test-physical-sequence
+(ns composition-kit.events.physical-sequence-test
   (use clojure.test)
   (require [composition-kit.events.physical-sequence :as ps])
   )

@@ -1,4 +1,4 @@
-(ns composition-kit.music-lib.test-tempo
+(ns composition-kit.music-lib.tempo-test
   (use clojure.test)
   (require [composition-kit.music-lib.tempo :as t]))
 

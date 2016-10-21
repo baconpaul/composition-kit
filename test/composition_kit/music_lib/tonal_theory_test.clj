@@ -1,4 +1,4 @@
-(ns composition-kit.music-lib.test-tonal-theory
+(ns composition-kit.music-lib.tonal-theory-test
   (use clojure.test)
   (require [composition-kit.music-lib.tonal-theory :as th]))
 

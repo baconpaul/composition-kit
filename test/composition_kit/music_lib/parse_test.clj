@@ -1,4 +1,4 @@
-(ns composition-kit.music-lib.test-parse
+(ns composition-kit.music-lib.parse-test
   (use clojure.test) 
   (require [composition-kit.music-lib.parse :as p])
   (require [composition-kit.music-lib.logical-sequence :as ls])

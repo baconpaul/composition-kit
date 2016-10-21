@@ -1,4 +1,4 @@
-(ns composition-kit.music-lib.test-logical-item
+(ns composition-kit.music-lib.logical-item-test
   (use clojure.test)
   (:require [composition-kit.music-lib.logical-item :as i])
   )

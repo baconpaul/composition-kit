@@ -1,4 +1,4 @@
-(ns composition-kit.music-lib.test-logical-to-physical
+(ns composition-kit.music-lib.logical-to-physical-test
   (use clojure.test)
   (:require [composition-kit.music-lib.logical-sequence :as ls])
   (:require [composition-kit.music-lib.logical-item :as i])

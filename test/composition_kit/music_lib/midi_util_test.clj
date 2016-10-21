@@ -1,4 +1,4 @@
-(ns composition-kit.music-lib.test-midi-util
+(ns composition-kit.music-lib.midi-util-test
   (use clojure.test)
   (require [composition-kit.music-lib.midi-util :as m])
   )

@@ -21,7 +21,7 @@
 
 
 (def beethoven-phrase
-  (overlay
+  (<*>
    (phrase
     (lily :relative :c4 "c4 bes ees4. des8 c ees aes bes ees,4. e8")
     (dynamics-at 0 -> 90
@@ -29,7 +29,7 @@
                  11/1 -> 120
                  6 -> 85
                  8 -> 88))
-   (concatenate
+   (>>>
     (alternates :aes3 :ees3)
     (alternates :g3 :ees3)
     (alternates :aes3 :ees3)

@@ -1,4 +1,4 @@
-(ns composition-kit.music-lib.test-logical-sequence
+(ns composition-kit.music-lib.logical-sequence-test
   (use clojure.test)
   (:require [composition-kit.music-lib.logical-sequence :as ls])
   (:require [composition-kit.music-lib.logical-item :as i])
@@ -226,3 +226,21 @@
     )
   )
 
+
+(deftest dynamics-and-concat-merge
+  (let [cs    (ls/repeated-note :c4 1/2 21)
+        loud  (ls/override-sequence-dynamics cs (constantly 127))
+        swell (ls/line-segment-dynamics cs 0 0 10 127)
+        
+        cs2   (ls/repeated-note :c4 1/2 9)
+        
+        ct-a (ls/concat-sequences swell cs2)
+        ct-b (ls/concat-sequences cs2 swell)
+        ]
+    
+    (is (= (map i/note-dynamics-to-7-bit-volume ct-b)
+           (concat (map i/note-dynamics-to-7-bit-volume cs2)
+                   (map i/note-dynamics-to-7-bit-volume swell)))
+        )
+    )
+  )

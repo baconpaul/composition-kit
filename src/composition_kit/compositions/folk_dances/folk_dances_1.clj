@@ -1,6 +1,7 @@
 (ns composition-kit.compositions.folk-dances.folk-dances-1
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
+  (:require [composition-kit.music-lib.tonal-theory :as th])
   (:require [composition-kit.music-lib.logical-sequence :as ls])
   (:require [composition-kit.music-lib.logical-item :as i])
 
@@ -89,10 +90,10 @@
         (>>>
          (phrase
           (lily "c8 des ees f g aes bes c des ees ees4. ees,4 ees'4. ees,4" :relative :c3)
-          (dynamics-at 0 -> 60 10/2 -> 110 15/2 -> 80))
+          (dynamics-at 0 -> 70 10/2 -> 100 15/2 -> 80))
          (phrase
           (lily "f8 ges aes bes c des ees f ges aes aes4. aes,4 aes'4. aes,4" :relative :c3)
-          (dynamics-at 0 -> 60 10/2 -> 110 15/2 -> 80)))
+          (dynamics-at 0 -> 60 10/2 -> 100 15/2 -> 80)))
 
         ]
     (>>>
@@ -245,17 +246,32 @@
 (defn mar-arp-b [& notes]
   (apply (partial mar-arp-pat [ [ 0 2 ] [ 1 2 ] [ 2 3 ] [ 1 2 ] [ 0 3 ] [ 2 4 ] [ 0 3 ] [ 3 3 ] [ 2 3 ] [ 0 2 ] ]) notes))
 
+(defn mar-flam [dur & notes]
+  (-*> (raw-sequence (ls/concrete-logical-sequence
+                      (map (fn [n idx] (i/notes-with-duration n (- dur (* idx 0.07)) (* idx 0.07)))
+                           notes
+                           (range (count notes)))))
+       (ls/hold-for-pct 0.7)
+       (ls/line-segment-dynamics 0 70 (* (count notes) 0.08) 100)
+       ))
 
 (def second-marimba
   (>>>
    (loop-n (mar-arp-b :d :g :bes :fis) 8)
    (mar-arp :d :g :bes)
-   (mar-arp-b :d :g :bes :fis)
-   (mar-arp-b :d :g :bes :d)
-   (phrase
-    (pitches :bes4 :a4 :g4 :d4 :fis4 :d4 :g4 :d5 :bes3 :g3)
-    (apply durations (repeat 10 1/4))
-    (dynamics 87 60 62 63 65 64 82 72 65 62))
+
+   (>>>
+    (mar-flam 3/2 :d4 :g4 :bes4)
+    (mar-flam 1   :fis4 :bes4 :d5)
+    )
+
+   (mar-arp :d :g :bes)
+
+   (>>>
+    (mar-flam 1 :d4 :g4 :bes4)
+    (mar-flam 1/2   :fis4 :bes4 :d5)
+    (mar-flam 1 :d4 :g4 :bes4)
+    )
    )
   )
 
@@ -276,9 +292,9 @@
                       bes'8 a g fis d
                       c d ees a,4
                       c4. d4" :relative :c3) 2)
-              (dynamics-at 0 -> 100 2.45 -> 70 2.5 -> 98 4.95 -> 65
-                           5 -> 110 7.5 -> 90 9.85 -> 40
-                           10 -> 100 15 -> 90 16 -> 92 20 -> 60
+              (dynamics-at 0 -> 80 2.45 -> 70 2.5 -> 85 4.95 -> 65
+                           5 -> 90 7.5 -> 90 9.85 -> 60
+                           10 -> 90 15 -> 80 16 -> 92 20 -> 60
                            )
               )
         sp (phrase
@@ -320,7 +336,7 @@
   )
 
 
-(def play-it true)
+(def play-it false)
 (def player
   (when play-it
     (-> (>>>
@@ -343,7 +359,7 @@
          )
         
         (with-clock clock)
-        (midi-play :beat-zero 0))
+        (midi-play :beat-zero 120))
     )) ;; 120 is second bit
 
 ;;(def sss (composition-kit.events.physical-sequence/stop player))

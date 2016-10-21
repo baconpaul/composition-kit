@@ -148,6 +148,15 @@
 (defn hold-for-pct [mseq pct]
   (transform-note-payload mseq (fn [i p] (assoc p :hold-for (* (:dur p) pct)))))
 
+(defn explicit-segment-dynamics [mseq values]
+  "Set the dynamics for each note. If you don't supply enough dynamics the last one
+repeats for the remainder of the sequence"
+  (let [usevalues (if (> (count mseq) (count values))
+                    (concat values (repeat (last values)))
+                    values)]
+    (map (fn [n d] (override-dynamics n (constantly d))) mseq usevalues)))
+
+
 (defn line-segment-dynamics [ series & dynamics ]
   "Given a line segment set of beat / level pairs, set the dynamics accordingly.
 Notes in the sequence before the first or after the last beat get the flat value of the
@@ -165,14 +174,9 @@ is a slow then fast crescendo"
                          frac  (if (= prior next) 1 (/ (- beat (first prior)) (- (first next) (first prior))))
                          val   (+ (* frac (second next)) (* (- 1 frac) (second prior)))
                          ]
-                     (int val)))]
-    (override-sequence-dynamics series vol-fn)))
-
-(defn explicit-segment-dynamics [mseq values]
-  "Set the dynamics for each note. If you don't supply enough dynamics the last one
-repeats for the remainder of the sequence"
-  (let [usevalues (if (> (count mseq) (count values))
-                    (concat values (repeat (last values)))
-                    values)]
-    (map (fn [n d] (override-dynamics n (constantly d))) mseq usevalues)))
+                     (int val)))
+        ;; We have to "render" this now since item beats may change later
+        vol-vals (map vol-fn series)
+        ]
+    (explicit-segment-dynamics series vol-vals)))
 
