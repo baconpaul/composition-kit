@@ -180,3 +180,29 @@ is a slow then fast crescendo"
         ]
     (explicit-segment-dynamics series vol-vals)))
 
+
+(defn line-segment-amplify [ series & dynamics ]
+  "Given a line segment set of beat / amp pairs, set the dynamics accordingly.
+Notes in the sequence before the first or after the last beat get the flat value of the
+first or last beat. So
+
+  (line-segment-amplify notes 0 0.9 20 1.1)
+
+is a slow then fast crescendo on top of the undelrying dynmics"
+  (let [beats-n-levels  (partition 2 dynamics)
+        vol-fn   (fn [item]
+                   (let [beat  (item-beat item)
+                         prior (or (last (take-while #(<= (first %) beat) beats-n-levels)) (first beats-n-levels))
+                         next  (or (first (drop-while #(<= (first %) beat) beats-n-levels)) (last beats-n-levels))
+                         
+                         frac  (if (= prior next) 1 (/ (- beat (first prior)) (- (first next) (first prior))))
+                         under (or (note-dynamics-to-7-bit-volume item) 0)
+                         val   (min 127 (* (+ (* frac (second next)) (* (- 1 frac) (second prior)))
+                                           under))
+                         ]
+                     (int val)))
+        ;; We have to "render" this now since item beats may change later
+        vol-vals (map vol-fn series)
+        ]
+    (explicit-segment-dynamics series vol-vals)))
+

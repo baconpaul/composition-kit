@@ -600,47 +600,256 @@
                       )
                      ;; I should have a syntax for in-chord dynamics but
                      (<*>
-                      (-*> (phrase (pitches :ees5) (durations 1)) (ls/explicit-segment-dynamics '(90)))
-                      (-*> (phrase (pitches :bes4) (durations 1)) (ls/explicit-segment-dynamics '(80)))
-                      (-*> (phrase (pitches :g4) (durations 1)) (ls/explicit-segment-dynamics '(70)))
-                      (-*> (phrase (pitches :ees4) (durations 1)) (ls/explicit-segment-dynamics '(75)))
+                      (-*> (phrase (pitches :ees5) (durations 1/4)) (ls/explicit-segment-dynamics '(90)))
+                      (-*> (phrase (pitches :bes4) (durations 1/4)) (ls/explicit-segment-dynamics '(80)))
+                      (-*> (phrase (pitches :g4) (durations 1/4)) (ls/explicit-segment-dynamics '(70)))
+                      (-*> (phrase (pitches :ees4) (durations 1/4)) (ls/explicit-segment-dynamics '(75)))
                       )
                      )
 
         ]
     (>>>
      theme-a
-     theme-b
+     (-*> theme-b
+          (ls/line-segment-amplify 0 1 10 1.05 20 1.4))
      )
     )
   )
 
 (def fourth-piano
   (let [rh-intr (lily "r4. r4 r4. <ees c' des>8 <ees c' des>" :relative :c4)
-        lh-intr (lily "r4. r4 r4. <ees ees'>8 <ees ees'>" :relative :c2)
+        rh-ahit (lily "r4. r4 r4. <aes f' ges>8 <aes f' ges>" :relative :c4)
+        rh-ees  (-*>
+                 (lily "r8 <ees c>16 <c des> <c ees>8 r4" :relative :c5)
+                 (ls/explicit-segment-dynamics '(0 79 75 77 0))
+                 (ls/hold-for-pct 0.6)
+                 )
+        rh-aes  (-*>
+                 (lily "r8 <ees c>16 <c f> <c ees>8 r4" :relative :c5)
+                 (ls/explicit-segment-dynamics '(0 79 75 77 0))
+                 (ls/hold-for-pct 0.6)
+                 )
+
+        rh-ees-b  (-*>
+                   (lily "<ees c>16 <c des> <c ees>8 r8 r4" :relative :c5)
+                   (ls/explicit-segment-dynamics '(79 75 77 0 0))
+                   (ls/hold-for-pct 0.6)
+                   )
+        rh-aes-b  (-*>
+                   (lily "<ees c>16 <c f> <c ees>8 r8 r4" :relative :c5)
+                   (ls/explicit-segment-dynamics '(79 75 77 0 0))
+                   (ls/hold-for-pct 0.6)
+                   )
+
+        lh-intr (lily "r4. r4 r4. <ees ees'>8 <ees ees'>" :relative :c1)
+        lh-ees  (-*>
+                 (lily "<ees, ees'>8 <des' c'> <c'' des ees> <ees,, ees'> <ees, ees'>" :relative :c2)
+                 (ls/explicit-segment-dynamics '(80 82 70 84 78))
+                 )
+        lh-aes  (-*>
+                 (lily "<aes aes'>8 <ges' f'> <f'' ges aes> <aes,, aes'> <aes, aes'>" :relative :c2)
+                 (ls/explicit-segment-dynamics '(80 82 70 84 78))
+                 )
+
+        ees-lh-scale (lily "c8 des ees f g aes bes c des ees" :relative :c2)
+        lh-ees-b (>>>
+                  (-*>
+                   (<*> ees-lh-scale
+                        (-*> ees-lh-scale
+                             (ls/transpose -12))
+                        )
+                   (ls/line-segment-dynamics 0 50 5 106))
+                  lh-ees
+                  lh-ees
+                  )
+        aes-lh-scale (lily "f8 ges aes bes c des ees f ges aes" :relative :c2)
+        lh-aes-b (>>>
+                  (-*>
+                   (<*> aes-lh-scale
+                        (-*> aes-lh-scale
+                             (ls/transpose -12)))
+                   (ls/line-segment-dynamics 0 50 5 106)
+                   )
+                  lh-aes
+                  lh-aes
+                  )
+
+        ;;_ (try-out lh-ees piano)
+        ;;chord-ees   (loop-n (lily "<ees c' des>4. <ees c' des>4" :relative :c3) 4)
+        ;;chord-aes   (loop-n (lily "<aes f' ges>4. <aes f' ges>4" :relative :c4) 4)
+
+        end-chord-a
+        (phrase
+         (lily (rstr 5 "<ees f bes>8"))
+         (dynamics 70 62 54 71 61))
+
+
+        end-chord-b
+        (phrase
+         (lily "<ees f bes>8 <ees f bes>8 <ees g bes>8 <ees f bes>8 <ees g bes>8" )
+         (dynamics 70 62 54 71 61))
+
+        end-chord-c
+        (phrase
+         (lily "<ees f bes>8 <ees f c'>8 <ees g c'>8 <ees f c>8 <ees g bes>8" )
+         (dynamics 70 62 54 71 61))
+
+        matched-phrase
+        (-*>
+         (<*>
+          (-*> (lily "ees'8 des c16 bes aes8 g
+                       c8 bes aes16 g d8 f
+                                 " :relative :c5)
+               (ls/amplify 1.1)
+               )
+          (-*> (lily "g'8 f ees16 des c8 bes
+                        ees8 des c16 bes f8 aes
+                                 " :relative :c5)
+               (ls/amplify 1.1)
+               )
+          
+          (-*> (lily "bes8 aes g16 f ees8 des
+                        g8 f ees16 des aes8 c"
+                     :relative :c5)
+               (ls/amplify 1.13))))
+
+        lh-end
+        (>>>
+         (-*>
+          (<*>
+           (loop-n (lily "ees4. ees4" :relative :c1) 8)
+           (loop-n (lily "ees4. ees4" :relative :c2) 8))
+          (ls/hold-for-pct 0.99)
+          (ls/line-segment-dynamics 0 70 20 100))
+         (phrase (pitches [ :ees2 :ees3 ] ) (durations 1) (dynamics 102)))
+        
+        res
+        (<*>
+         (>>>
+          rh-intr
+          (loop-n rh-ees 2)
+          (loop-n rh-aes 4)
+          rh-intr
+          (loop-n rh-ees-b 2)
+          rh-ahit
+          (loop-n rh-aes-b 2)
+
+          end-chord-a end-chord-b end-chord-a end-chord-b
+
+          (-*> end-chord-c (ls/amplify 1.02))
+          (-*> end-chord-b (ls/amplify 1.04))
+          (-*> end-chord-c (ls/amplify 1.06))
+          (-*> end-chord-a (ls/amplify 1.08))
+
+          (-*> end-chord-c (ls/amplify 1.1))
+          (-*> end-chord-b (ls/amplify 1.13))
+          (-*> end-chord-c (ls/amplify 1.16))
+          (-*> end-chord-a (ls/amplify 1.18))
+
+          
+          (-*> (lily "<ees g bes ees>4" :relative :c4))
+          )
+         (>>>
+          lh-intr
+          (loop-n lh-ees 2)
+          (loop-n lh-aes 4)
+          lh-ees-b
+          lh-aes-b
+          (rest-for 10)
+          lh-end
+          )
+         )
+
+        ;;_ (try-out lh-aes-b piano)
         ]
 
-    (<*>
-     (>>>
-      rh-intr
-      )
-     (>>>
-      lh-intr
+    res
+    ))
+
+(def fourth-bass ;; surely you mean home plate?
+  (let [p-1 (lily "r4. r4 r4. ees8 ees," :relative :c2)
+        p-e (lily "r4. r4 r4. r8 ees," :relative :c2)
+        p-a (lily "r4. r4 r4. r8 aes," :relative :c2)
+        p-ees (lily "ees4. ees4" :relative :c2)
+        p-ees-o (<*> p-ees
+                     (-*> p-ees (ls/transpose -12)))
+        p-aes (lily "aes4. aes4" :relative :c2)
+        p-aes-o (<*> p-aes
+                     (-*> p-aes (ls/transpose -12)))
+
+        lh-end
+        (>>>
+         (-*>
+          (<*>
+           (loop-n (lily "ees4. ees4" :relative :c1) 8)
+           (loop-n (lily "ees4. ees4" :relative :c2) 8))
+          (ls/hold-for-pct 0.99)
+          (ls/line-segment-dynamics 0 70 20 100))
+         (phrase (pitches [ :ees2 :ees3 ] ) (durations 1) (dynamics 102)))
+
+
+        res
+        (>>>
+         p-1
+         (-*>
+          (>>>
+           (loop-n p-ees-o 2)
+           (loop-n p-aes-o 4)
+           p-e
+           (loop-n p-ees-o 2)
+           p-a
+           (loop-n p-aes-o 2)
+           )
+          (ls/hold-for-pct 0.999))
+         (rest-for 10)
+         lh-end
+         )
+        ;;_ (try-out res synth-bass)
+        ]
+    res
+    ))
+
+(defn five-beat-oct-creschendo [n1 n2]
+  (-*> (phrase
+        (pitches n1 n2)
+        (durations 1/4 1/4))
+       (ls/loop-sequence 10)
+       (ls/line-segment-dynamics 0 40 10 100)))
+
+(def fourth-mar
+  (let [p-1 (lily "r4. r4 r4. ees16 bes' <bes ees> <ees g>" :relative :c4)
+        ]
+    (>>>
+     p-1
+     (loop-n (mar-arp :ees :c :des) 2)
+     (loop-n (mar-arp :aes :f :ges) 4)
+
+     (five-beat-oct-creschendo :ees4 :ees5)
+     (loop-n (mar-arp :ees :c :des) 2)
+     (five-beat-oct-creschendo :aes4 :aes5)
+     (loop-n (mar-arp :aes :f :ges) 2)
+     (rest-for 10)
+
+     (-*>
+      (>>>
+       (loop-n (mar-arp :ees :f :bes) 2)
+       (loop-n (mar-arp-b :ees :f :bes :c) 2)
+       (loop-n (mar-arp :ees :f :bes) 2)
+       (loop-n (mar-arp-b :ees :f :bes :c) 2)
+       )
+      (ls/line-segment-amplify 0 1.0 20 1.3)
       )
      )
     ))
 
+
 (def final-song
   (-> (>>>
        (<*>
-        (-> first-lead
-            (on-instrument synth-lead))
-        (-> first-piano-mid
-            (on-instrument piano))
-        (-> first-marimba
-            (on-instrument marimba))
-        (-> first-bass
-            (on-instrument synth-bass))
+        (-> first-lead (on-instrument synth-lead))
+        (-> first-piano-mid (on-instrument piano))
+        (-> first-marimba (on-instrument marimba))
+        (-> first-bass (on-instrument synth-bass))
         )
        (<*>
         (-> second-piano-mid (on-instrument piano))
@@ -658,6 +867,8 @@
        (<*>
         (-> fourth-lead (on-instrument synth-lead))
         (-> fourth-piano (on-instrument piano))
+        (-> fourth-bass (on-instrument synth-bass))
+        (-> fourth-mar (on-instrument marimba))
         )
        )
       
@@ -675,8 +886,9 @@
   (when play-it
     (midi-play
      final-song
-     :beat-zero 120
-     :beat-end 150
+     :beat-zero -1
+     ;;:beat-zero 210
+     ;;:beat-end 230
      ))
   ;; 120 is second bit; 150 is third bit
   )
