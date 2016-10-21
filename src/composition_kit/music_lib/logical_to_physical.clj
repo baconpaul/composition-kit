@@ -24,7 +24,12 @@
   ;; does the magic
   (let [opts (apply hash-map opt-arr)
         beat-zero (get opts :beat-zero 0)
-        pattern  (drop-while #(< (i/item-beat %) beat-zero) in-pattern)
+        beat-end  (get opts :beat-end -1)
+        pattern  (->> in-pattern
+                      (drop-while #(< (i/item-beat %) beat-zero))
+                      (take-while #(or (< beat-end 0) (< (i/item-beat %) beat-end)))
+                      )
+        
         ]
     (reduce (fn [pseq item]
               (case (i/item-type item)

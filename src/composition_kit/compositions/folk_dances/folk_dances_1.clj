@@ -296,8 +296,8 @@
                       c d ees a,4
                       c4. d4" :relative :c3) 2)
               (dynamics-at 0 -> 80 2.45 -> 70 2.5 -> 85 4.95 -> 65
-                           5 -> 90 7.5 -> 90 9.85 -> 60
-                           10 -> 90 15 -> 80 16 -> 92 20 -> 60
+                           5 -> 83 7.5 -> 84 9.85 -> 60
+                           10 -> 83 15 -> 80 16 -> 92 20 -> 72
                            )
               )
         sp (phrase
@@ -468,8 +468,14 @@
                        r4. r4
                        ees,32 d ees d ees16 f g g, g' g, aes8
                        r4. r4
-                      " :relative :c5 )]
-    (>>> p-124 p-124)
+                      " :relative :c5 )
+        p-end (-*>
+               (lily "<ees ees'>16 <ees ees'> <ees ees'>8 " :relative :c5)
+               (ls/amplify 1.3)
+               (ls/hold-for-pct 0.2)
+               )
+        ]
+    (>>> p-124 p-124 p-end)
     ))
 
                                         ;(do
@@ -513,9 +519,116 @@
                     (ls/amplify 0.4)
                     (ls/transpose 12)
                     (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.25)))))
+        p-end-r (-*>
+                 (lily "ees16 ees' ees,8" :relative :c5)
+                 (ls/explicit-segment-dynamics '(60 70 60)))
+        p-end (<*>
+               p-end-r
+               (-*> p-end-r
+                    (ls/amplify 0.2)
+                    (ls/transpose 7)
+                    (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.125)))
+                    )
+               (-*> p-end-r
+                    (ls/amplify 0.4)
+                    (ls/transpose 12)
+                    (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.25)))))
         ;;_ (try-out p-ech bells)
         ]
-    p-1))
+    (>>> p-1 p-end)))
+
+
+(def fourth-lead
+  (let [theme-a    (-*>
+                    (lily
+                     (str
+                      (rstr 2 "bes'4. bes4 bes16 aes g8 f c ees")
+                      (rstr 2 "ees'4. ees4 ees16 des c8 bes ges aes")
+                      "bes4. bes4 bes16 aes g8 f c ees "
+                      "bes'4. bes4 bes16 aes g8 f c ees "
+                      (rstr 2 "ees'4. ees4 ees16 des c8 bes ges aes")))
+
+                    ;; make those notes stacatto when...
+                    (ls/transform-note-payload
+                     (fn [i p] (if (>= (:dur p) 1)
+                                 (assoc p :hold-for 0.99)
+                                 (assoc p :hold-for 0.1)))))
+
+        theme-b     (>>>
+                     (-*>
+                      (<*> (phrase
+                            (lily " bes8 aes g16 f bes4
+      ees,8 f g16 ees aes4
+      bes8 aes g16 f bes4
+      ees,8 f g16 ees aes4
+      
+      ees'8 des c16 bes aes8 g
+      c8 bes aes16 g f8 ees
+
+      ees'8 des c16 bes aes8 g
+      c8 bes aes16 g f8 ees
+
+      ees'8 des c16 bes aes8 g
+      c8 bes aes16 g f8 ees
+
+      ees'8 des c16 bes aes8 g
+      c8 bes aes16 g d8 f
+" :relative :c5))
+                           (>>> (rest-for 20)
+                                (-*> (lily "
+                                 g8 f ees16 des c8 bes
+                                 ees8 des c16 bes aes8 g
+
+                                 g'8 f ees16 des c8 bes
+                                 ees8 des c16 bes f8 aes
+                                 " :relative :c5)
+                                     (ls/amplify 0.5)
+                                     )
+                                )
+                           
+                           (>>> (rest-for 25)
+                                (-*> (lily "
+                                 bes8 aes g16 f ees8 des
+                                 g8 f ees16 des aes8 c
+                                 " :relative :c5)
+                                     (ls/amplify 0.3)
+                                     )
+                                )
+                           )
+
+                      (ls/hold-for-pct 0.3)
+                      )
+                     ;; I should have a syntax for in-chord dynamics but
+                     (<*>
+                      (-*> (phrase (pitches :ees5) (durations 1)) (ls/explicit-segment-dynamics '(90)))
+                      (-*> (phrase (pitches :bes4) (durations 1)) (ls/explicit-segment-dynamics '(80)))
+                      (-*> (phrase (pitches :g4) (durations 1)) (ls/explicit-segment-dynamics '(70)))
+                      (-*> (phrase (pitches :ees4) (durations 1)) (ls/explicit-segment-dynamics '(75)))
+                      )
+                     )
+
+        ]
+    (>>>
+     theme-a
+     theme-b
+     )
+    )
+  )
+
+(def fourth-piano
+  (let [rh-intr (lily "r4. r4 r4. <ees c' des>8 <ees c' des>" :relative :c4)
+        lh-intr (lily "r4. r4 r4. <ees ees'>8 <ees ees'>" :relative :c2)
+        ]
+
+    (<*>
+     (>>>
+      rh-intr
+      )
+     (>>>
+      lh-intr
+      )
+     )
+    ))
 
 (def final-song
   (-> (>>>
@@ -542,6 +655,10 @@
         (-> third-lead (on-instrument synth-lead))
         (-> third-bell (on-instrument bells))
         )
+       (<*>
+        (-> fourth-lead (on-instrument synth-lead))
+        (-> fourth-piano (on-instrument piano))
+        )
        )
       
       (with-clock clock) 
@@ -556,9 +673,14 @@
 (def play-it true)
 (def player
   (when play-it
-    (midi-play final-song :beat-zero 0))
+    (midi-play
+     final-song
+     :beat-zero 120
+     :beat-end 150
+     ))
   ;; 120 is second bit; 150 is third bit
   )
+
 
 
 

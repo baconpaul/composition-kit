@@ -91,6 +91,9 @@
 (defn raw-sequence [ s]
   {:composition-type ::sequence :composition-payload s})
 
+(defn rest-for [dur]
+  (raw-sequence [(i/rest-with-duration dur 0)]))
+
 (defn lily [ & arguments ]
   "The lily macro allows you to make a component which participates in a phrase based on a simple monophonic lilypond type list
 of symbols. For instance
