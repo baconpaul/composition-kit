@@ -2,112 +2,131 @@
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.music-lib.logical-sequence :as ls])
+  (:require [composition-kit.music-lib.logical-item :as i])
 
   (:use composition-kit.core))
 
 
+(def lead-synth (midi/midi-instrument 0))
 (def piano (midi/midi-instrument 1))
 
-(def clock (tempo/constant-tempo 5 4 95))
+(def clock (tempo/constant-tempo 5 4 105))
 
-(def piano-rh-as-written
-  "ees2 d2.
-  ees4 f g2.
-  aes2 g2.
-  
-  f4 g ees d
-  c d bes1
-  
-  ees2 f2.
-  g4 aes bes2.
-  aes2 g2.
-  
-  f4 g ees d
-  c d bes1
-  
-  bes2 ees2.
-  d2 ees2.
-  bes2 ees2.
-  d2 aes'2 g4
-  f g ees2.
-  d4 ees c d bes
-  
-  bes2 ees2.
-  d2 ees2.
-  bes2 ees2.
-  d2 aes'2 g4
-  f g ees2.
-  d4 ees c d bes
-  
-  <c ees aes>2 <c ees g>4 <c ees f> <c ees g> 
-  <c ees> <c f> <c d> <c ees> bes
-  bes <f bes ees>1
-  bes4 <f bes ees>1
-  
-  bes4 << { aes'4 g f ees } \\\\ < g, bes >1 >>
-  bes4 << { d4 ees c bes } \\\\ < g bes >1 >>
-  bes4 << { aes'4 g f ees } \\\\ < g, bes >1 >>
-  bes4 << { d4 ees c bes } \\\\ < g bes >1 >>
+(def lead
+  (let [brk       true
+        
+        melody-structure
+        [[:ees4 2 70] [:d4 3 65 brk]
+         [:ees4 1 72] [:f4 1 74] [:g4 3 77 brk]
+         
+         [:aes4 2 80] [:g4 3 76 brk]
+         [:f4 1 71] [:g4 1 76] [:ees4 1 71] [:d4 1 67] [:c4 1 64] [:d4 1 65] [:bes3 4 58]
 
-  bes4 <f bes ees>1
-  bes4 <f bes ees>1
-  
-  bes4 << <f bes>1 \\\\ { ees'2 d }>>
-  <g, bes ees>1"
+         [:ees4 2 70] [ :f4 3 74 brk]
+         [:g4 1 75] [:aes4 1 78] [:bes4 3 82 brk]
+
+         [:aes4 2 80] [:g4 3 76 brk]
+         [:f4 1 71 ] [:g4 1 76] [:ees4 1 71] [:d4 1 67] [:c4 1 64] [:d4 1 65] [:bes3 4 58 brk]
+
+         [:bes3 2 65] [:ees4 3 60 brk]
+         [:d4 2 65] [:ees4 3 60 brk]
+         [:bes3 2 65] [:ees4 3 60 brk]
+         [:d4 2 65] [:aes4 2 72] [:g4 1 70] [:f4 1 66] [:g4 1 68] [:ees4 2 62]
+         [:d4 1 70] [:ees4 1 70] [:c4 1 68] [:d4 1 72] [:bes3 1 68 brk]
+
+         [:bes4 2 65] [:ees5 3 60 brk]
+         [:d5 2 65] [:ees5 3 60 brk]
+         [:bes4 2 65] [:ees5 3 60 brk]
+         [:d5 2 65] [:aes5 2 72] [:g5 1 70] [:f5 1 66] [:g5 1 68] [:ees5 2 62]
+         [:d5 1 70] [:ees5 1 70] [:c5 1 68] [:d5 1 72] [:bes4 1 68 brk]
+
+         ]
+
+        a-to-n
+        (fn [sp [pitch dur vel bk]]
+          (-> sp
+              (update-in [:end] + dur)
+              (update-in
+               [:notes]
+               concat [(i/notes-with-duration pitch dur (:end sp) (if (nil? bk) (* 1.01 dur) (* 0.94 dur)))]))
+          )
+        ;;          (i/notes-with-duration
+
+        music
+        (-*>
+         (raw-sequence (:notes (reduce a-to-n {:end 0 :notes []} melody-structure)))
+         (ls/explicit-segment-dynamics (map #(nth % 2) melody-structure))
+         (ls/transpose 12)
+         )
+        ]
+    (>>>
+     (rest-for 10)
+     music)
+    )
   )
 
-(def piano-lh-as-written "
-  <bes a g>2 <bes a ges>2.
-  <bes a g>4 <bes a e>4 <bes a d,>2.
-  <bes a g>2 <bes a ges>2.
+(defn try-out [p i]
+  (-> p (on-instrument i) (with-clock clock) (midi-play)))
 
-  <bes a g>4 <bes a ges>4 <bes a d,>4 <bes a e>
-  <bes a ges>4 <bes a g>4 <bes a e>1
+(def piano-m
+  (let [lh-one (<*>
+                (>>>
+                 (-*>
+                  (lily "<ees ees'>4 <a' bes ees> <aes bes d> <ees' aes a> <d g aes>" :relative :c2)
+                  (ls/line-segment-dynamics 0 77 1 65 2 61 4 73))
+                 (-*>
+                  (lily "<ees ees'>4 <a' bes ees> <aes bes d> <ees' aes a>2" :relative :c2)
+                  (ls/line-segment-dynamics 0 77 1 65 2 61 4 73))
+                 )
+                (pedal-held-and-cleared-at 0 4.9 5 9.9))
 
-  <bes a g>2 <bes a ges>2.
-  <bes a g>4 <bes a e>4 <bes a d,>2.
-  <bes a g>2 <bes a ges>2.
+        lh-two (<*>
+                (>>>
+                 (-*>
+                  (lily "<ees ees'>1 r4" :relative :c2)
+                  (ls/explicit-segment-dynamics '(78)))
+                 (-*>
+                  (lily "<ees ees'>4 <a' bes ees> <aes bes d> <a bes ees>2" :relative :c2)
+                  (ls/line-segment-dynamics 0 77 1 65 2 61 4 73)))
+                (pedal-held-and-cleared-at 0 9.9))
 
-  <bes a g>4 <bes a ges>4 <bes a d,>4 <bes a e>
-  <bes a ges>4 <bes a g>4 <bes a e>1
+        rh-two (<*>
+                (-*>
+                 (lily "  <bes a g>2 <bes a ges>2. <bes' a g>4 <bes a e>4 <bes a d,>2." :relative :c4)
+                 (ls/explicit-segment-dynamics '(79 74 81 77 72))))
+                                        ;_ (loop-n (try-out rh-two piano) 2)
+        ]
+    (<*>
+     (>>>
+      lh-one
+      lh-two
+      )
+     (>>>
+      (rest-for 10)
+      rh-two
+      )
+     )
+    )
+  )
 
-  <bes a g>2 <bes a ges>2.
-  <bes a g>2 <bes a e>2.
-  <bes a g>2 <bes a ges>2.
-  <bes a g>2 <bes a e>2.
-  <bes a g>2 <bes a ges>2.
-  <bes a g>4 <bes a ges> <bes a f> <bes a e> <bes a ees>
+(def final-song
+  (<*>
+   (-> lead (on-instrument lead-synth))
+   (-> piano-m (on-instrument piano))
+   )
+  )
 
-  <bes a g>2 <bes a ges>2.
-  <bes a g>2 <bes a e>2.
-  <bes a g>2 <bes a ges>2.
-  <bes a g>2 <bes a e>2.
-  <bes a g>2 <bes a ges>2.
-  <bes a g>4 <bes a ges> <bes a f> <bes a e> <bes a ees>
-
-  bes2 a4 aes g ges f ees des c
-  bes <ges ges'>1
-  bes4 <ges ges'>1
-  bes4 <ges ges'>1
-  bes4 <ges ges'>1 
-  bes4 <ges ges'>1
-  bes4 <ges ges'>1
-
-
-  bes4 <ges ges'>1
-  bes4 <des, des'>1
-  bes'4 <bes, bes'>1
-  <ees, ees'>1")
-
+(def play-it true)
 (def player
-  (when false
+  (when play-it
     (->
-     (-> (overlay
-          (lily piano-rh-as-written :relative :c4)
-          (lily piano-lh-as-written :relative :c3))
-         (on-instrument piano))
+     final-song
      (with-clock clock)
-     (midi-play))))
+     (midi-play
+      :beat-zero 0
+      :beat-end 20
+
+      ))))
 
 ;;(def x (composition-kit.events.physical-sequence/stop player))
 
