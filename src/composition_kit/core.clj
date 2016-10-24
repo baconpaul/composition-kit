@@ -179,14 +179,12 @@ hold it until the next beat, where it releases and re-applies. So basically peda
 at each of the arguments. The last argument ends the pedal."
   (let [shiftarg  (concat (rest arguments) [(last arguments)])
         fromto    (map (fn [ a b ] (list a b)) arguments shiftarg)
-        ramps     (sort-by first (mapcat (fn [ [ s e ] ]
-                                           (concat
-                                            ;; down
-                                            (if (= s e) []
-                                                (map (fn [v] [ ( + (* v 0.01) s 0.05) (int (* 12.7 v)) ] ) (range 11)))
-                                            ;; up
-                                            (map (fn [v] [ ( + (* v 0.005) e) (int (* 12.7 (- 10 v))) ] ) (range 11))))
-                                         fromto))
+
+        ramps     (mapcat (fn [[s e]]
+                            (if (= s e) ;; we are at the end so just turn off
+                              [ [ s 0 ] ]
+                              [ [ (+ s 0.02) 127 ] [ e 0 ] ])) fromto )
+
         result    (ls/concrete-logical-sequence (map (fn [[b l]] (i/sustain-pedal-event l b)) ramps))
         ]
     {:composition-type ::sequence :composition-payload result  })

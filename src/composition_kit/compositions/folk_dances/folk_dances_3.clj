@@ -165,12 +165,12 @@
     (midi-play
      final-song
      ;;:beat-zero (* 8 15)
-     ;;:beat-end (* 12 15)
+     ;;t:beat-end (* 12 15)
      )))
 
 ;;(def s (composition-kit.events.physical-sequence/stop player))
 
 
-
+;;(map (juxt i/item-beat i/item-payload) (:composition-payload (pedal-held-and-cleared-at 1 3 5)))
 
 
