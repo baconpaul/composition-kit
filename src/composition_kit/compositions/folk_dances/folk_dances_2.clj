@@ -53,8 +53,8 @@
         ;;          (i/notes-with-duration
 
         music
-        (-*>
-         (raw-sequence (:notes (reduce a-to-n {:end 0 :notes []} melody-structure)))
+        (->
+         (ls/concrete-logical-sequence (:notes (reduce a-to-n {:end 0 :notes []} melody-structure)))
          (ls/explicit-segment-dynamics (map #(nth % 2) melody-structure))
          (ls/transpose 12)
          )
@@ -66,32 +66,32 @@
   )
 
 (defn try-out [p i]
-  (-> p (on-instrument i) (with-clock clock) (midi-play)))
+  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play)))
 
 (def piano-m
   (let [lh-one (<*>
                 (>>>
-                 (-*>
+                 (->
                   (lily "<ees ees'>4 <a' bes ees> <aes bes d> <ees' aes a> <d g aes>" :relative :c2)
                   (ls/line-segment-dynamics 0 77 1 65 2 61 4 73))
-                 (-*>
+                 (->
                   (lily "<ees ees'>4 <a' bes ees> <aes bes d> <ees' aes a>2" :relative :c2)
                   (ls/line-segment-dynamics 0 77 1 65 2 61 4 73))
                  )
-                (pedal-held-and-cleared-at 0 4.9 5 9.9))
+                (ls/pedal-held-and-cleared-at 0 4.9 5 9.9))
 
         lh-two (<*>
                 (>>>
-                 (-*>
+                 (->
                   (lily "<ees ees'>1 r4" :relative :c2)
                   (ls/explicit-segment-dynamics '(78)))
-                 (-*>
+                 (->
                   (lily "<ees ees'>4 <a' bes ees> <aes bes d> <a bes ees>2" :relative :c2)
                   (ls/line-segment-dynamics 0 77 1 65 2 61 4 73)))
-                (pedal-held-and-cleared-at 0 9.9))
+                (ls/pedal-held-and-cleared-at 0 9.9))
 
         rh-two (<*>
-                (-*>
+                (->
                  (lily "  <bes a g>2 <bes a ges>2. <bes' a g>4 <bes a e>4 <bes a d,>2." :relative :c4)
                  (ls/explicit-segment-dynamics '(79 74 81 77 72))))
                                         ;_ (loop-n (try-out rh-two piano) 2)
@@ -111,22 +111,22 @@
 
 (def final-song
   (<*>
-   (-> lead (on-instrument lead-synth))
+   (-> lead (ls/on-instrument lead-synth))
    ;;(-> piano-m (on-instrument piano))
    )
   )
 
-(def play-it true)
+(def play-it false)
 (def player
   (when play-it
     (->
      final-song
-     (with-clock clock)
+     (ls/with-clock clock)
      (midi-play
       :beat-zero -1
       ;;:beat-end 0
 
       ))))
 
-;;(def x (composition-kit.events.physical-sequence/stop player))
+(def x (composition-kit.events.physical-sequence/stop player))
 

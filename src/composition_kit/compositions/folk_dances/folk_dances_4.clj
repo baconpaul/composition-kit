@@ -27,7 +27,7 @@
 
 (def first-piano
   (<*>
-   (-*>
+   (->
     (lily "c8 c8 c8 c8 c8 c8 d bes'
         c,8 c8 c8 c8 c8 c8 d bes'
         c,8 c8 c8 c8 c8 c8 d bes'
@@ -35,7 +35,7 @@
     (ls/transform :dynamics accent-pattern-dynamics)
     (ls/hold-for-pct 0.7)
     )
-   (-*>
+   (->
     
     (lily  "a8. a8. a8. a8. g8 <ees bes'>8
             a8. a8. a8. a8. bes8 <ees, bes'>8
@@ -53,8 +53,8 @@
   (when play-it
     (->
      (<*>
-      (-> first-piano (on-instrument piano))
+      (-> first-piano (ls/on-instrument piano))
       )
-     (with-clock clock)
+     (ls/with-clock clock)
      (midi-play))))
   

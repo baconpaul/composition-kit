@@ -7,12 +7,12 @@
 
   (:use composition-kit.core))
 
-(def piano (midi/midi-instrument 0))
+(def piano (midi/midi-instrument 1))
 (def sin-bell (midi/midi-instrument 1))
 (def clock (tempo/constant-tempo 15 4 95))
 
 (defn try-out [p i]
-  (-> p (on-instrument i) (with-clock clock) (midi-play)))
+  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play)))
 
 
 
@@ -103,9 +103,9 @@
                         (range (count measure-overall-dyn)) measure-overall-dyn by-measure-dyn))
 
         rh-orig
-        (-*> (lily orig-piano-rh :relative :c3)
-             (ls/hold-for-pct 0.99)
-             ((fn [s] (apply ls/line-segment-dynamics (concat [s] xpand-dyn)))))
+        (-> (lily orig-piano-rh :relative :c3)
+            (ls/hold-for-pct 0.99)
+            ((fn [s] (apply ls/line-segment-dynamics (concat [s] xpand-dyn)))))
 
 
         nff
@@ -122,23 +122,23 @@
               p)))
         
         rh-top-note
-        (-*> rh-orig
-             (ls/transform-note-payload (nff filter)))
+        (-> rh-orig
+            (ls/transform-note-payload (nff filter)))
 
         rh-other-notes 
-        (-*> rh-orig
-             (ls/transform-note-payload (nff remove)))
+        (-> rh-orig
+            (ls/transform-note-payload (nff remove)))
 
         rh
         (<*>
-         (-*> rh-top-note (ls/amplify 1.07))
-         (-*> rh-other-notes (ls/amplify 0.92)))
+         (-> rh-top-note (ls/amplify 1.07))
+         (-> rh-other-notes (ls/amplify 0.92)))
         
         lh
         (let [ls (lily orig-piano-lh :relative :c3)]
-          (-*>
+          (->
            (<*> ls
-                (-*> ls (ls/transpose -12)))
+                (-> ls (ls/transpose -12)))
            (ls/hold-for-pct 0.98)
            ((fn [s] (apply ls/line-segment-dynamics (concat [s] xpand-dyn))))
            (ls/amplify 0.82)
@@ -147,11 +147,11 @@
 
         ]
     
-    (-*>
+    (->
      (<*>
       rh
       lh
-      (apply pedal-held-and-cleared-at (mapcat (fn [i] [(* 15 i) (+ (* 15 i) 3) (+ (* 15 i) 7) (+ (* 15 i) 10)]) (range 15)))
+      (apply ls/pedal-held-and-cleared-at (mapcat (fn [i] [(* 15 i) (+ (* 15 i) 3) (+ (* 15 i) 7) (+ (* 15 i) 10)]) (range 15)))
       )
 
      )
@@ -160,11 +160,11 @@
 
 ;; overlayone is (r8 root 5 root o 5) 6 pattern shifting across
 (def sin-bell-repeat
-  (let [ph  (-*>
+  (let [ph  (->
              (lily "r8 aes ees' aes, aes'16 aes' ees,8" :relative :c5)
              (ls/hold-for-pct 0.2)
              )
-        ph2  (-*>
+        ph2  (->
               (lily "r8 aes16 aes' ees, ees' aes, aes' aes aes' ees, ees'" :relative :c5)
               (ls/hold-for-pct 0.2)
               )
@@ -172,11 +172,11 @@
         ]
     (>>>
      (rest-for (* 2 15))
-     (-*>
-      (loop-n ph 10)
+     (->
+      (ls/loop-n ph 10)
       (ls/line-segment-dynamics 0 0 (* 2 15) 30))
-     (-*>
-      (loop-n ph2 20)
+     (->
+      (ls/loop-n ph2 20)
       (ls/line-segment-dynamics 0 30 (* 4 15) 20)
       )
      )
@@ -185,10 +185,10 @@
 (def final-song
   (->
    (<*>
-    (-> orig-piano (on-instrument piano))
+    (-> orig-piano (ls/on-instrument piano))
     ;;(-> sin-bell-repeat (on-instrument sin-bell))
     )
-   (with-clock clock)))
+   (ls/with-clock clock)))
 
 (def playit true)
 (def player
