@@ -48,7 +48,7 @@
   )
 
 
-(def play-it false)
+(def play-it true)
 (def player
   (when play-it
     (->

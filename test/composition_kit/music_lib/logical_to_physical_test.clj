@@ -18,8 +18,8 @@
         bpm    140
         clock  (tempo/constant-tempo 2 4 bpm)
         phrase (-> (ls/merge-sequences mphrase rphrase controls)
-                   (ls/assign-clock clock)
-                   (ls/assign-instrument inst))
+                   (ls/with-clock clock)
+                   (ls/on-instrument inst))
         pseq   (ltop/schedule-logical-on-physical (ps/new-sequence) phrase)
 
         t (midi/get-opened-transmitter)
@@ -77,8 +77,8 @@
         pseq   (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
                 (-> loop
-                    (ls/assign-instrument (midi/midi-instrument 0))
-                    (ls/assign-clock (tempo/constant-tempo 4 4 120))))]
+                    (ls/on-instrument (midi/midi-instrument 0))
+                    (ls/with-clock (tempo/constant-tempo 4 4 120))))]
     (is (= (count (:seq pseq)) 60))
     )
   )
@@ -88,12 +88,12 @@
         pseq   (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
                 (-> phrase
-                    (ls/assign-instrument (midi/midi-instrument 0))
-                    (ls/assign-clock (tempo/constant-tempo 4 4 120))))
+                    (ls/on-instrument (midi/midi-instrument 0))
+                    (ls/with-clock (tempo/constant-tempo 4 4 120))))
         shortseq (ltop/create-and-schedule
                   (-> phrase
-                      (ls/assign-instrument (midi/midi-instrument 0))
-                      (ls/assign-clock (tempo/constant-tempo 4 4 120))))]
+                      (ls/on-instrument (midi/midi-instrument 0))
+                      (ls/with-clock (tempo/constant-tempo 4 4 120))))]
     (is (= (count (:seq pseq)) (count (:seq shortseq))))
     (is (= (map i/item-beat (:seq pseq)) (map i/item-beat (:seq shortseq))))
     )
@@ -110,8 +110,8 @@
         pseq   (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
                 (-> phrase
-                    (ls/assign-instrument inst)
-                    (ls/assign-clock clock)))
+                    (ls/on-instrument inst)
+                    (ls/with-clock clock)))
 
         t (midi/get-opened-transmitter)
         callback-store (atom [])
@@ -162,17 +162,17 @@
     (is (thrown? clojure.lang.ExceptionInfo (ltop/schedule-logical-on-physical (ps/new-sequence) phrase)))
     (is (thrown? clojure.lang.ExceptionInfo (ltop/schedule-logical-on-physical
                                              (ps/new-sequence)
-                                             (ls/assign-instrument phrase inst)))) ;; no clock
+                                             (ls/on-instrument phrase inst)))) ;; no clock
 
     (is (thrown? clojure.lang.ExceptionInfo (ltop/schedule-logical-on-physical
                                              (ps/new-sequence)
-                                             (ls/assign-clock phrase clock)))) ;; no instrument
+                                             (ls/with-clock phrase clock)))) ;; no instrument
 
     (is (not
          (nil? (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
-                (ls/assign-instrument
-                 (ls/assign-clock phrase clock)
+                (ls/on-instrument
+                 (ls/with-clock phrase clock)
                  inst))))) ;; no instrument
     )
   )

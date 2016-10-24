@@ -1,7 +1,7 @@
 (ns composition-kit.music-lib.transport-window)
 
 (defn make-transport-window [window-title]
-  (let [state  (atom {})
+  (let [state  (atom {:beat 0 :time 0 :measure-beat (0 0)})
 
         canvas
         (proxy [java.awt.Canvas] []

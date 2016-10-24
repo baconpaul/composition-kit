@@ -169,6 +169,7 @@
     (is (= (count (dyn loud)) 33))
     (is (= (distinct (dyn loud)) '(127)))
     (is (= (first (dyn swell)) 40))
+    (is (= (i/item-beat (last swell)) 8))
     (is (= (last (dyn swell)) 40))
     (is (= (apply max (dyn swell)) 80))
     (is (= (second (dyn swell)) 42))
@@ -186,11 +187,11 @@
   (let [ph     (ls/repeated-note :c4 1/4 5)
         inst   (midi/midi-instrument 0)
         clock  (tempo/constant-tempo 2 4 140)
-        phin   (ls/assign-instrument ph inst)
-        phcl   (ls/assign-clock ph clock)
+        phin   (ls/on-instrument ph inst)
+        phcl   (ls/with-clock ph clock)
         phall  (-> ph
-                   (ls/assign-clock clock)
-                   (ls/assign-instrument inst))
+                   (ls/with-clock clock)
+                   (ls/on-instrument inst))
 
         not-nil? (comp not nil?)
         ]

@@ -1,7 +1,7 @@
 (ns drums-example
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
-
+  (:require [composition-kit.music-lib.logical-sequence :as ls])
   (:use composition-kit.core)
   )
 
@@ -32,16 +32,16 @@
 
 ;; So here's some basic drums. I mean, duh.
 (def drum-pattern 
-  (-> (concatenate
-       (loop-n (step-strings base-beat) 3)
+  (-> (>>>
+       (ls/loop-n (step-strings base-beat) 3)
        (step-strings fill-beat)
-       (loop-n (step-strings base-beat) 3)
+       (ls/loop-n (step-strings base-beat) 3)
        (step-strings fill-beat-alt))
 
-      (on-instrument drums)))
+      (ls/on-instrument drums)))
 
 (-> drum-pattern
-    (with-clock clock)
+    (ls/with-clock clock)
     (midi-play))
 
 

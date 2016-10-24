@@ -8,7 +8,13 @@
   (:use composition-kit.core))
 
 (def piano (midi/midi-instrument 0))
+(def sin-bell (midi/midi-instrument 1))
 (def clock (tempo/constant-tempo 15 4 95))
+
+(defn try-out [p i]
+  (-> p (on-instrument i) (with-clock clock) (midi-play)))
+
+
 
 (def orig-piano-rh
   "<c ees bes'>4   <c ees bes'>4   <c ees bes'>4   <c ees c'>1
@@ -80,7 +86,7 @@
 
 
 (def orig-piano
-  (let [in-measure-dyn      (partition 2 [0 1  4 1.2  5 0.8  11 1.15  12 0.6]) ;; this pattern is bad for measures 9 - 11
+  (let [in-measure-dyn      (partition 2 [0 1  4 1.2  5 0.8  11 1.15  12 0.5]) ;; this pattern is bad for measures 9 - 11
         mid-measure-dyn     (partition 2 [0 1 3 0.9 6 1.05 6.9 1.02 9 0.97 15 1.15])
         final-mid-measure   (partition 2 [0 0.95 10 1.2 12 0.8])
 
@@ -89,7 +95,7 @@
                                     (repeat 1 final-mid-measure)
                                     (repeat 4 in-measure-dyn))
         
-        measure-overall-dyn [45 47 52 47 63 64 67 64 72 76 79 45 47 52 46]
+        measure-overall-dyn [42 45 57 47 63 64 67 64 72 76 79 45 47 52 46]
         xpand-dyn (flatten
                    (map (fn [id md inm]
                           (let [ofs (* id 15)]
@@ -125,8 +131,8 @@
 
         rh
         (<*>
-         (-*> rh-top-note (ls/amplify 1.05))
-         (-*> rh-other-notes (ls/amplify 0.95)))
+         (-*> rh-top-note (ls/amplify 1.07))
+         (-*> rh-other-notes (ls/amplify 0.92)))
         
         lh
         (let [ls (lily orig-piano-lh :relative :c3)]
@@ -135,7 +141,7 @@
                 (-*> ls (ls/transpose -12)))
            (ls/hold-for-pct 0.98)
            ((fn [s] (apply ls/line-segment-dynamics (concat [s] xpand-dyn))))
-           (ls/amplify 0.87)
+           (ls/amplify 0.82)
            )
           )
 
@@ -152,10 +158,35 @@
     ))
 
 
+;; overlayone is (r8 root 5 root o 5) 6 pattern shifting across
+(def sin-bell-repeat
+  (let [ph  (-*>
+             (lily "r8 aes ees' aes, aes'16 aes' ees,8" :relative :c5)
+             (ls/hold-for-pct 0.2)
+             )
+        ph2  (-*>
+              (lily "r8 aes16 aes' ees, ees' aes, aes' aes aes' ees, ees'" :relative :c5)
+              (ls/hold-for-pct 0.2)
+              )
+        ;;_ (try-out ph sin-bell)
+        ]
+    (>>>
+     (rest-for (* 2 15))
+     (-*>
+      (loop-n ph 10)
+      (ls/line-segment-dynamics 0 0 (* 2 15) 30))
+     (-*>
+      (loop-n ph2 20)
+      (ls/line-segment-dynamics 0 30 (* 4 15) 20)
+      )
+     )
+    ))
+
 (def final-song
   (->
    (<*>
     (-> orig-piano (on-instrument piano))
+    ;;(-> sin-bell-repeat (on-instrument sin-bell))
     )
    (with-clock clock)))
 
@@ -164,13 +195,12 @@
   (when playit
     (midi-play
      final-song
-     ;;:beat-zero (* 8 15)
-     ;;t:beat-end (* 12 15)
+     :beat-zero (- (* 0 15) 1)
+     :beat-end (* 2 15)
      )))
 
 ;;(def s (composition-kit.events.physical-sequence/stop player))
 
 
-;;(map (juxt i/item-beat i/item-payload) (:composition-payload (pedal-held-and-cleared-at 1 3 5)))
 
 

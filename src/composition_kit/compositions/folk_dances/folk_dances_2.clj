@@ -112,7 +112,7 @@
 (def final-song
   (<*>
    (-> lead (on-instrument lead-synth))
-   (-> piano-m (on-instrument piano))
+   ;;(-> piano-m (on-instrument piano))
    )
   )
 
@@ -123,8 +123,8 @@
      final-song
      (with-clock clock)
      (midi-play
-      :beat-zero 0
-      :beat-end 20
+      :beat-zero -1
+      ;;:beat-end 0
 
       ))))
 

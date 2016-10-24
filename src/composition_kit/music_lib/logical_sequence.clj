@@ -89,6 +89,8 @@
 (defn loop-sequence [ original count ]
   (mapcat #(beat-shift original (* % (beat-length original))) (range count)))
 
+;; An alias
+(def loop-n loop-sequence)
 
 (defn concat-sequences [ & concat-these ]
   "string sequences on after another"
@@ -127,10 +129,10 @@
 (defn overlay-octave-below [sequence]
   (merge-sequences sequence (transpose sequence -12)))
 
-(defn assign-clock [ sequence clock ]
+(defn with-clock [ sequence clock ]
   (transform sequence :clock (constantly clock)))
 
-(defn assign-instrument [ sequence instrument ]
+(defn on-instrument [ sequence instrument ]
   (transform sequence :instrument (constantly instrument)))
 
 
@@ -148,14 +150,17 @@
 (defn hold-for-pct [mseq pct]
   (transform-note-payload mseq (fn [i p] (assoc p :hold-for (* (:dur p) pct)))))
 
-(defn explicit-segment-dynamics [mseq values]
+(defn explicit-dynamics [mseq & levs]
   "Set the dynamics for each note. If you don't supply enough dynamics the last one
 repeats for the remainder of the sequence"
-  (let [usevalues (if (> (count mseq) (count values))
+  (let [values    (if (seq? (first levs)) (first levs) levs)
+        usevalues (if (> (count mseq) (count values))
                     (concat values (repeat (last values)))
                     values)]
     (map (fn [n d] (override-dynamics n (constantly d))) mseq usevalues)))
 
+;; deprecated name
+(def explicit-segment-dynamics explicit-dynamics)
 
 (defn line-segment-dynamics [ series & dynamics ]
   "Given a line segment set of beat / level pairs, set the dynamics accordingly.
@@ -169,10 +174,11 @@ is a slow then fast crescendo"
         vol-fn   (fn [item]
                    (let [beat  (item-beat item)
                          prior (or (last (take-while #(<= (first %) beat) beats-n-levels)) (first beats-n-levels))
-                         next  (or (first (drop-while #(<= (first %) beat) beats-n-levels)) (last beats-n-levels))
+                         nxt   (or (first (drop-while #(<= (first %) beat) beats-n-levels)) (last beats-n-levels))
                          
-                         frac  (if (= prior next) 1 (/ (- beat (first prior)) (- (first next) (first prior))))
-                         val   (+ (* frac (second next)) (* (- 1 frac) (second prior)))
+                         frac  (if (= prior nxt) 1 (/ (- beat (first prior)) (- (first nxt) (first prior))))
+                         frac  (max (min frac 1) 0)
+                         val   (+ (* frac (second nxt)) (* (- 1 frac) (second prior)))
                          ]
                      (int val)))
         ;; We have to "render" this now since item beats may change later
@@ -193,11 +199,11 @@ is a slow then fast crescendo on top of the undelrying dynmics"
         vol-fn   (fn [item]
                    (let [beat  (item-beat item)
                          prior (or (last (take-while #(<= (first %) beat) beats-n-levels)) (first beats-n-levels))
-                         next  (or (first (drop-while #(<= (first %) beat) beats-n-levels)) (last beats-n-levels))
+                         nxt  (or (first (drop-while #(<= (first %) beat) beats-n-levels)) (last beats-n-levels))
                          
-                         frac  (if (= prior next) 1 (/ (- beat (first prior)) (- (first next) (first prior))))
+                         frac  (if (= prior nxt) 1 (/ (- beat (first prior)) (- (first nxt) (first prior))))
                          under (or (note-dynamics-to-7-bit-volume item) 0)
-                         val   (min 127 (* (+ (* frac (second next)) (* (- 1 frac) (second prior)))
+                         val   (min 127 (* (+ (* frac (second nxt)) (* (- 1 frac) (second prior)))
                                            under))
                          ]
                      (int val)))
@@ -206,3 +212,19 @@ is a slow then fast crescendo on top of the undelrying dynmics"
         ]
     (explicit-segment-dynamics series vol-vals)))
 
+(defn pedal-held-and-cleared-at [ & arguments ]
+  "Given a collection of beats, depress the pedal just a smidge after the beat and then
+hold it until the next beat, where it releases and re-applies. So basically pedal clears are
+at each of the arguments. The last argument ends the pedal."
+  (let [shiftarg  (concat (rest arguments) [(last arguments)])
+        fromto    (map (fn [ a b ] (list a b)) arguments shiftarg)
+
+        ramps     (mapcat (fn [[s e]]
+                            (if (= s e) ;; we are at the end so just turn off
+                              [ [ s 0 ] ]
+                              [ [ (+ s 0.02) 127 ] [ e 0 ] ])) fromto )
+
+        result    (concrete-logical-sequence (map (fn [[b l]] (sustain-pedal-event l b)) ramps))
+        ]
+    result
+    ))
