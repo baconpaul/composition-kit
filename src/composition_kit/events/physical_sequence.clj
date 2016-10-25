@@ -1,4 +1,6 @@
-(ns composition-kit.events.physical-sequence)
+(ns composition-kit.events.physical-sequence
+  (:require [composition-kit.events.transport-window :as tw])
+  )
 
 ;; This is a set of functions which allow you to build a sequence of functions then 'play' them (have them triggered at their time)
 ;; once built. It's not really intended for adding events on live but I suppose you could do that, since it would work.
@@ -26,7 +28,8 @@
   "Generate a new sequence object to which sequencable items can be added"
   {:seq (sorted-set-by (compare-by-key-then :time))
    :return-values []
-   :play true })
+   :play true
+   :transport nil })
 
 
 (defn add-to-sequence [s & items]
@@ -45,7 +48,9 @@
         to-be-played      (:seq agent-data)
         curr              (take-while #(<= (:time %) rnow) to-be-played)
         future-item       (drop-while #(<= (:time %) rnow) to-be-played)
+        t-w               (:transport agent-data)
         ]
+    (when (and t-w (:assoc t-w)) ((:assoc t-w ) :time rnow))
     (cond
       (empty? to-be-played)    (assoc agent-data :play false)
 
@@ -74,11 +79,22 @@
   )
 
 
+(defn stop [ s ] (send s (fn [agent-data] (assoc agent-data :play false))))
+
 (defn play [ s & items ]
-  (let [args  (apply hash-map items)         ]
-    (send (agent s) play-on-thread (System/currentTimeMillis))
+  (let [args  (apply hash-map items)
+        mod-s
+        (if true ; :use-transport args
+          (let [t-w (tw/make-transport-window "Transport")]
+            (assoc s :transport t-w))
+          s)
+        ag   (agent mod-s)
+        ]
+    (when true ;; :use transport args
+      ((:on-stop (:transport @ag)) #(stop ag)))
+    
+    (send ag play-on-thread (System/currentTimeMillis))
     )
   )
 
-(defn stop [ s ] (send s (fn [agent-data] (assoc agent-data :play false))))
 

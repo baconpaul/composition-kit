@@ -899,12 +899,15 @@
     (midi-play
      final-song
      
-     :beat-zero 0
-     :beat-end 20
+     :beat-zero 100
+     :beat-end 180
+
+     :beat-clock clock
      ))
   ;; 120 is second bit; 150 is third bit
   )
 
+(agent-errors player)
 
 ;;(try-out first-lead synth-lead)
 
