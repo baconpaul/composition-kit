@@ -108,23 +108,30 @@
 
         result
         (if (not (nil? beat-clk))
-          (let [len  (ls/beat-length pattern)]
-            (reduce (fn [pseq ii]
-                      (let [i (+ beat-zero ii)
+          (let [len  (ls/beat-length pattern)
+                overs 4
+                ]
+            (reduce (fn [pseq iii]
+                      (let [iib (float (/ iii overs))
+                            ii (int iib)
+                            i (+ beat-zero ii)
+                            ib (+ beat-zero iib)
                             t0         (tempo/beats-to-time beat-clk beat-zero)
-                            start-time (* 1000 (- (tempo/beats-to-time beat-clk i) t0))
+                            start-time (* 1000 (- (tempo/beats-to-time beat-clk ib) t0))
                             ]
                         (ps/add-to-sequence
                          pseq
                          (fn [ttt] 
                            (when-let [t-w (tw/agent-transport-window)]
                              ((:assoc t-w) :beat i)
+                             ((:assoc t-w) :pct (float (* 100 (/ (- ib beat-zero) (- len beat-zero)))))
+                             ((:assoc t-w) :pbeat (float (- iib ii)))
                              ))
                          start-time
                          )) 
                       )
                     reduce-seq
-                    (range (inc len)))
+                    (range (* overs (inc len))))
             
             )
           reduce-seq)

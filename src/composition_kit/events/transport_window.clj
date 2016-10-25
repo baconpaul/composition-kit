@@ -22,13 +22,18 @@
     )
   )
 
-(defn format-beat [b]
+(defn format-beat [b p]
   (str "B :"
        (-> (java.text.DecimalFormat. "00000")
-           (.format b))))
+           (.format b))
+       " /"
+       (-> (java.text.DecimalFormat. "00.0")
+           (.format p))
+       "%"
+       ))
 
 (defn make-transport-window [window-title]
-  (let [state  (atom {:time 0 :beat 0 :measure 15 :measure-beat 12 :measure-denom 4 :on-stop nil})
+  (let [state  (atom {:time 0 :beat 0 :pbeat 0 :pct 0 :on-stop nil})
 
         big-font    (java.awt.Font. "Menlo" 0 48)
         small-font  (java.awt.Font. "Menlo" 0 30)
@@ -39,11 +44,18 @@
             (doto g
               (.setColor (java.awt.Color. 30 30 50))
               (.fillRect 0 0 (.getWidth this) (.getHeight this))
+
+              (.setColor (java.awt.Color. 50 50 80))
+              (.fillRect 0 0 (* (/ (:pct @state) 100) (.getWidth this)) (.getHeight this))
+
               (.setColor (java.awt.Color. 130 240 130))
               (.setFont big-font)
               (.drawString (format-time (:time @state)) 10 48)
               (.setColor (java.awt.Color. 130 130 240))
-              (.drawString (format-beat (:beat @state)) 10 108)
+              (.drawString (format-beat (:beat @state) (:pct @state)) 10 108)
+
+              (.setColor (java.awt.Color. 130 130 240))
+              (.fillRect 250 (- 110 (* 48 (:pbeat @state)))  10  (* 48 (:pbeat @state)))
               )
             )
           )
@@ -72,7 +84,7 @@
         
         frame
         (doto (java.awt.Frame. window-title)
-          (.setSize 400 175)
+          (.setSize 500 175)
           (.setLayout (java.awt.BorderLayout.))
           (.add panel java.awt.BorderLayout/CENTER)
           (.validate)
@@ -83,7 +95,8 @@
            (proxy [java.awt.event.WindowAdapter] []
              (windowClosing [e]
                ;; Get off the AWT thread
-               ;;(send (agent {}) (fn [v] (.stop animator)))
+               (when-let [us (:on-stop @state)]
+                 (send (agent {}) (fn [v] (us) v)))
 
                (doto frame
                  (.setVisible false)
