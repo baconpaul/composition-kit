@@ -207,7 +207,7 @@
         arp  pat
         ]
     (->
-     (ls/sequence-from-pitches-and-durations
+     (ls/explicit-phrase
       (map #(keyword (str (name (get note-map (first %))) (inc (second %)))) arp)
       (repeat (count arp) 1/4))
      (ls/explicit-dynamics 87 60 62 63 65 64 82 72 65 62)))
@@ -294,7 +294,7 @@
   )
 
 (def second-bass
-  (-> (ls/sequence-from-pitches-and-durations
+  (-> (ls/explicit-phrase
        [[ :g2 :g1 ]
         [ :g2 :g1 ] [ :fis2 :fis1 ]
         [ :g2 :g1 ] [ :fis2 :fis1 ] [ :g2 :g1 ]]
@@ -525,28 +525,28 @@
         p-ech (<*>
                p-1
                (-> p-1
-                    (ls/amplify 0.2)
-                    (ls/transpose 7)
-                    (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.125)))
-                    )
+                   (ls/amplify 0.2)
+                   (ls/transpose 7)
+                   (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.125)))
+                   )
                (-> p-1
-                    (ls/amplify 0.4)
-                    (ls/transpose 12)
-                    (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.25)))))
+                   (ls/amplify 0.4)
+                   (ls/transpose 12)
+                   (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.25)))))
         p-end-r (->
                  (lily "ees16 ees' ees,8" :relative :c5)
                  (ls/explicit-segment-dynamics '(60 70 60)))
         p-end (<*>
                p-end-r
                (-> p-end-r
-                    (ls/amplify 0.2)
-                    (ls/transpose 7)
-                    (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.125)))
-                    )
+                   (ls/amplify 0.2)
+                   (ls/transpose 7)
+                   (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.125)))
+                   )
                (-> p-end-r
-                    (ls/amplify 0.4)
-                    (ls/transpose 12)
-                    (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.25)))))
+                   (ls/amplify 0.4)
+                   (ls/transpose 12)
+                   (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.25)))))
         ;;_ (try-out p-ech bells)
         ]
     (>>> p-1 p-end)))
@@ -614,10 +614,10 @@
                       )
                      ;; I should have a syntax for in-chord dynamics but
                      (<*>
-                      (-> (ls/sequence-from-pitches-and-durations [:ees5 ] [ 1/4 ]) (ls/explicit-segment-dynamics '(90)))
-                      (-> (ls/sequence-from-pitches-and-durations [:bes4 ] [ 1/4 ]) (ls/explicit-segment-dynamics '(80)))
-                      (-> (ls/sequence-from-pitches-and-durations [:g4 ] [ 1/4 ]) (ls/explicit-segment-dynamics '(70)))
-                      (-> (ls/sequence-from-pitches-and-durations [:ees4 ] [ 1/4 ]) (ls/explicit-segment-dynamics '(75)))
+                      (-> (ls/explicit-phrase [:ees5 ] [ 1/4 ]) (ls/explicit-segment-dynamics '(90)))
+                      (-> (ls/explicit-phrase [:bes4 ] [ 1/4 ]) (ls/explicit-segment-dynamics '(80)))
+                      (-> (ls/explicit-phrase [:g4 ] [ 1/4 ]) (ls/explicit-segment-dynamics '(70)))
+                      (-> (ls/explicit-phrase [:ees4 ] [ 1/4 ]) (ls/explicit-segment-dynamics '(75)))
                       )
                      )
 
@@ -735,7 +735,7 @@
            (ls/loop-n (lily "ees4. ees4" :relative :c2) 8))
           (ls/hold-for-pct 0.99)
           (ls/line-segment-dynamics 0 70 20 100))
-         (-> (ls/sequence-from-pitches-and-durations [ [ :ees2 :ees3 ] ] [ 1 ]) (ls/explicit-dynamics 102))
+         (-> (ls/explicit-phrase [ [ :ees2 :ees3 ] ] [ 1 ]) (ls/explicit-dynamics 102))
          )
 
         res
@@ -800,7 +800,7 @@
            (ls/loop-n (lily "ees4. ees4" :relative :c2) 8))
           (ls/hold-for-pct 0.99)
           (ls/line-segment-dynamics 0 70 20 100))
-         (-> (ls/sequence-from-pitches-and-durations [ [ :ees2 :ees3 ] ] [ 1 ] ) (ls/explicit-dynamics 102)))
+         (-> (ls/explicit-phrase [ [ :ees2 :ees3 ] ] [ 1 ] ) (ls/explicit-dynamics 102)))
 
 
         res
@@ -825,7 +825,7 @@
     ))
 
 (defn five-beat-oct-creschendo [n1 n2]
-  (-> (ls/sequence-from-pitches-and-durations
+  (-> (ls/explicit-phrase
        [n1 n2] [1/4 1/4])
       (ls/loop-sequence 10)
       (ls/line-segment-dynamics 0 40 10 100)))
@@ -893,24 +893,23 @@
   (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play)))
 
 
-(def play-it true)
+(def play-it false)
 (def player
   (when play-it
     (midi-play
      final-song
      
-     :beat-zero 100
-     :beat-end 180
+     ;;:beat-zero 100
+     :beat-end 20
 
      :beat-clock clock
      ))
   ;; 120 is second bit; 150 is third bit
   )
 
-(agent-errors player)
+;;(agent-errors player)
 
 ;;(try-out first-lead synth-lead)
 
-;;(def sss (composition-kit.events.physical-sequence/stop player))
 
 

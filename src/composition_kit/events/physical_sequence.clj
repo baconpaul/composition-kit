@@ -52,7 +52,10 @@
         ]
     (when (and t-w (:assoc t-w)) ((:assoc t-w ) :time rnow))
     (cond
-      (empty? to-be-played)    (assoc agent-data :play false)
+      (empty? to-be-played)    (do
+                                 (when t-w ((:close t-w)))
+                                 (assoc agent-data :play false)
+                                 )
 
       (not (:play agent-data)) agent-data  ;; someone stopped me in another action so just chillax
 
@@ -72,7 +75,7 @@
       :else                    (let [time-until  (- (:time (first to-be-played)) rnow)]
                                  ;; spin (with a little backoff sleeping)
                                  (send *agent* play-on-thread t0-in-millis)
-                                 (when (> time-until 5) (Thread/sleep (* time-until 0.7)))
+                                 (when (> time-until 5) (Thread/sleep (min 100 (* time-until 0.7)))) ;; that 100 keeps clock tickin
                                  agent-data)
       )
     )
@@ -83,15 +86,23 @@
 
 (defn play [ s & items ]
   (let [args  (apply hash-map items)
+        use-transport true
         mod-s
-        (if true ; :use-transport args
+        (if use-transport
           (let [t-w (tw/make-transport-window "Transport")]
             (assoc s :transport t-w))
           s)
         ag   (agent mod-s)
         ]
-    (when true ;; :use transport args
-      ((:on-stop (:transport @ag)) #(stop ag)))
+    (when use-transport
+      ((:on-stop (:transport @ag))
+       (fn []
+         (do
+           (stop ag)
+           (when-let [us (:user-stop args)]
+             (send ag (fn [d] (us) d))))
+         )
+       ))
     
     (send ag play-on-thread (System/currentTimeMillis))
     )

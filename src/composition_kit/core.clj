@@ -51,7 +51,7 @@ of symbols. For instance
                     (as-> s
                         ;;(ltop/schedule-logical-on-physical (:composition-payload item)))]
                         (apply ltop/schedule-logical-on-physical (concat [ s item ] opt-arr))))]
-    (ps/play ps)
+    (ps/play ps :user-stop midi/all-notes-off)
     
     )
   )

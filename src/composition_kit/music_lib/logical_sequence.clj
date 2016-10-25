@@ -63,6 +63,8 @@
                 this-item (notes-with-duration fp (first durations) curr-beat this-hold)]
             (recur (rest pitches) (rest durations) (+ curr-beat (first durations)) (conj res this-item)))))))
 
+(def explicit-phrase sequence-from-pitches-and-durations)
+
 (defn sequence-from-pitches-constant-duration [ pitch-pattern duration & options-list ]
   (apply sequence-from-pitches-and-durations (concat [pitch-pattern
                                                       (map (constantly duration) pitch-pattern)]

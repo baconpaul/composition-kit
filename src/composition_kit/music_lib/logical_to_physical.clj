@@ -2,6 +2,7 @@
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.events.physical-sequence :as ps])
+  (:require [composition-kit.events.transport-window :as tw])
   (:require [composition-kit.music-lib.logical-sequence :as ls])
   (:require [composition-kit.music-lib.logical-item :as i])
   (:require [composition-kit.music-lib.tonal-theory :as th])
@@ -116,26 +117,22 @@
                         (ps/add-to-sequence
                          pseq
                          (fn [ttt] 
-                           (let [ad @*agent*
-                                 tw (:transport ad)]
-                             (when (and ad tw)
-                               ((:assoc tw) :beat i))
+                           (when-let [t-w (tw/agent-transport-window)]
+                             ((:assoc t-w) :beat i)
                              ))
                          start-time
                          )) 
                       )
                     reduce-seq
-                    (range len))
+                    (range (inc len)))
             
             )
           reduce-seq)
         ]
 
-    result
+    result 
     )
   )
-
-
 
 (defn create-and-schedule [pattern]
   "A utility for when you want just one sequence schedulable"

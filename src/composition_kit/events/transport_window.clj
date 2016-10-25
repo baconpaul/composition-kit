@@ -8,7 +8,7 @@
         ]
     ;;[ ms s m ]
     (str
-     "T  :"
+     "T :"
      (-> (java.text.DecimalFormat. "00")
          (.format m))
      ":"
@@ -23,14 +23,15 @@
   )
 
 (defn format-beat [b]
-  (str "B  :"
+  (str "B :"
        (-> (java.text.DecimalFormat. "00000")
            (.format b))))
 
 (defn make-transport-window [window-title]
-  (let [state  (atom {:time 0 :beat 0 :on-stop nil})
+  (let [state  (atom {:time 0 :beat 0 :measure 15 :measure-beat 12 :measure-denom 4 :on-stop nil})
 
-        big-font  (java.awt.Font. "Menlo" 0 48)
+        big-font    (java.awt.Font. "Menlo" 0 48)
+        small-font  (java.awt.Font. "Menlo" 0 30)
 
         time-panel
         (proxy [java.awt.Canvas] []
@@ -42,7 +43,7 @@
               (.setFont big-font)
               (.drawString (format-time (:time @state)) 10 48)
               (.setColor (java.awt.Color. 130 130 240))
-              (.drawString (format-beat (:beat @state)) 10 105)
+              (.drawString (format-beat (:beat @state)) 10 108)
               )
             )
           )
@@ -71,7 +72,7 @@
         
         frame
         (doto (java.awt.Frame. window-title)
-          (.setSize 400 200)
+          (.setSize 400 175)
           (.setLayout (java.awt.BorderLayout.))
           (.add panel java.awt.BorderLayout/CENTER)
           (.validate)
@@ -84,8 +85,9 @@
                ;; Get off the AWT thread
                ;;(send (agent {}) (fn [v] (.stop animator)))
 
-               (.setVisible frame false)
-               (.dispose frame)
+               (doto frame
+                 (.setVisible false)
+                 (.dispose))
 
                ))))
 
@@ -98,12 +100,15 @@
     {:panel  panel
      :state  state
      :assoc  assoc-state
-     :close  (fn [] (doto frame (.setVisible frame false) (.dispose frame)))
+     :close  (fn [] (doto frame (.setVisible false) (.dispose)))
      :on-stop (fn [f] (swap! state assoc :on-stop f))
      }
     )
   )
 
+(defn agent-transport-window []
+  (:transport @*agent*))
 
-
+;;(def w (make-transport-window "ff"))
+;;((:close w))
 

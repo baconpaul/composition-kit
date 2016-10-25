@@ -12,7 +12,7 @@
 (def clock (tempo/constant-tempo 15 4 95))
 
 (defn try-out [p i]
-  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play)))
+  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play :beat-clock clock)))
 
 
 
@@ -107,7 +107,6 @@
             (ls/hold-for-pct 0.99)
             ((fn [s] (apply ls/line-segment-dynamics (concat [s] xpand-dyn)))))
 
-
         nff
         (fn [op]
           (fn [i p]
@@ -190,14 +189,18 @@
     )
    (ls/with-clock clock)))
 
-(def playit true)
+(def playit false)
 (def player
   (when playit
     (midi-play
      final-song
      :beat-zero (- (* 0 15) 1)
-     :beat-end (* 2 15)
+     :beat-end (* 4 15)
+
+     :beat-clock clock
      )))
+
+;; (agent-error player)
 
 ;;(def s (composition-kit.events.physical-sequence/stop player))
 

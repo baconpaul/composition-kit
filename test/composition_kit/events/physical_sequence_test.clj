@@ -61,7 +61,7 @@
     (is (= (first (disitem s2)) identity))
     (is (= (first (disitem s3)) identity))
 
-    (is (= (count s4) 3))
+    (is (= (count s4) 4))
     (is (= (count (distinct (map :time (:seq s4)))) 1))
     (is (= (set (map :item (:seq s4))) #{ identity partial juxt }))
     
