@@ -60,6 +60,10 @@
             )
           )
 
+        frame
+        (doto (java.awt.Frame. window-title)
+          (.setSize 500 175)
+          (.setLayout (java.awt.BorderLayout.)))
 
         stop-button
         (doto  (java.awt.Button. "Stop")
@@ -69,6 +73,9 @@
                (when-let [f (:on-stop @state)]
                  (f)
                  )
+               (doto frame
+                 (.setVisible false)
+                 (.dispose))
                )
              )
            )
@@ -82,15 +89,12 @@
 
 
         
-        frame
-        (doto (java.awt.Frame. window-title)
-          (.setSize 500 175)
-          (.setLayout (java.awt.BorderLayout.))
-          (.add panel java.awt.BorderLayout/CENTER)
-          (.validate)
-          (.setVisible true))
         _
         (doto frame
+          (.add panel java.awt.BorderLayout/CENTER)
+          (.validate)
+          (.setVisible true)
+
           (.addWindowListener
            (proxy [java.awt.event.WindowAdapter] []
              (windowClosing [e]

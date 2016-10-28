@@ -124,7 +124,7 @@
                          (fn [ttt] 
                            (when-let [t-w (tw/agent-transport-window)]
                              ((:assoc t-w) :beat i)
-                             ((:assoc t-w) :pct (float (* 100 (/ (- ib beat-zero) (- len beat-zero)))))
+                             ((:assoc t-w) :pct (float (* 100 (/ (- ib beat-zero) len))))
                              ((:assoc t-w) :pbeat (float (- iib ii)))
                              ))
                          start-time

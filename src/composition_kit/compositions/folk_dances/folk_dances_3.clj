@@ -7,13 +7,36 @@
 
   (:use composition-kit.core))
 
-(def piano (midi/midi-instrument 1))
+;; Whack together a clock here
+(defn near-constant-tempo [per-meas unit bpm]
+  (-> (tempo/constant-tempo per-meas unit bpm)
+      (assoc :clocktype ::near-constant)))
+
+(derive ::near-constant :composition-kit.music-lib.tempo/constant)
+(defmethod tempo/beats-to-time ::near-constant [clock beats]
+  (let [b-mod (mod beats 15)
+        measure (int (/ beats 15))
+        b-line (partition 2  [0 0 4 0.12 7 -0.08 10 0.11 15 0])
+
+        b4 (last (filter #(>= b-mod (first %)) b-line))
+        af (first (filter #(< b-mod (first %)) b-line))
+
+        lin-fac (/ (- b-mod (first b4)) (- (first af) (first b4)))
+
+        fac (* (+ (* lin-fac (second b4))
+                  (* (- 1 lin-fac) (second af))
+                  ) (:spb clock))
+        fac (if (and (>= measure 8) (<= measure 10)) 0 fac)
+        ]
+    (+ (* beats (:spb clock)) fac)))
+
+(def piano (midi/midi-instrument 0))
 (def sin-bell (midi/midi-instrument 1))
-(def clock (tempo/constant-tempo 15 4 95))
+(def clock (near-constant-tempo 15 4 95))
+(def con-clock (tempo/constant-tempo 15 4 95))
 
 (defn try-out [p i]
   (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play :beat-clock clock)))
-
 
 
 (def orig-piano-rh
@@ -95,7 +118,7 @@
                                     (repeat 1 final-mid-measure)
                                     (repeat 4 in-measure-dyn))
         
-        measure-overall-dyn [42 45 57 47 63 64 67 64 72 76 79 45 47 52 46]
+        measure-overall-dyn [42 45 49 47 63 64 67 64 72 76 79 45 47 52 46]
         xpand-dyn (flatten
                    (map (fn [id md inm]
                           (let [ofs (* id 15)]
@@ -126,12 +149,27 @@
 
         rh-other-notes 
         (-> rh-orig
-            (ls/transform-note-payload (nff remove)))
+            (ls/transform-note-payload (nff remove))
+            (->> (mapcat (fn [c]
+                           (let [p (i/item-payload c)
+                                 new-item
+                                 (fn [i n]
+                                   (-> (i/identity-item-transformer c)
+                                       (i/add-transform :payload (constantly (assoc p :notes [n])))
+                                       (i/add-transform :beat (comp (partial + (* 0.02 (inc i))) i/item-beat))
+                                       ))
+                                 ]
+                             (if (seq? (:notes p))
+                               (map-indexed  new-item (:notes p))
+                               [c])
+                             )
+                           ))))
+
 
         rh
         (<*>
          (-> rh-top-note (ls/amplify 1.07))
-         (-> rh-other-notes (ls/amplify 0.92)))
+         (-> rh-other-notes (ls/amplify 0.85)))
         
         lh
         (let [ls (lily orig-piano-lh :relative :c3)]
@@ -163,47 +201,54 @@
              (lily "r8 aes ees' aes, aes'16 aes' ees,8" :relative :c5)
              (ls/hold-for-pct 0.2)
              )
-        ph2  (->
-              (lily "r8 aes16 aes' ees, ees' aes, aes' aes aes' ees, ees'" :relative :c5)
-              (ls/hold-for-pct 0.2)
-              )
-        ;;_ (try-out ph sin-bell)
+        ph2 (->
+             (lily "r8 aes bes bes' aes aes, g16 aes g' f g,8 ees ees ees' r4" :relative :c5)
+             (ls/hold-for-pct 0.2)
+             )
+        ;;        _ (try-out ph2 sin-bell)
         ]
     (>>>
      (rest-for (* 2 15))
      (->
       (ls/loop-n ph 10)
-      (ls/line-segment-dynamics 0 0 (* 2 15) 30))
+      (ls/line-segment-dynamics 0 0 (* 2 15) 20))
      (->
-      (ls/loop-n ph2 20)
-      (ls/line-segment-dynamics 0 30 (* 4 15) 20)
+      (ls/loop-n ph 20)
+      (ls/line-segment-dynamics 0 20 (* 4 15) 5)
       )
+     ph2
+     (rest-for (* 3 15))
+     (->
+      (ls/loop-n ph 19)
+      (ls/line-segment-dynamics 0 5 (* 2 15) 30 (* 4 15) 0)
+      )
+
      )
     ))
 
 (def final-song
   (->
    (<*>
-    (-> orig-piano (ls/on-instrument piano))
-    ;;(-> sin-bell-repeat (on-instrument sin-bell))
-    )
-   (ls/with-clock clock)))
+    (-> orig-piano (ls/on-instrument piano) (ls/with-clock clock))
+    (-> sin-bell-repeat (ls/on-instrument sin-bell) (ls/with-clock con-clock))
+    ))
+  )
 
 (def playit false)
 (def player
   (when playit
     (midi-play
      final-song
-     :beat-zero (- (* 0 15) 1)
-     :beat-end (* 4 15)
+     ;;:beat-zero (- (* 8 15) 1)
+     ;;     :beat-end (* 11 15)
 
-     :beat-clock clock
+     :beat-clock con-clock
      )))
 
 ;; (agent-error player)
 
 ;;(def s (composition-kit.events.physical-sequence/stop player))
 
-
+(ls/beat-length final-song)
 
 

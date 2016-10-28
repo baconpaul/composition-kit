@@ -21,7 +21,6 @@
 
 (defn rstr [n s] (str (apply str (interpose " " (repeat n s))) " "))
 
-
 ;;;;;; FIRST SECTION
 
 (def first-lead
