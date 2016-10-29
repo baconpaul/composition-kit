@@ -7,6 +7,10 @@
 
   (:use composition-kit.core))
 
+;; TODOS
+;; - Bells in middle section
+;; - Voices follow lead in middle section for a bit
+
 ;; Whack together a clock here
 (defn near-constant-tempo [per-meas unit bpm]
   (-> (tempo/constant-tempo per-meas unit bpm)
@@ -32,11 +36,13 @@
 
 (def piano (midi/midi-instrument 0))
 (def sin-bell (midi/midi-instrument 1))
+(def pad (midi/midi-instrument 2))
+(def chorus (midi/midi-instrument 3))
 (def clock (near-constant-tempo 15 4 95))
 (def con-clock (tempo/constant-tempo 15 4 95))
 
 (defn try-out [p i]
-  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play :beat-clock clock)))
+  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play :beat-clock con-clock)))
 
 
 (def orig-piano-rh
@@ -216,13 +222,115 @@
       (ls/loop-n ph 20)
       (ls/line-segment-dynamics 0 20 (* 4 15) 5)
       )
-     ph2
+     ;;ph2
      (rest-for (* 3 15))
      (->
-      (ls/loop-n ph 19)
+      (ls/loop-n ph 18)
       (ls/line-segment-dynamics 0 5 (* 2 15) 30 (* 4 15) 0)
       )
+     (->
+      (lily "r8 aes16 aes' bes8 g, aes" :relative :c5)
+      (ls/hold-for-pct 0.2)
+      (ls/explicit-dynamics '(0 21 26 28 21 17))
+      )
 
+     )
+    ))
+
+(def pad-phrase
+  (>>>
+   (-> (ls/explicit-phrase [ [ :c3 :aes3] [:c3 :aes3] [:des3 :aes3] [:c3 :g3] [:c3 :aes3]] [15 15 15 7 8])
+       (ls/explicit-dynamics '(20 21 24 31))
+       (ls/hold-for-pct 0.99)
+       (ls/loop-n 2)
+       )
+   (-> (ls/explicit-phrase [[ :des3 :ees3] [ :ees3 :bes3 :c4]
+                            [:c3 :aes3] [:des3 :aes3]  [:g3 :ees4] ] [ 3 4 3 3 2 ])
+       (ls/explicit-dynamics '(30 34 40 44 46 ))
+       (ls/hold-for-pct 0.99)
+       )
+   (-> (ls/explicit-phrase [[ :ees3 :aes3 :bes3]
+                            [ :ees3 :aes3 :g3]
+                            [ :ees3 :aes3 :bes3]
+                            [ :ees3 :aes3 :g3]
+                            [ :c3 :c4]
+                            ]
+                           [ 3  4 3 3 2 ])
+       (ls/explicit-dynamics '(30 34 40 44 46 ))
+       (ls/hold-for-pct 0.99)
+       )
+
+   (-> (ls/explicit-phrase [[ :des3 :aes3 :c4] [:des3 :aes3 :bes3 ]
+                            [:des3 :aes3 :c4] ] [3 4 1])
+       (ls/explicit-dynamics '(47 11 21 ))
+       (ls/hold-for-pct 0.99)
+       )
+   (rest-for 7)
+
+   (-> (ls/explicit-phrase [ [ :c3 :aes3] [:c3 :aes3] [:des3 :aes3] [:c3 :g3] [:c3 :aes3]] [15 15 15 7 8])
+       (ls/explicit-dynamics '(20 21 24 31))
+       (ls/hold-for-pct 0.99)
+       )
+   ))
+
+(def choral-one
+  (let [
+        p1  (->  (lily "c4 des ees f g aes c bes8 r8 c, des ees f g aes bes2 aes8 r8 r4" :relative :c4)
+                 (ls/hold-for-pct 1.01)
+                 (ls/line-segment-dynamics 0 40 6 55 7 45 15 62)
+                 )
+        p2  (->  (lily "ees4 f g aes bes c aes g8 r8 c, f f aes bes c des2 c8 r8 r4" :relative :c3)
+                 (ls/hold-for-pct 1.01)
+                 (ls/line-segment-dynamics 0 40 6 55 7 45 15 62)
+                 )
+
+        
+        p1-alt  (->  (lily "c4 des ees f g aes c bes8 r8 c, des ees f aes2" :relative :c4)
+                     (ls/hold-for-pct 1.01)
+                     (ls/line-segment-dynamics 0 40 6 55 7 45 15 12)
+                     )
+        p2-alt  (->  (lily "ees4 f g aes bes c aes g8 r8 c, f f aes ees2" :relative :c3)
+                     (ls/hold-for-pct 1.01)
+                     (ls/line-segment-dynamics 0 40 6 55 7 45 15 12)
+                     )
+
+        p3        (->  (lily "des4 ees f g aes bes ces bes8 r8 ces, des ees f g aes ces2 c8 r8 r4" :relative :c4)
+                       (ls/hold-for-pct 1.01)
+                       (ls/line-segment-dynamics 0 50 6 59 7 51 15 67)
+                       )
+
+        p4  (->  (lily "bes4 ces des ees f g aes g8 r8 ees f g aes bes ces ces,2 c'8 r8 r4" :relative :c3)
+                 (ls/hold-for-pct 1.01)
+                 (ls/line-segment-dynamics 0 50 6 59 7 51 15 67)
+                 )
+
+        p5  (-> (lily "des4 des des ees ees ees ees aes, aes aes des des des des des" :relative :c5)
+                (ls/hold-for-pct 0.3)
+                (ls/line-segment-dynamics 0 60 3 70 7 80 15 95)
+                )
+
+        ;; bit unsatisfied here
+        p6  (-> (lily "ees4 ees ees g g g g bes, bes bes aes aes aes g g" :relative :c3)
+                (ls/hold-for-pct 0.3)
+                (ls/line-segment-dynamics 0 60 3 70 7 80 15 95)
+                )
+
+        ]
+    
+    ;;(try-out (<*> p5 p6) chorus)
+    (>>>
+     (rest-for (* 4 15))
+     (<*> p1 p2)
+     (<*> p1 p2)
+     (<*> p3 p4)
+     (<*> p1 p2)
+
+     (<*> p5 p6)
+     (rest-for (* 2 15))
+     (<*> p1 p2)
+     (<*> p1 p2)
+     (<*> p3 p4)
+     (<*> p1-alt p2-alt);; alternate here please!
      )
     ))
 
@@ -231,16 +339,18 @@
    (<*>
     (-> orig-piano (ls/on-instrument piano) (ls/with-clock clock))
     (-> sin-bell-repeat (ls/on-instrument sin-bell) (ls/with-clock con-clock))
+    (-> pad-phrase (ls/on-instrument pad ) (ls/with-clock con-clock))
+    (-> choral-one (ls/on-instrument chorus) (ls/with-clock clock))
     ))
   )
 
-(def playit false)
+(def playit true)
 (def player
   (when playit
     (midi-play
      final-song
-     ;;:beat-zero (- (* 8 15) 1)
-     ;;     :beat-end (* 11 15)
+     ;;:beat-zero (- (* 14 15) 1)
+     ;;:beat-end (* 15 15)
 
      :beat-clock con-clock
      )))
