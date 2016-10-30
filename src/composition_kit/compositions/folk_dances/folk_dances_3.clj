@@ -9,7 +9,6 @@
 
 ;; TODOS
 ;; - Bells in middle section
-;; - Voices follow lead in middle section for a bit
 
 ;; Whack together a clock here
 (defn near-constant-tempo [per-meas unit bpm]
@@ -194,7 +193,9 @@
      (<*>
       rh
       lh
-      (apply ls/pedal-held-and-cleared-at (mapcat (fn [i] [(* 15 i) (+ (* 15 i) 3) (+ (* 15 i) 7) (+ (* 15 i) 10)]) (range 15)))
+      (apply ls/pedal-held-and-cleared-at
+             (mapcat (fn [i] [(* 15 i) (+ (* 15 i) 3) (+ (* 15 i) 7) (+ (* 15 i) 10)]) (range 15))
+             )
       )
 
      )
@@ -211,6 +212,12 @@
              (lily "r8 aes bes bes' aes aes, g16 aes g' f g,8 ees ees ees' r4" :relative :c5)
              (ls/hold-for-pct 0.2)
              )
+
+        ph3 (-> (lily "r8 ees8 ees16 ees' ees' ees,16" :relative :c5)
+                (ls/hold-for-pct 0.2)
+                (ls/loop-n 20)
+                (ls/line-segment-dynamics 0 10 40 10)
+                ) 
         ;;        _ (try-out ph2 sin-bell)
         ]
     (>>>
@@ -222,8 +229,10 @@
       (ls/loop-n ph 20)
       (ls/line-segment-dynamics 0 20 (* 4 15) 5)
       )
-     ;;ph2
+
      (rest-for (* 3 15))
+     ;;ph3
+
      (->
       (ls/loop-n ph 18)
       (ls/line-segment-dynamics 0 5 (* 2 15) 30 (* 4 15) 0)
@@ -304,20 +313,20 @@
                  (ls/line-segment-dynamics 0 50 6 59 7 51 15 67)
                  )
 
-        p5  (-> (lily "des4 des des ees ees ees ees aes, aes aes des des des des des" :relative :c5)
-                (ls/hold-for-pct 0.3)
-                (ls/line-segment-dynamics 0 60 3 70 7 80 15 95)
-                )
+        alto-mid (-> (lily "bes4 aes ees8. r16  ees2.. r8 aes4 g c, des2. ees2
+ees2. ees1 ees2. ees2. bes'2 c4 c c bes1 c4 c c r2. r2
+" :relative :c5)
+                     (ls/hold-for-pct 0.99)
+                     )
 
-        ;; bit unsatisfied here
-        p6  (-> (lily "ees4 ees ees g g g g bes, bes bes aes aes aes g g" :relative :c3)
-                (ls/hold-for-pct 0.3)
-                (ls/line-segment-dynamics 0 60 3 70 7 80 15 95)
-                )
+        tenor-mid (-> (lily "des2. ees4 f g bes aes2. des,4 aes des f aes 
+g ees bes c1 des4 ees f g aes bes c2 des2. c1 des2. r2. r2" :relative :c3)
+                      (ls/hold-for-pct 0.99))
+
 
         ]
     
-    ;;(try-out (<*> p5 p6) chorus)
+    ;;(try-out (<*> alto-mid tenor-mid) chorus)
     (>>>
      (rest-for (* 4 15))
      (<*> p1 p2)
@@ -325,8 +334,8 @@
      (<*> p3 p4)
      (<*> p1 p2)
 
-     (<*> p5 p6)
-     (rest-for (* 2 15))
+     (<*>  alto-mid tenor-mid)
+     
      (<*> p1 p2)
      (<*> p1 p2)
      (<*> p3 p4)
@@ -349,8 +358,8 @@
   (when playit
     (midi-play
      final-song
-     ;;:beat-zero (- (* 14 15) 1)
-     ;;:beat-end (* 15 15)
+     ;;:beat-zero (- (* 8 15) 1)
+     ;;:beat-end (* 12 15)
 
      :beat-clock con-clock
      )))
