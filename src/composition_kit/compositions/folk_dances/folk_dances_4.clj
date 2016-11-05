@@ -162,7 +162,7 @@ e16 f e8 dis4 e16 f e8 d4
     
     (>>> 
      intro
-     first-sec
+     ;;first-sec
      )
 
 
@@ -192,7 +192,8 @@ e16 f e8 dis4 e16 f e8 d4
         (midi-play
          ;;:beat-zero 32
          ;;:beat-zero 30
-         :beat-end 64
+         ;;:beat-zero 14
+         ;;:beat-end 33
          :beat-clock clock
          ))))
   

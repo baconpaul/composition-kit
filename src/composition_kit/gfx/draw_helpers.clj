@@ -20,7 +20,7 @@
 
 (defn draw-onto-scaled [img draw-fn s]
   "We work in a 1600x900 unit space and scale to the 16:9 resolution we actually have"
-  (let [g (.createGraphics img)
+  (let [^java.awt.Graphics2D g (.createGraphics ^BufferedImage img)
 
         rh
         (java.awt.RenderingHints.
@@ -40,7 +40,7 @@
   (draw-onto-scaled img draw-fn 1))
 
 
-(defn draw-onto [img draw-fn]
+(defn draw-onto [^BufferedImage img draw-fn]
   "We work in a 160x90 unit space and scale to the 16:9 resolution we actually have"
   (let [w (.getWidth img)
         s (float (/ w 1600))
@@ -48,16 +48,16 @@
     (draw-onto-scaled img draw-fn s))
   )
 
-(defn clear-with [img col]
+(defn clear-with [^BufferedImage img ^java.awt.Color col]
   (draw-onto-unscaled img (fn [g]
-                            (doto g
+                            (doto ^java.awt.Graphics2D g
                               (.setColor col)
                               (.fillRect 0 0 (.getWidth img nil) (.getHeight img nil))))))
 
-(defn v-gradient-clear [img col-top col-bot]
+(defn v-gradient-clear [^BufferedImage img ^java.awt.Color col-top ^java.awt.Color col-bot]
   (draw-onto-unscaled
    img
-   (fn [g]
+   (fn [^java.awt.Graphics2D g]
      (let [gp (java.awt.GradientPaint. 0 0 col-top 0 (.getHeight img) col-bot)]
        (doto g
          (.setPaint gp)
@@ -65,10 +65,10 @@
          ))))
   )
 
-(defn show-image [img]
+(defn show-image [^BufferedImage img]
   (let [canvas
         (proxy [java.awt.Canvas] []
-          (paint [g]
+          (paint [^java.awt.Graphics g]
             (.drawImage g img 0 0 nil)))
 
         frame
@@ -96,7 +96,7 @@
 
 (defn movie-player
   [image-list window-title]
-  (let [wh    (juxt #(.getWidth %) #(.getHeight %))
+  (let [wh    (juxt #(.getWidth ^BufferedImage %) #(.getHeight ^BufferedImage %))
         sizes (if-let [imfn  (some fn? image-list)]
                 [(wh ((first image-list)))]
                 (map wh image-list)
@@ -122,14 +122,14 @@
 
         image-canvas
         (proxy [java.awt.Canvas] []
-          (paint [g]
+          (paint [^java.awt.Graphics g]
             (if-let [img (nth image-list @selected-image)]
               (let [i2p (if (fn? img) (img) img)]
                 (doto g
                   (.drawImage i2p 0 0 nil)))
               (doto g
                 (.setColor java.awt.Color/BLACK)
-                (.fillRect 0 0 (.getWidth this) (.getHeight this))
+                (.fillRect 0 0 (.getWidth ^java.awt.Canvas this) (.getHeight ^java.awt.Canvas this))
                 )
               )
             ))
@@ -142,7 +142,7 @@
           )
         
         frame
-        (doto (java.awt.Frame. window-title)
+        (doto (java.awt.Frame. ^String window-title)
           (.setSize (+ 100 mw) (+ 100 mh))
           (.setLocation 0 300)
           (.setLayout (java.awt.BorderLayout.))
@@ -167,7 +167,7 @@
         (doto slider
           (.addAdjustmentListener
            (proxy [java.awt.event.AdjustmentListener] []
-             (adjustmentValueChanged [e]
+             (adjustmentValueChanged [^java.awt.event.AdjustmentEvent e]
                (set-image! (.getValue e))
                ))
            )

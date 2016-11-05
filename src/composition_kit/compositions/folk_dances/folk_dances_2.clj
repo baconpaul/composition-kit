@@ -10,7 +10,7 @@
 (def lead-synth (midi/midi-instrument 0))
 (def piano (midi/midi-instrument 1))
 
-(def clock (tempo/constant-tempo 5 4 105))
+(def clock (tempo/constant-tempo 5 4 97))
 
 (def lead
   (let [brk       true
@@ -112,7 +112,7 @@
 (def final-song
   (<*>
    (-> lead (ls/on-instrument lead-synth))
-   ;;(-> piano-m (on-instrument piano))
+   (-> piano-m (ls/on-instrument piano))
    )
   )
 
@@ -124,8 +124,8 @@
      (ls/with-clock clock)
      (midi-play
       :beat-zero -1
-      ;;:beat-end 0
-
+      :beat-end 21
+      :beat-clock clock
       ))))
 
 ;;(def x (composition-kit.events.physical-sequence/stop player))

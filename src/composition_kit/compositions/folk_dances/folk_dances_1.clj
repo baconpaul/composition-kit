@@ -895,7 +895,7 @@
 (def play-it false)
 (def player
   (when play-it
-    (midi-playFo
+    (midi-play
      final-song
      
      ;;:beat-zero 100

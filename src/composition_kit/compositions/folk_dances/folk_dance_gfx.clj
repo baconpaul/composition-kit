@@ -7,7 +7,7 @@
 (defn ellipse-star [img x y size smudge]
   (dh/draw-onto
    img
-   (fn [g]
+   (fn [^java.awt.Graphics g]
      (doseq [r  (reverse  (range size))]
        (let [rnorm (/ r size)
              rneg  (- 1 rnorm)
