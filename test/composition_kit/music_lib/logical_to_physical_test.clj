@@ -78,8 +78,19 @@
                 (ps/new-sequence)
                 (-> loop
                     (ls/on-instrument (midi/midi-instrument 0))
-                    (ls/with-clock (tempo/constant-tempo 4 4 120))))]
+                    (ls/with-clock (tempo/constant-tempo 4 4 120)))
+                )
+        clock (tempo/constant-tempo 4 4 120)
+        pseq-bc (ltop/schedule-logical-on-physical
+                 (ps/new-sequence)
+                 (-> loop
+                     (ls/on-instrument (midi/midi-instrument 0))
+                     (ls/with-clock clock))
+                 :beat-clock clock
+                 )
+        ]
     (is (= (count (:seq pseq)) 60))
+    (is (= (count (:seq pseq-bc)) 144)) ;; coz of all those clock graphics events which got inserted
     )
   )
 
