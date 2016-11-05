@@ -37,8 +37,10 @@
 (def sin-bell (midi/midi-instrument 1))
 (def pad (midi/midi-instrument 2))
 (def chorus (midi/midi-instrument 3))
+(def ring-bells (midi/midi-instrument 4))
 (def clock (near-constant-tempo 15 4 95))
 (def con-clock (tempo/constant-tempo 15 4 95))
+
 
 (defn try-out [p i]
   (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play :beat-clock con-clock)))
@@ -248,10 +250,14 @@
 
 (def pad-phrase
   (>>>
-   (-> (ls/explicit-phrase [ [ :c3 :aes3] [:c3 :aes3] [:des3 :aes3] [:c3 :g3] [:c3 :aes3]] [15 15 15 7 8])
+   (rest-for 30)
+   (-> (ls/explicit-phrase [  [:des3 :aes3] [:c3 :g3] [:c3 :aes3]] [  15 7 8])
        (ls/explicit-dynamics '(20 21 24 31))
        (ls/hold-for-pct 0.99)
-       (ls/loop-n 2)
+       )
+   (-> (ls/explicit-phrase [  [ :c3 :aes3 ] [:c3 :aes3 ] [:des3 :aes3] [:c3 :g3] [:c3 :aes3]] [15 15  15 7 8])
+       (ls/explicit-dynamics '(20 21 24 31))
+       (ls/hold-for-pct 0.99)
        )
    (-> (ls/explicit-phrase [[ :des3 :ees3] [ :ees3 :bes3 :c4]
                             [:c3 :aes3] [:des3 :aes3]  [:g3 :ees4] ] [ 3 4 3 3 2 ])
@@ -308,7 +314,7 @@
                        (ls/line-segment-dynamics 0 50 6 59 7 51 15 67)
                        )
 
-        p4  (->  (lily "bes4 ces des ees f g aes g8 r8 ees f g aes bes ces ces,2 c'8 r8 r4" :relative :c3)
+        p4  (->  (lily "bes4 ces des ees f g aes g8 r8 ees f g aes bes ces ces2 c8 r8 r4" :relative :c3)
                  (ls/hold-for-pct 1.01)
                  (ls/line-segment-dynamics 0 50 6 59 7 51 15 67)
                  )
@@ -343,6 +349,39 @@ g ees bes c1 des4 ees f g aes bes c2 des2. c1 des2. r2. r2" :relative :c3)
      )
     ))
 
+(def glock
+  (let [alto-mid (-> (lily "bes4 aes ees8. r16  ees4 f4 g bes aes4 g c, des2. ees2
+g4 ees bes c1 des4 ees f g aes bes bes2 c,4 c c bes1 c4 c c des2. r2
+" :relative :c5)
+                     (ls/hold-for-pct 0.2)
+                     (ls/line-segment-dynamics 0 50 6 59 7 51 15 67)
+
+                     (as-> ls
+                         (<*>
+                          ls
+                          (-> ls
+                              (ls/amplify 0.2)
+                              (ls/transpose 7)
+                              (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.0525)))
+                              )
+                          (-> ls
+                              (ls/amplify 0.4)
+                              (ls/transpose 12)
+                              (ls/transform :beat (fn [i] (+ (i/item-beat i) 0.107)))
+                              )
+                          ))
+                     (ls/amplify 0.3)
+                     )
+        
+        ]
+    #_(try-out alto-mid ring-bells)
+    (>>>
+     (rest-for (* 8 15))
+     alto-mid
+     )
+    )
+  )
+
 (def final-song
   (->
    (<*>
@@ -350,14 +389,16 @@ g ees bes c1 des4 ees f g aes bes c2 des2. c1 des2. r2. r2" :relative :c3)
     (-> sin-bell-repeat (ls/on-instrument sin-bell) (ls/with-clock con-clock))
     (-> pad-phrase (ls/on-instrument pad ) (ls/with-clock con-clock))
     (-> choral-one (ls/on-instrument chorus) (ls/with-clock clock))
+    (-> glock (ls/on-instrument ring-bells) (ls/with-clock clock))
     ))
   )
 
-(def playit true)
+(def playit false)
 (def player
   (when playit
     (midi-play
      final-song
+     :beat-zero -1
      ;;:beat-zero (- (* 8 15) 1)
      ;;:beat-end (* 12 15)
 

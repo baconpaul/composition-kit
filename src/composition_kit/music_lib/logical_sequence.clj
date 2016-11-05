@@ -60,7 +60,9 @@
                                :legato    1
                                :staccato  0.1
                                :standard  0.95))
-                this-item (notes-with-duration fp (first durations) curr-beat this-hold)]
+                this-item (if (nil? fp)
+                            (rest-with-duration (first durations) curr-beat)
+                            (notes-with-duration fp (first durations) curr-beat this-hold))]
             (recur (rest pitches) (rest durations) (+ curr-beat (first durations)) (conj res this-item)))))))
 
 (def explicit-phrase sequence-from-pitches-and-durations)

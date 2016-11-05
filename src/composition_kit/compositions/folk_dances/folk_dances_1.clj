@@ -892,14 +892,15 @@
   (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play)))
 
 
-(def play-it true)
+(def play-it false)
 (def player
   (when play-it
-    (midi-play
+    (midi-playFo
      final-song
      
      ;;:beat-zero 100
      ;;:beat-end 20
+     :beat-zero -1
 
      :beat-clock clock
      ))

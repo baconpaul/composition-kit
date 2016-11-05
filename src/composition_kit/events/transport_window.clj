@@ -32,7 +32,7 @@
        "%"
        ))
 
-(defn make-transport-window [window-title]
+(defn make-transport-window [^String window-title]
   (let [state  (atom {:time 0 :beat 0 :pbeat 0 :pct 0 :on-stop nil})
 
         big-font    (java.awt.Font. "Menlo" 0 48)
@@ -40,19 +40,19 @@
 
         time-panel
         (proxy [java.awt.Canvas] []
-          (paint [g]
+          (paint [^java.awt.Graphics2D g]
             (doto g
               (.setColor (java.awt.Color. 30 30 50))
-              (.fillRect 0 0 (.getWidth this) (.getHeight this))
+              (.fillRect 0 0 (.getWidth ^java.awt.Canvas this) (.getHeight ^java.awt.Canvas this))
 
               (.setColor (java.awt.Color. 50 50 80))
-              (.fillRect 0 0 (* (/ (:pct @state) 100) (.getWidth this)) (.getHeight this))
+              (.fillRect 0 0 (* (/ (:pct @state) 100) (.getWidth ^java.awt.Canvas this)) (.getHeight ^java.awt.Canvas this))
 
               (.setColor (java.awt.Color. 130 240 130))
               (.setFont big-font)
-              (.drawString (format-time (:time @state)) 10 48)
+              (.drawString (^String format-time (:time @state)) 10 48)
               (.setColor (java.awt.Color. 130 130 240))
-              (.drawString (format-beat (:beat @state) (:pct @state)) 10 108)
+              (.drawString (^String format-beat (:beat @state) (:pct @state)) 10 108)
 
               (.setColor (java.awt.Color. 130 130 240))
               (.fillRect 250 (- 110 (* 48 (:pbeat @state)))  10  (* 48 (:pbeat @state)))

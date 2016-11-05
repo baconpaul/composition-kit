@@ -7,9 +7,12 @@
   (:use composition-kit.core))
 
 (def piano (midi/midi-instrument 0))
-(def mallet-two (midi/midi-instrument 1))
+(def drum-set (midi/midi-instrument 1))
 
 (def clock (tempo/constant-tempo 4 4 152))
+
+(defn try-out [p i]
+  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play)))
 
 (def accent-pattern-dynamics
   (fn [i]
@@ -91,30 +94,105 @@ e16 f e8 dis4 e16 f e8 d4
    )
   )
 
+(def drums
+  {:boomy-bass  :c1
+   :stick-hit   :cis1
+   })
+
+(def drum-pattern
+  (let [test-p (ls/explicit-phrase [ :c4 :c4 ] [1 1])
+        intro  (>>> (rest-for (+ 4 4 4 3))
+                    (<*>
+                     (->  (ls/explicit-phrase [ :c1 :c1 ] [ 1/2 1/2 ])
+                          (ls/explicit-dynamics '( 120 110)))
+                     (>>>
+                      (rest-for 0.05)
+                      (->  (ls/explicit-phrase [ :d1 :d1 ] [ 0.45 1/2 ])
+                           (ls/explicit-dynamics '( 120 110))))
+                     (->  (ls/explicit-phrase [ :cis1 :cis1 ] [ 1/2 1/2 ])
+                          (ls/explicit-dynamics '( 120 110)))
+                     )
+
+                    (->
+                     (<*>
+                      (ls/explicit-phrase (repeat 20 :c4) (repeat 20 3/4))
+                      (ls/explicit-phrase (repeat 15 :fis2) (repeat 15 1))
+                      (-> (ls/explicit-phrase (repeat 4 :c2) [ 4 4 4 2])
+                          (ls/hold-for 0.2))
+                      )
+                     (ls/line-segment-dynamics 0 70 3.9 90 4 74 7.8 95 8 80 15 120)
+                     )
+                    (<*>
+                     (->  (ls/explicit-phrase [ :c1 :c1 ] [ 1/2 1/2 ])
+                          (ls/explicit-dynamics '( 120 110)))
+                     (>>>
+                      (rest-for 0.05)
+                      (->  (ls/explicit-phrase [ :d1 :d1 ] [ 0.45 1/2 ])
+                           (ls/explicit-dynamics '( 120 110))))
+                     (->  (ls/explicit-phrase [ :cis1 :cis1 ] [ 1/2 1/2 ])
+                          (ls/explicit-dynamics '( 120 110)))
+                     )
+                    )
+
+        beat-one  [:c1    "X...........X..." ;; bass drum
+                   :fis2  "Q..P.....M....N."
+                   :ais2  "......T.....V..."
+                   ]
+        beat-two [:c1    "X...........X..." ;; bass drum
+                  :fis2  "Q...Q...Q...Q.Q."
+                  ]
+
+        first-sec
+        (<*>
+         (->
+          (>>>
+           (->  (step-strings beat-one)
+                (ls/loop-n 3)
+                )
+           (step-strings beat-two)
+           )
+          (ls/loop-n 2)
+          )
+         )
+
+        ;;_ (try-out (step-strings beat-one) drum-set)
+        ;;_
+        ;;(try-out intro drum-pattern)
+        ]
+    
+    (>>> 
+     intro
+     first-sec
+     )
+
+
+    ))
+
+
 (def final-song
-  (-> 
-   (->
-    (>>>
-     (<*>
+  (->
+   (<*>
+    (->
+     (>>>
       (-> one-a-piano (ls/on-instrument piano))
-      )
-     (<*>
       (-> one-b-piano (ls/on-instrument piano))
       )
+     (ls/loop-n 2)
      )
-    (ls/loop-n 2)
+    (-> drum-pattern (ls/on-instrument drum-set))
     )
    (ls/with-clock clock)
    )
   )
 
-(def play-it true)
+(def play-it false)
 (def player
   (when play-it
     (-> final-song
         (midi-play
          ;;:beat-zero 32
-         ;;:beat-end 12
+         ;;:beat-zero 30
+         :beat-end 64
          :beat-clock clock
          ))))
   
