@@ -7,8 +7,11 @@
   (:use composition-kit.core))
 
 
-(def lead-synth (midi/midi-instrument 0))
-(def piano (midi/midi-instrument 1))
+(def piano (midi/midi-instrument 0))
+(def soft-lead (midi/midi-instrument 1))
+(def gunky-hit (midi/midi-instrument 2))
+(def bass-inst (midi/midi-instrument 3))
+(def solo-violin (midi/midi-instrument 4))
 
 (def clock (tempo/constant-tempo 5 4 97))
 
@@ -60,63 +63,177 @@
          )
         ]
     (>>>
-     (rest-for 10)
+     (rest-for 20)
      music)
     )
   )
 
 (defn try-out [p i]
-  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play)))
+  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play :beat-clock clock)))
+
+(defn blur-chord [chord duration]
+  (apply <*> (map
+              (fn [n delay] (>>> (rest-for delay) (ls/explicit-phrase [n] [ (- duration delay)])))
+              chord
+              (map (partial * 0.02) (range))
+              ))
+  )
 
 (def piano-m
-  (let [lh-one (<*>
-                (>>>
-                 (->
-                  (lily "<ees ees'>4 <a' bes ees> <aes bes d> <ees' aes a> <d g aes>" :relative :c2)
-                  (ls/line-segment-dynamics 0 77 1 65 2 61 4 73))
-                 (->
-                  (lily "<ees ees'>4 <a' bes ees> <aes bes d> <ees' aes a>2" :relative :c2)
-                  (ls/line-segment-dynamics 0 77 1 65 2 61 4 73))
-                 )
-                (ls/pedal-held-and-cleared-at 0 4.9 5 9.9))
+  (let [bc blur-chord
+        chord-intro (<*>
+                     (->
+                      (bc [ :g2 :a2 :bes2 ] 2)
+                      (ls/loop-n 10)
+                      (ls/line-segment-dynamics 0 50 9.9 67 10 45 20 81)
+                      (ls/transpose 12)
+                      )
+                     (ls/pedal-held-and-cleared-at 0 19)
+                     )
 
-        lh-two (<*>
-                (>>>
-                 (->
-                  (lily "<ees ees'>1 r4" :relative :c2)
-                  (ls/explicit-segment-dynamics '(78)))
-                 (->
-                  (lily "<ees ees'>4 <a' bes ees> <aes bes d> <a bes ees>2" :relative :c2)
-                  (ls/line-segment-dynamics 0 77 1 65 2 61 4 73)))
-                (ls/pedal-held-and-cleared-at 0 9.9))
+        chord-part-a
+        (->
+         (<*>
+          (->
+           (>>>
+            (bc [ :g2 :a2 :bes2] 2)
+            (bc [ :ges2 :a2 :bes2] 3)
+            
+            (bc [ :g2 :a2 :bes2] 1)
+            (bc [ :e2 :a2 :bes2] 1)
+            (bc [ :d2 :a2 :bes2] 3)
 
-        rh-two (<*>
-                (->
-                 (lily "  <bes a g>2 <bes a ges>2. <bes' a g>4 <bes a e>4 <bes a d,>2." :relative :c4)
-                 (ls/explicit-segment-dynamics '(79 74 81 77 72))))
-                                        ;_ (loop-n (try-out rh-two piano) 2)
+            (bc [ :g2 :a2 :bes2] 2)
+            (bc [ :ges2 :a2 :bes2] 3)
+            
+            (bc [ :g2 :a2 :bes2] 1)
+            (bc [ :ges2 :a2 :bes2] 1)
+            (bc [ :d2 :a2 :bes2] 1)
+            (bc [ :e2 :a2 :bes2] 1)
+            (bc [ :ges2 :a2 :bes2] 1)
+            (bc [ :g2 :a2 :bes2] 1)
+            (bc [ :e2 :a2 :bes2] 4)
+            )
+           (ls/line-segment-dynamics
+            0 52
+            5 54
+            9.9 67
+            10 55
+            15 62
+            20 67)
+           (as-> ms
+               (<*> (ls/transpose ms 12)
+                    (ls/transpose ms 24)))
+           )
+          (ls/pedal-held-and-cleared-at 0 5 10 16 20)
+          )
+         (ls/loop-n 2)
+         )
+        
+        ;;_ (try-out chord-part-a piano)
         ]
-    (<*>
-     (>>>
-      lh-one
-      lh-two
-      )
-     (>>>
-      (rest-for 10)
-      rh-two
-      )
+    (>>>
+     chord-intro
+     chord-part-a
      )
     )
   )
 
+(def gunk-poly
+  (let [g4 (fn [d] (ls/explicit-phrase [:g4] [d]))
+        initial-triplets
+        (-> (g4 2/3)
+            (ls/loop-n (* 3 10))
+            (ls/line-segment-dynamics 0 50 10 70 10.01 60 20 90)
+            )
+
+        five-measure
+        (>>>
+         (ls/loop-n (g4 2/3) 6)
+         (g4 1)
+         
+         (rest-for 1/2)
+         (g4 1)
+         (g4 1/2)
+         (ls/loop-n (g4 2/3) 3)
+         (g4 1)
+
+         (ls/loop-n (g4 2/3) 6)
+         (g4 1)
+         
+         (rest-for 1/2)
+         (ls/loop-n  (g4 1) 5)
+         (g4 1/2)
+         (ls/loop-n (g4 2/3) 6)
+         )
+
+        ]
+    (>>>
+     initial-triplets
+     five-measure
+     (<*>
+      five-measure
+      (-> five-measure
+          (ls/transpose 12)
+          (ls/amplify 0.6))
+      )
+     )
+    ))
+
+(def bass-pattern
+  (let [intro (->  (ls/explicit-phrase [:g2 :ees2 :g2 nil] [10 5 4.95 0.05])
+                   (ls/hold-for-pct 1)
+                   )
+        phrase-one (-> (lily "g2 ges2. g4 ees d2. g2 ges2. g4 ges d e ges g e1" :relative :c3)
+                       (ls/hold-for-pct 1.01)
+                       (ls/loop-n 2))
+        ]
+    (>>>
+     intro
+     phrase-one
+     )
+    ))
+
+(def violin
+  (let [gs (-> (ls/explicit-phrase [:ees5 :g5
+                                    :g4 :aes5 :bes5
+                                    :c5 :d5 :ees5 :f5 :g5 :aes5 :bes5
+                                    :g4 :aes5 :bes5
+                                    :bes5 :aes5 :g5 :f5 :ees5 :d5 :ees5 :f5
+                                    ]
+                                   [5 5
+                                    10 2 3
+                                    1 1 1 1 1 1 4
+                                    10 2 3
+                                    1 1 1 1 1 1 1 3
+                                    ])
+               (ls/hold-for-pct 1)
+               (ls/explicit-dynamics 50 70
+                                     65 72 67
+                                     50 56 58 63 64 72 54
+                                     65 72 67
+                                     50 56 58 63 64 72 54 64
+                                     )
+               )
+        ;;_ (try-out gs solo-violin)
+        ]
+    (>>>
+     (rest-for 10)
+     gs
+     )
+    ))
+
 (def final-song
   (<*>
-   (-> lead (ls/on-instrument lead-synth))
    (-> piano-m (ls/on-instrument piano))
+   (-> lead (ls/on-instrument soft-lead))
+   (-> gunk-poly (ls/on-instrument gunky-hit))
+   (-> bass-pattern (ls/on-instrument bass-inst))
+   (-> violin (ls/on-instrument solo-violin))
    )
   )
 
-(def play-it false)
+(def play-it true)
 (def player
   (when play-it
     (->
@@ -124,7 +241,7 @@
      (ls/with-clock clock)
      (midi-play
       :beat-zero -1
-      :beat-end 21
+      :beat-end 70
       :beat-clock clock
       ))))
 
