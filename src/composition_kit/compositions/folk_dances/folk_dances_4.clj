@@ -9,6 +9,7 @@
 (def piano (midi/midi-instrument 0))
 (def drum-set (midi/midi-instrument 1))
 (def syn-bass (midi/midi-instrument 2))
+(def muted-bell (midi/midi-instrument 3))
 
 (def clock (tempo/constant-tempo 4 4 152))
 
@@ -94,6 +95,22 @@ e16 f e8 dis4 e16 f e8 d4
     )
    )
   )
+
+(def two-piano
+  (let [lh (->  (lily "f4. a2 r8 bes4. g2 r8" :relative :c3)
+                (as-> ms
+                    (<*> ms (ls/transpose ms -12)))
+                (ls/hold-for-pct 0.99)
+                )
+        rh (->  (lily "<f a c>1 <f bes c>1" :relative :c3) (ls/hold-for-pct 0.99))
+
+        p (<*> lh rh)
+        ;;_ (try-out p piano)        
+        ]
+    (>>>
+     p
+     p
+     )))
 
 (def drum-pattern
   (let [test-p (ls/explicit-phrase [ :c4 :c4 ] [1 1])
@@ -209,18 +226,56 @@ e16 f e8 dis4 e16 f e8 d4
   )
 
 
+(def bell-one
+  (let [pat (lily "bes8. a g fis g8 g
+bes8. a g fis g8 g
+bes8. a g fis g8 g
+g16 a g8 fis4 
+g16 a g8 fis8 g
+bes8. a g fis g8 g
+bes8. a g fis g8 g
+bes8. a g fis g8 g
+g16 a g8 fis4 
+g16 a g8 f4 
+" :relative :c6)
+        blur-pat (<*> pat
+                      (-> (ls/transpose pat 12)
+                          (ls/transform :beat (fn [u] (+ (i/item-beat u) 0.125)))
+                          (ls/amplify 0.7)
+                          )
+                      (-> (ls/transpose pat 7)
+                          (ls/transform :beat (fn [u] (+ (i/item-beat u) 0.0625)))
+                          (ls/amplify 0.4)
+                          )
+                      )
+        ;;_ (try-out blur-pat muted-bell)
+        ]
+    (>>>
+     (rest-for 32)
+     blur-pat
+     (rest-for 32)
+     blur-pat)
+    )
+  )
+
+;;(try-out bell-one muted-bell)
+
 (def final-song
   (->
    (<*>
-    (->
-     (>>>
-      (-> one-a-piano (ls/on-instrument piano))
-      (-> one-b-piano (ls/on-instrument piano))
+    (>>>
+     (->
+      (>>>
+       (-> one-a-piano (ls/on-instrument piano))
+       (-> one-b-piano (ls/on-instrument piano))
+       )
+      (ls/loop-n 2)
       )
-     (ls/loop-n 2)
+     (-> two-piano (ls/on-instrument piano))
      )
     (-> drum-pattern (ls/on-instrument drum-set))
     (-> bass (ls/on-instrument syn-bass))
+    (-> bell-one (ls/on-instrument muted-bell))
     )
    (ls/with-clock clock)
    )

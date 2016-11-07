@@ -7,13 +7,15 @@
   (:use composition-kit.core))
 
 
+;; FIXME - pedal on piano
+
 (def piano (midi/midi-instrument 0))
 (def soft-lead (midi/midi-instrument 1))
 (def gunky-hit (midi/midi-instrument 2))
 (def bass-inst (midi/midi-instrument 3))
 (def solo-violin (midi/midi-instrument 4))
 
-(def clock (tempo/constant-tempo 5 4 97))
+(def clock (tempo/constant-tempo 5 4 92))
 
 (def lead
   (let [brk       true
@@ -32,13 +34,21 @@
          [:f4 1 71 ] [:g4 1 76] [:ees4 1 71] [:d4 1 67] [:c4 1 64] [:d4 1 65] [:bes3 4 58 brk]
 
          [:bes3 2 65] [:ees4 3 60 brk]
-         [:d4 2 65] [:ees4 3 60 brk]
+         [:d4 2 65] [:ees4 4 60 ]
+
          [:bes3 2 65] [:ees4 3 60 brk]
-         [:d4 2 65] [:aes4 2 72] [:g4 1 70] [:f4 1 66] [:g4 1 68] [:ees4 2 62]
+         [:d4 2 65] [:ees4 4 60] 
+
+         [:bes3 2 67] [:ees4 3 60 brk]
+         [:d4 2 65] [:ees4 3 60 brk]
+
+         [:bes3 2 65] [:ees4 3 60 brk]
+         [:d4 2 65] [:aes4 2 72] [:g4 1 70] [:f4 1 66] [:g4 1 68] [:ees4 3 62]
          [:d4 1 70] [:ees4 1 70] [:c4 1 68] [:d4 1 72] [:bes3 1 68 brk]
 
          [:bes4 2 65] [:ees5 3 60 brk]
          [:d5 2 65] [:ees5 3 60 brk]
+
          [:bes4 2 65] [:ees5 3 60 brk]
          [:d5 2 65] [:aes5 2 72] [:g5 1 70] [:f5 1 66] [:g5 1 68] [:ees5 2 62]
          [:d5 1 70] [:ees5 1 70] [:c5 1 68] [:d5 1 72] [:bes4 1 68 brk]
@@ -51,7 +61,9 @@
               (update-in [:end] + dur)
               (update-in
                [:notes]
-               concat [(i/notes-with-duration pitch dur (:end sp) (if (nil? bk) (* 1.01 dur) (* 0.94 dur)))]))
+               concat (if (nil? pitch)
+                        [(i/rest-with-duration dur (:end sp))]
+                        [(i/notes-with-duration pitch dur (:end sp) (if (nil? bk) (* 1.01 dur) (* 0.94 dur)))])))
           )
         ;;          (i/notes-with-duration
 
@@ -129,18 +141,71 @@
           )
          (ls/loop-n 2)
          )
+
+        chord-part-b
+        (<*>
+         (->
+          (>>>
+           (bc [ :g2 :a2 :bes2 ] 2)
+           (bc [ :ges2 :a2 :bes2 ] 3)
+           (bc [ :g2 :a2 :bes2 ] 2)
+           (bc [ :e2 :a2 :bes2 ] 2)
+           (bc [ :e2 :a2 :bes2 ] 2)
+
+
+           (bc [ :g2 :a2 :bes2 ] 2)
+           (bc [ :ges2 :a2 :bes2 ] 3)
+           (bc [ :g2 :a2 :bes2 ] 2)
+           (bc [ :e2 :a2 :bes2 ] 2)
+           (bc [ :e2 :a2 :bes2 ] 2)
+
+
+           ;;(bc [ :g2 :a2 :bes2 ] 2)
+           (rest-for 2) ;; beat 24 after this rest
+           (bc [ :ges2 :aes2 :bes2 ] 3) ;; that aes is super important harminically
+           (bc [ :f2 :aes2 :bes2 ] 2) 
+           (bc [ :ees2 :f2 :bes2 ] 3) ;; 29 
+
+           (bc [ :g2 :a2 :bes2 ] 2)
+           (bc [ :ges2 :aes2 :bes2 ] 3) ;; 34
+           
+           (bc [ :f2 :aes2 :bes2 ] 2) 
+           (bc [ :ees2 :f2 :bes2 ] 2) 
+           (bc [ :ees2 :g2 :bes2 ] 2)
+
+           (bc [ :f2 :aes2 :bes2] 2)
+           (bc [ :c2 :f2 :bes2] 2)
+
+           (bc [ :c2 :g2 :bes2] 2)
+           (bc [ :c2 :f2 :bes2] 2)
+           (bc [ :bes1 :f2 :bes2] 1)
+           )
+          (ls/line-segment-dynamics 0 50 21 62 22 50 34.9 74 35 58 52 66)
+          
+          (as-> ms
+              (<*> (ls/transpose ms 12)
+                   (ls/transpose ms 24)
+                   ))
+          
+          )
+         (ls/pedal-held-and-cleared-at 0 5 10 15 20)
+         )
+
         
         ;;_ (try-out chord-part-a piano)
         ]
     (>>>
      chord-intro
      chord-part-a
+
+     chord-part-b
      )
     )
   )
 
 (def gunk-poly
   (let [g4 (fn [d] (ls/explicit-phrase [:g4] [d]))
+        nt (fn [n d] (ls/explicit-phrase [n] [d]))
         initial-triplets
         (-> (g4 2/3)
             (ls/loop-n (* 3 10))
@@ -167,6 +232,39 @@
          (ls/loop-n (g4 2/3) 6)
          )
 
+        second-part
+        (>>>
+         (ls/loop-n (g4 2/3) 3)
+         (ls/loop-n (g4 3/4) 4)
+         (ls/loop-n (g4 2/3) 9)
+
+         (ls/loop-n (g4 2/3) 3)
+         (ls/loop-n (g4 3/4) 4)
+         (ls/loop-n (g4 2/3) 9)
+
+         ;;(ls/loop-n (g4 2/3) 3)
+         (rest-for 2)
+         (ls/loop-n (nt :aes4 3/4) 4)
+
+         (ls/loop-n (nt :bes4 2/3) 3)
+         (ls/loop-n (nt :f4 3/4) 2)
+         (ls/loop-n (nt :ees4 3/4) 2)
+
+         (ls/loop-n (g4 2/3) 3)
+         (ls/loop-n (nt :aes4 3/4) 4)
+
+         (ls/loop-n (nt :bes4 2/3) 3)
+         (ls/loop-n (nt :ees5 2/3) 3)
+         (ls/loop-n (nt :g4 2/3) 3)
+         (ls/loop-n (nt :aes4 2/3) 3)
+         (ls/loop-n (nt :f4 2/3) 3)
+         (ls/loop-n (nt :c5 2/3) 3)
+         (ls/loop-n (nt :c5 2/3) 3)
+         
+         (nt :bes4 1)
+
+         )
+
         ]
     (>>>
      initial-triplets
@@ -177,20 +275,27 @@
           (ls/transpose 12)
           (ls/amplify 0.6))
       )
+     second-part
      )
     ))
 
 (def bass-pattern
   (let [intro (->  (ls/explicit-phrase [:g2 :ees2 :g2 nil] [10 5 4.95 0.05])
-                   (ls/hold-for-pct 1)
+                   (ls/hold-for-pct 1.01)
                    )
         phrase-one (-> (lily "g2 ges2. g4 ees d2. g2 ges2. g4 ges d e ges g e1" :relative :c3)
                        (ls/hold-for-pct 1.01)
                        (ls/loop-n 2))
+
+        phrase-two (-> (lily "g2 ges2. g2 ees1  g2 ges2. g2 ees1
+ r2 ges2. aes2 ees2. g2 aes2. bes2 ees,2 g aes f c1 bes4
+ " :relative :c3)
+                       (ls/hold-for-pct 1.01)) ;; FIX - implement ties in lily parser and set this back to 1.01 or kill that ees
         ]
     (>>>
      intro
      phrase-one
+     phrase-two
      )
     ))
 
@@ -215,11 +320,40 @@
                                      50 56 58 63 64 72 54 64
                                      )
                )
-        ;;_ (try-out gs solo-violin)
+        gs-b (-> (ls/explicit-phrase [:bes4 :ees5
+                                      :d5 :ees5
+                                      :bes4 :ees5
+                                      :d5 :ees5
+                                      :f5 :g5 :aes5 :bes5
+                                      :g5 :aes5 :bes5 :c6 :bes5
+                                      :aes5 :bes5 :g5 :f5 :g5 :ees5 :f5 :bes5
+                                      ]
+                                     [2 3
+                                      2 4
+                                      2 3
+                                      2 4
+
+                                      2 3 2 3
+                                      2 3 2 2 1
+
+                                      1 1 3 1 1 1 1 1
+                                      ]
+                                     )
+                 (ls/hold-for-pct 1)
+                 (ls/explicit-dynamics 60 66
+                                       60 71
+                                       60 66
+                                       63 74
+                                       71 74 77 82
+                                       72 76 60 62 64 68 74 64
+                                       )
+                 )
+        ;;_ (try-out gs-b solo-violin)
         ]
     (>>>
      (rest-for 10)
      gs
+     gs-b
      )
     ))
 
@@ -241,7 +375,7 @@
      (ls/with-clock clock)
      (midi-play
       :beat-zero -1
-      :beat-end 70
+      :beat-end 126
       :beat-clock clock
       ))))
 
