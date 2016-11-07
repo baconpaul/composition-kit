@@ -31,6 +31,7 @@
       )))
 
 
+
 (def one-a-piano
   (->
    (<*>
@@ -153,7 +154,7 @@ e16 f e8 dis4 e16 f e8 d4
                        :c1    "X.......Q......."
                        ]
 
-        ;;_ (try-out (step-strings beat-two-alt) drum-set)
+        ;;_ (try-out (ls/loop-n  (step-strings beat-two-alt) 4) drum-set)
 
 
         intro-back [:c4    "X..FXMP.Z.FGZ..P"

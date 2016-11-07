@@ -33,6 +33,7 @@
         ]
     (+ (* beats (:spb clock)) fac)))
 
+
 (def piano (midi/midi-instrument 0))
 (def sin-bell (midi/midi-instrument 1))
 (def pad (midi/midi-instrument 2))
@@ -44,6 +45,7 @@
 
 (defn try-out [p i]
   (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play :beat-clock con-clock)))
+
 
 
 (def orig-piano-rh
@@ -175,7 +177,7 @@
 
         rh
         (<*>
-         (-> rh-top-note (ls/amplify 1.07))
+         (-> rh-top-note (ls/amplify 1.07)) ;; 1.07 0.85
          (-> rh-other-notes (ls/amplify 0.85)))
         
         lh
@@ -393,12 +395,13 @@ g4 ees bes c1 des4 ees f g aes bes bes2 c,4 c c bes1 c4 c c des2. r2
     ))
   )
 
-(def playit false)
+
+(def playit true)
 (def player
   (when playit
     (midi-play
      final-song
-     :beat-zero -1
+     :beat-zero 29
      ;;:beat-zero (- (* 8 15) 1)
      ;;:beat-end (* 12 15)
 
