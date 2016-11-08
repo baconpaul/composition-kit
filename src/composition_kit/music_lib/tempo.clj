@@ -67,3 +67,16 @@ at measure 12. Remember measures start at 1.
     )
   )
 
+(defn user-function-tempo [ beats-per-measure unit-of-measure bpm user-beats-to-time ]
+  {:clocktype ::user-specified
+   :bpm       bpm
+   :spb       (/ 60 bpm)
+   :beats-per-measure beats-per-measure
+   :unit-of-measure   unit-of-measure
+   :user-function user-beats-to-time ;; a function of this clock + beats
+   })
+
+(defmethod metronome?           ::user-specified [clock] true)
+(defmethod beats-to-time        ::user-specified [clock beats] ((:user-function clock) clock beats) )
+(defmethod measure-beat-to-beat ::user-specified [clock measure beat] (+ (dec beat) ( * (dec measure) (:beats-per-measure clock))))
+(defmethod measure-beat-to-time ::user-specified [clock measure beat] (beats-to-time clock (measure-beat-to-beat clock measure beat)))

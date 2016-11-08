@@ -3,13 +3,15 @@
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.music-lib.logical-sequence :as ls])
   (:require [composition-kit.music-lib.logical-item :as i])
+  (:require [composition-kit.music-lib.curves :as curves])
 
   (:use composition-kit.core))
 
 
 ;; FIXME - pedal on piano
 ;; FIXME - dynamics and instability on bells
-;; FIXME - ritardando at the end please
+;; FIXME - dynamics generally
+;; FIXME - control bends on the pitch wheel for the bell in the holds at the bes4 ees1 section
 
 (def piano (midi/midi-instrument 0))
 (def soft-lead (midi/midi-instrument 1))
@@ -17,7 +19,17 @@
 (def bass-inst (midi/midi-instrument 3))
 (def solo-violin (midi/midi-instrument 4))
 
-(def clock (tempo/constant-tempo 5 4 92))
+;; Ritardando at beat (217 )
+(defn btt [clock beats]
+  (if (< beats 216.5)
+    (* beats (:spb clock))
+    (let [slowdown  (curves/sigmoid 216.5 (:spb clock) 227 (* 1.015 (:spb clock)))
+          ]
+      (* beats (slowdown beats))
+      )
+    )
+  )
+(def clock (tempo/user-function-tempo 5 4 92 btt))
 
 (def lead
   (let [brk       true
@@ -245,7 +257,7 @@
             (bc [:d2 :f2 :bes2] 2)
             (bc [:c2 :f2 :aes2] 2)
             (bc [:bes1 :f2 :aes2] 2)
-            (bc [:bes1 :ees2 :g2] 2)
+            (bc [:bes1 :ees2 :aes2] 2)
             )
            (ls/line-segment-dynamics 0 60 17 70 18 58 31 72 32 58)
            
@@ -258,7 +270,83 @@
           )
          (ls/pedal-held-and-cleared-at 0 10 20 30 40)
          )
-        ;;_ (try-out chord-part-b piano)
+
+        held-part
+        (>>>
+         (-> (lily "<bes' bes' f'>4 <bes, bes' f' bes ees' f>1
+<bes' bes' f'>4 <bes, bes' f' bes ees' f>1
+
+<bes' bes' f'>4 <bes, bes' g' bes ees' f>1
+<bes' bes' f'>4 <bes, bes' f' bes ees' f>1
+
+<bes' bes' f'>4 <bes, bes' g' bes ees' f>1
+<bes' bes' f'>4 <bes, bes' f' bes ees' f>1
+
+<bes' bes' f'>4 <bes, bes' f' bes ees' f>1
+<bes' bes' f'>4 <bes, bes' f' bes ees' f>1
+
+" :relative :c2)
+             ;; FIXME - make this a builtin
+             (->> (mapcat (fn [c]
+                            (let [p (i/item-payload c)
+                                  new-item
+                                  (fn [i n]
+                                    (-> (i/identity-item-transformer c)
+                                        (i/add-transform :payload (constantly (assoc p :notes [n])))
+                                        (i/add-transform :beat (comp (partial + (* 0.01 (inc i))) i/item-beat))
+                                        ))
+                                  ]
+                              (if (seq? (:notes p))
+                                (map-indexed  new-item (:notes p))
+                                [c])
+                              )
+                            )))
+
+             (ls/hold-for-pct 0.999)
+             ;; FIXME - these dynamics are sort of bad
+             (ls/line-segment-dynamics 0 62 9.9 68 10 62 30 71 40 60)
+
+             )
+         )
+
+        chord-part-d
+        (->
+         (<*>
+          (->
+           (>>>
+            (bc [ :g2 :a2 :bes2] 2)
+            (bc [ :ges2 :a2 :bes2] 3)
+            
+            (bc [ :g2 :a2 :bes2] 1)
+            (bc [ :e2 :a2 :bes2] 1)
+            (bc [ :d2 :a2 :bes2] 3)
+
+            (bc [ :g2 :a2 :bes2] 2)
+            (bc [ :ges2 :a2 :bes2] 3)
+            
+            (bc [ :g2 :a2 :bes2] 1)
+            (bc [ :ges2 :a2 :bes2] 1)
+            (bc [ :d2 :a2 :bes2] 1)
+            (bc [ :e2 :a2 :bes2] 1)
+            (bc [ :ges2 :a2 :bes2] 1)
+            (bc [ :g2 :a2 :bes2] 1)
+            (bc [ :e2 :a2 :bes2] 4)
+            )
+           (ls/line-segment-dynamics
+            0 52
+            5 54
+            9.9 72
+            10 64
+            15 62
+            20 58)
+           (as-> ms
+               (<*> (ls/transpose ms 12)
+                    (ls/transpose ms 24)))
+           )
+          (ls/pedal-held-and-cleared-at 0 5 10 16 20)
+          )
+         )
+        ;;_ (try-out held-part piano)
         ]
     (>>>
      chord-intro
@@ -267,20 +355,30 @@
      chord-part-b
 
      chord-part-c
+
+     held-part
+
+     chord-part-d
      )
     )
   )
 
 (def gunk-poly
   (let [g4 (fn [d] (ls/explicit-phrase [:g4] [d]))
+        g4n (fn [d n] (ls/loop-n  (ls/explicit-phrase [:g4] [d]) n))
         nt (fn [n d] (ls/explicit-phrase [n] [d]))
         nta (fn [n d] (ls/explicit-phrase n (repeat (count n) d)))
         ntn (fn [n d r] (ls/loop-n (nt n d) r))
         initial-triplets
-        (-> (g4 2/3)
-            (ls/loop-n (* 3 10))
-            (ls/line-segment-dynamics 0 50 10 70 10.01 60 20 90)
-            )
+        (->
+         (>>>  (g4n 2/3 (* 6 3))
+               (g4n 3/4 4)
+               (g4n 1/2 2)
+               (g4n 2/3 (* 2 3))
+               )
+
+         (ls/line-segment-dynamics 0 50 10 70 10.01 60 20 90)
+         )
 
         five-measure
         (>>>
@@ -362,6 +460,22 @@
          (ntn :bes4 2/3 6)
          )
 
+        bflat-part
+        (<*>
+         (>>>
+          (ntn :bes4 2/3 3) (ntn :bes4 3/4 4)
+          (ntn :c5 3/4 4) (ntn :d5 2/3 3)
+          (ntn :ees5 1/2 4) (ntn :f5 2/6 6) (ntn :d5 1/2 2)
+          (ntn :bes4 1/2 2) (ntn :bes4 2/3 6)
+          (ntn :d5 1/2 2) (ntn :bes4 2/3 6)
+          (ntn :ees5 1/2 2) (ntn :bes4 2/3 6)
+          (ntn :bes4 1/2 2) (ntn :bes4 2/3 6)
+          (ntn :bes4 1/2 2) (ntn :bes4 2/3 6)
+
+          )
+         ;; put in a pitch bend here
+         )
+
         ]
     (>>>
      initial-triplets
@@ -374,6 +488,8 @@
       )
      second-part
      third-part
+     bflat-part
+     five-measure
      )
     ))
 
@@ -383,18 +499,29 @@
                    )
         phrase-one (-> (lily "g2 ges2. g4 ees d2. g2 ges2. g4 ges d e ges g e1" :relative :c3)
                        (ls/hold-for-pct 1.01)
-                       (ls/loop-n 2))
+                       )
 
         phrase-two (-> (lily "g2 ges2. g2 ees1  g2 ges2. g2 ees1
  r2 ges2. aes2 ees2. g2 aes2. bes2 ees,2 g aes f c1 bes2.
 f'2 ees1. f2 d2 ees1. c1. bes1 c2 d2 c2 bes1
+
+bes'4 bes,1 bes'4 bes,1 
+bes'4 bes,1 bes'4 bes,1 bes'4 bes,1
+bes'4 bes,1 bes'4 bes,1 bes'4 bes,1
+
  " :relative :c3)
                        (ls/hold-for-pct 1.01)) ;; FIX - implement ties in lily parser and set this back to 1.01 or kill that ees
+
+        phrase-three (-> (lily "bes2 ges2. g4 ees d2. g2 ges2. g4 ges d e ges g e1" :relative :c3)
+                         (ls/hold-for-pct 1.01)
+                         )
+
         ]
     (>>>
      intro
-     phrase-one
+     phrase-one phrase-one
      phrase-two
+     phrase-three
      )
     ))
 
@@ -466,6 +593,56 @@ f'2 ees1. f2 d2 ees1. c1. bes1 c2 d2 c2 bes1
                                        82 87 88 75
                                        72
                                        ))
+
+        gs-d (-> (ls/explicit-phrase [:bes4 :ees5
+                                      :bes4 :ees5
+                                      :bes4 :aes5 :g5 :f5 :ees5
+                                      :bes4 :d5 :ees5 :c5 :bes4
+
+                                      :bes4 :c6 :bes5 :aes5 :g5
+                                      :bes4 :f5 :g5 :ees5 :d5
+
+                                      :d5 :ees5 :f5 :g5 :aes5
+
+                                      :bes5 :aes5
+                                      :g5 :aes5 :bes5
+                                      :c6
+
+                                      :f5 :g5 :aes5 :bes5 :c5 :d5 :bes4
+                                      ]
+                                     [3 2
+                                      3 2                                      
+                                      1 1 1 1 1
+                                      1 1 1 1 1
+
+                                      1 1 1 1 1
+                                      1 1 1 1 1
+
+                                      2 2 2 2 2
+
+                                      2 3
+                                      1 1 3
+                                      5
+
+                                      1 1 1 1 1 1 4
+                                      ])
+                 (ls/hold-for-pct 1)
+                 (ls/explicit-dynamics 71 79
+                                       71 82
+                                       74 87 84 76 73
+                                       74 87 84 76 73
+
+                                       74 87 84 76 73
+                                       74 87 84 76 73
+
+                                       77 82 84 87 91
+
+                                       85 78 77 79 82
+                                       84
+
+                                       87 86 85 83 81 78 73
+                                       )
+                 )
         
         ;;_ (try-out gs-b solo-violin)
         ]
@@ -474,6 +651,7 @@ f'2 ees1. f2 d2 ees1. c1. bes1 c2 d2 c2 bes1
      gs
      gs-b
      gs-c
+     gs-d
      )
     ))
 
@@ -505,5 +683,5 @@ f'2 ees1. f2 d2 ees1. c1. bes1 c2 d2 c2 bes1
 ;;(def x (composition-kit.events.physical-sequence/stop player))
 
 (/ (float  (tempo/beats-to-time clock  (ls/beat-length final-song))) 60 )
-
+(ls/beat-length final-song)
 

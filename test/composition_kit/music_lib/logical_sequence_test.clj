@@ -245,3 +245,10 @@
         )
     )
   )
+
+(deftest transpose
+  (let [p (ls/explicit-phrase [ :c4 :d4 nil [:e4 :g4]] [ 1 1 1 1])
+        q (ls/transpose p 3)
+        ]
+    (is (= (count q) 4))
+    ))
