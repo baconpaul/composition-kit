@@ -11,6 +11,11 @@
 (def syn-bass (midi/midi-instrument 2))
 (def muted-bell (midi/midi-instrument 3))
 
+(def violin-marc (midi/midi-instrument 4))
+(def violin-stac (midi/midi-instrument 5))
+
+;;(try-out (lily "c4 d e") violin-marc)
+
 (def clock (tempo/constant-tempo 4 4 152))
 
 (defn try-out [p i]
@@ -259,6 +264,75 @@ g16 a g8 f4
     )
   )
 
+;; Interesting - first time I've had to mix two instruments. Lets do it the hard way then think aout the idiom as I approach
+;; the symphonic work
+(def violin
+  (let [part-b-first-time
+        (>>>
+         (->
+          (>>> 
+           (-> (ls/explicit-phrase [:c5] [3])
+               (ls/hold-for-pct 1)
+               (ls/on-instrument violin-marc)
+               )
+           (-> (ls/explicit-phrase [:c6 :c6] [1/2 1/2])
+               (ls/hold-for-pct 0.8)
+               (ls/on-instrument violin-stac)
+               )
+           )
+          (ls/loop-n 7)
+          )
+         (-> (ls/explicit-phrase [ :c5 :d5 :e5 :d5 :e5 :f5 :f5 :g5 :a5 :a5 :b5 :c6]
+                                 [ 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3]
+                                 )
+             (ls/hold-for-pct 0.7)
+             (ls/on-instrument violin-stac)
+             )
+         )
+
+        part-a-second-time-round
+        (>>>
+         (-> (ls/explicit-phrase [ :f5 nil ] [2 1/2])
+             (ls/hold-for-pct 1.01)
+             (ls/on-instrument violin-marc)
+             )
+         (-> (lily "f8 f16 d c8" :relative :c5)
+             (ls/hold-for-pct 0.7)
+             (ls/on-instrument violin-stac)
+             (ls/explicit-dynamics '(75 92 81 94))
+             )
+         (-> (ls/explicit-phrase [ :f5 nil ] [2 2])
+             (ls/hold-for-pct 1.01)
+             (ls/on-instrument violin-marc)
+             (ls/explicit-dynamics '(97))
+             )
+         (-> (ls/explicit-phrase [ :f5 nil ] [2 1/2])
+             (ls/hold-for-pct 1.01)
+             (ls/on-instrument violin-marc)
+             )
+         (-> (lily "f8 f16 d c8 ees d des c b bes" :relative :c5)
+             (ls/hold-for-pct 0.7)
+             (ls/on-instrument violin-stac)
+             (ls/explicit-dynamics '(75 92 81 94 105 103 101 100))
+             )
+         (-> (ls/explicit-phrase [ :bes5 ] [1])
+             (ls/hold-for-pct 1.01)
+             (ls/on-instrument violin-marc)
+             (ls/explicit-dynamics '(104))
+             )
+
+         )
+        ]
+    (>>>
+     (rest-for 32)
+     part-b-first-time
+     part-a-second-time-round
+     part-a-second-time-round
+     part-b-first-time
+     )
+    )
+  )
+
 ;;(try-out bell-one muted-bell)
 
 (def final-song
@@ -277,6 +351,7 @@ g16 a g8 f4
     (-> drum-pattern (ls/on-instrument drum-set))
     (-> bass (ls/on-instrument syn-bass))
     (-> bell-one (ls/on-instrument muted-bell))
+    violin
     )
    (ls/with-clock clock)
    )

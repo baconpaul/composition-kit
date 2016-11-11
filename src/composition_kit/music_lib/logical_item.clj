@@ -81,6 +81,14 @@
 
 (defn sustain-pedal-event [ value beat ] (control-event 64 value beat ))
 
+(defn pitch-bend-event [  value beat ]
+  {:itemtype ::pitch-bend-event
+   :payload-72632  { :value value }
+   :beat-2314     beat
+   })
+(defmethod music-item? ::pitch-bend-event [it] true)
+
+
 ;; Each item of the transfomer gets handed the entire item.
 (defn identity-item-transformer [underlyer]
   {:itemtype ::item-transformer

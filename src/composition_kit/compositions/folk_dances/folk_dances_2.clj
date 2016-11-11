@@ -8,10 +8,8 @@
   (:use composition-kit.core))
 
 
-;; FIXME - pedal on piano
-;; FIXME - dynamics and instability on bells
-;; FIXME - dynamics generally
-;; FIXME - control bends on the pitch wheel for the bell in the holds at the bes4 ees1 section
+;; FIXME - dynamics on bass
+;; FIXME - legato on bass across "sections"
 
 (def piano (midi/midi-instrument 0))
 (def soft-lead (midi/midi-instrument 1))
@@ -57,15 +55,15 @@
          [:bes3 2 67] [:ees4 3 60 brk]
          [:d4 2 65] [:ees4 3 60 brk]
 
-         [:bes3 2 65] [:ees4 3 60 brk]
-         [:d4 2 65] [:aes4 2 72] [:g4 1 70] [:f4 1 66] [:g4 1 68] [:ees4 3 62]
-         [:d4 1 70] [:ees4 1 70] [:c4 1 68] [:d4 1 72] [:bes3 1 68 brk]
+         [:bes3 2 65] [:ees4 3 60 brk] ;; here
+         [:d4 2 68] [:aes4 2 82] [:g4 1 81] [:f4 1 76] [:g4 1 79] [:ees4 3 75]
+         [:d4 1 70] [:ees4 1 76] [:c4 1 68] [:d4 1 72] [:bes3 1 68 brk]
 
          [:bes4 2 65] [:ees5 3 60 brk]
          [:d5 2 65] [:ees5 3 60 brk]
 
-         [:bes4 2 65] [:ees5 3 60 brk]
-         [:d5 2 65] [:aes5 2 72] [:g5 1 70] [:f5 1 66] [:g5 1 68] [:ees5 3 62]
+         [:bes4 2 65] [:ees5 3 67 brk]
+         [:d5 2 65] [:aes5 2 82] [:g5 1 78] [:f5 1 66] [:g5 1 68] [:ees5 3 62]
          [:d5 1 70] [:ees5 1 70] [:c5 1 68] [:d5 1 72] [:bes4 1 68 brk]
 
          [:aes4 2 69 ] [:g4 1 72 ] [:f4 1 74] [ :g4 1 80]
@@ -272,8 +270,9 @@
          )
 
         held-part
-        (>>>
-         (-> (lily "<bes' bes' f'>4 <bes, bes' f' bes ees' f>1
+        (<*>
+         (>>>
+          (-> (lily "<bes' bes' f'>4 <bes, bes' f' bes ees' f>1
 <bes' bes' f'>4 <bes, bes' f' bes ees' f>1
 
 <bes' bes' f'>4 <bes, bes' g' bes ees' f>1
@@ -286,28 +285,32 @@
 <bes' bes' f'>4 <bes, bes' f' bes ees' f>1
 
 " :relative :c2)
-             ;; FIXME - make this a builtin
-             (->> (mapcat (fn [c]
-                            (let [p (i/item-payload c)
-                                  new-item
-                                  (fn [i n]
-                                    (-> (i/identity-item-transformer c)
-                                        (i/add-transform :payload (constantly (assoc p :notes [n])))
-                                        (i/add-transform :beat (comp (partial + (* 0.01 (inc i))) i/item-beat))
-                                        ))
-                                  ]
-                              (if (seq? (:notes p))
-                                (map-indexed  new-item (:notes p))
-                                [c])
-                              )
-                            )))
+              ;; FIXME - make this a builtin
+              (->> (mapcat (fn [c]
+                             (let [p (i/item-payload c)
+                                   new-item
+                                   (fn [i n]
+                                     (-> (i/identity-item-transformer c)
+                                         (i/add-transform :payload (constantly (assoc p :notes [n])))
+                                         (i/add-transform :beat (comp (partial + (* 0.01 (inc i))) i/item-beat))
+                                         ))
+                                   ]
+                               (if (seq? (:notes p))
+                                 (map-indexed  new-item (:notes p))
+                                 [c])
+                               )
+                             )))
 
-             (ls/hold-for-pct 0.999)
-             ;; FIXME - these dynamics are sort of bad
-             (ls/line-segment-dynamics 0 62 9.9 68 10 62 30 71 40 60)
+              (ls/hold-for-pct 0.999)
+              ;; FIXME - these dynamics are sort of bad
+              (ls/line-segment-dynamics 0 54 9.9 62 10 56 30 64 40 57)
 
-             )
+              )
+          )
+         (ls/pedal-held-and-cleared-at 0 40)
          )
+
+        
 
         chord-part-d
         (->
@@ -347,6 +350,7 @@
           )
          )
         ;;_ (try-out held-part piano)
+
         ]
     (>>>
      chord-intro
@@ -362,6 +366,7 @@
      )
     )
   )
+
 
 (def gunk-poly
   (let [g4 (fn [d] (ls/explicit-phrase [:g4] [d]))
@@ -473,23 +478,50 @@
           (ntn :bes4 1/2 2) (ntn :bes4 2/3 6)
 
           )
-         ;; put in a pitch bend here
+         (let [f (curves/sigmoid 25 8192 33 13000)
+               f2 (curves/sigmoid 33 13000 40 8192)
+               vals (concat (map (fn [i] [(float i) (f i)]) (map (comp (partial + 25) (partial * 8) (fn [i] (/ i 100))) (range 100)))
+                            (map (fn [i] [(float i) (f2 i)]) (map (comp (partial + 33) (partial * 7) (fn [i] (/ i 100))) (range 100)))
+                            )
+               lis (map (fn [[b v]] (i/pitch-bend-event v b)) vals)
+               ]
+           lis
+           )
+
          )
+        ;;_ (try-out bflat-part gunky-hit)
 
         ]
     (>>>
      initial-triplets
-     five-measure
-     (<*>
-      five-measure
-      (-> five-measure
-          (ls/transpose 12)
-          (ls/amplify 0.6))
+     (->
+      (>>>
+       five-measure
+       (<*>
+        five-measure
+        (-> five-measure
+            (ls/transpose 12)
+            (ls/amplify 0.6))
+        )
+       second-part
+       third-part
+       bflat-part
+       five-measure)
+      (ls/line-segment-dynamics 0 80
+                                25 65
+                                26 80
+                                50 65
+                                75 77
+                                100 82
+                                120 86
+                                140 80
+                                144 70
+                                170 75
+                                183 82
+                                204 50
+                                206 0
+                                )
       )
-     second-part
-     third-part
-     bflat-part
-     five-measure
      )
     ))
 

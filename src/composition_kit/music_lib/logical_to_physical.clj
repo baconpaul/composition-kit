@@ -98,6 +98,28 @@
                         (:value payload))
                        start-time
                        ))
+
+                    :composition-kit.music-lib.logical-item/pitch-bend-event
+                    (let [_          (schedulable-item item)
+                          payload    (i/item-payload item)
+                          clock      (i/item-clock item)
+                          t0         (tempo/beats-to-time clock beat-zero)
+                          instrument (i/item-instrument item)
+                          
+                          start-time (* 1000 (- (tempo/beats-to-time clock (i/item-beat item)) t0))
+                          v  (:value payload)
+                          msb (int (/ v 127))
+                          lsb (mod v 127)
+                          ]
+                      (ps/add-to-sequence
+                       pseq
+                       (midi/send-pitch-bend
+                        (:receiver instrument)
+                        (:channel instrument)
+                        lsb
+                        msb)
+                       start-time
+                       ))
                     
                     :composition-kit.music-lib.logical-item/rest-with-duration
                     pseq
