@@ -11,11 +11,16 @@
 ;;   Dynamics on the synth lead
 ;;   Add Bells to third synth
 
-(def synth-lead (midi/midi-instrument 0))
-(def piano (midi/midi-instrument 1))
-(def synth-bass (midi/midi-instrument 2))
-(def marimba (midi/midi-instrument 3))
-(def bells (midi/midi-instrument 4))
+(def instruments
+  (-> (midi/midi-instrument-map)
+      (midi/add-midi-instrument :synth-lead (midi/midi-port 0))
+      (midi/add-midi-instrument :piano (midi/midi-port 1))
+      (midi/add-midi-instrument :synth-bass (midi/midi-port 2))
+      (midi/add-midi-instrument :marimba (midi/midi-port 3))
+      (midi/add-midi-instrument :bells (midi/midi-port 4))
+      ))
+
+(defn on-inst [s i] (ls/on-instrument s (i instruments)))
 
 (def clock (tempo/constant-tempo 5 8 130))
 
@@ -859,29 +864,29 @@
 (def final-song
   (-> (>>>
        (<*>
-        (-> first-lead (ls/on-instrument synth-lead))
-        (-> first-piano-mid (ls/on-instrument piano))
-        (-> first-marimba (ls/on-instrument marimba))
-        (-> first-bass (ls/on-instrument synth-bass))
+        (-> first-lead (on-inst :synth-lead))
+        (-> first-piano-mid (on-inst :piano))
+        (-> first-marimba (on-inst :marimba))
+        (-> first-bass (on-inst :synth-bass))
         )
        (<*>
-        (-> second-piano-mid (ls/on-instrument piano))
-        (-> bell-lead (ls/on-instrument bells))
-        (-> second-marimba (ls/on-instrument marimba))
-        (-> second-bass (ls/on-instrument synth-bass))
+        (-> second-piano-mid (on-inst :piano))
+        (-> bell-lead (on-inst :bells))
+        (-> second-marimba (on-inst :marimba))
+        (-> second-bass (on-inst :synth-bass))
         )
        (<*>
-        (-> third-piano (ls/on-instrument piano))
-        (-> third-bass (ls/on-instrument synth-bass))
-        (-> third-marimba (ls/on-instrument marimba))
-        (-> third-lead (ls/on-instrument synth-lead))
-        (-> third-bell (ls/on-instrument bells))
+        (-> third-piano (on-inst :piano))
+        (-> third-bass (on-inst :synth-bass))
+        (-> third-marimba (on-inst :marimba))
+        (-> third-lead (on-inst :synth-lead))
+        (-> third-bell (on-inst :bells))
         )
        (<*>
-        (-> fourth-lead (ls/on-instrument synth-lead))
-        (-> fourth-piano (ls/on-instrument piano))
-        (-> fourth-bass (ls/on-instrument synth-bass))
-        (-> fourth-mar (ls/on-instrument marimba))
+        (-> fourth-lead (on-inst :synth-lead))
+        (-> fourth-piano (on-inst :piano))
+        (-> fourth-bass (on-inst :synth-bass))
+        (-> fourth-mar (on-inst :marimba))
         )
        )
       
@@ -889,10 +894,10 @@
       ))
 
 (defn try-out [p i]
-  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play)))
+  (-> p (on-inst i) (ls/with-clock clock) (midi-play)))
 
 
-(def play-it false)
+(def play-it true)
 (def player
   (when play-it
     (midi-play

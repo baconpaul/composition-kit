@@ -34,11 +34,17 @@
     (+ (* beats (:spb clock)) fac)))
 
 
-(def piano (midi/midi-instrument 0))
-(def sin-bell (midi/midi-instrument 1))
-(def pad (midi/midi-instrument 2))
-(def chorus (midi/midi-instrument 3))
-(def ring-bells (midi/midi-instrument 4))
+(def instruments
+  (-> (midi/midi-instrument-map)
+      (midi/add-midi-instrument :piano (midi/midi-port 0))
+      (midi/add-midi-instrument :sin-bell (midi/midi-port 1))
+      (midi/add-midi-instrument :pad (midi/midi-port 2))
+      (midi/add-midi-instrument :chorus (midi/midi-port 3))
+      (midi/add-midi-instrument :ring-bells (midi/midi-port 4))
+      ))
+
+(defn on-inst [s i] (ls/on-instrument s (i instruments)))
+
 (def clock (near-constant-tempo 15 4 95))
 (def con-clock (tempo/constant-tempo 15 4 95))
 
@@ -387,11 +393,11 @@ g4 ees bes c1 des4 ees f g aes bes bes2 c,4 c c bes1 c4 c c des2. r2
 (def final-song
   (->
    (<*>
-    (-> orig-piano (ls/on-instrument piano) (ls/with-clock clock))
-    (-> sin-bell-repeat (ls/on-instrument sin-bell) (ls/with-clock con-clock))
-    (-> pad-phrase (ls/on-instrument pad ) (ls/with-clock con-clock))
-    (-> choral-one (ls/on-instrument chorus) (ls/with-clock clock))
-    (-> glock (ls/on-instrument ring-bells) (ls/with-clock clock))
+    (-> orig-piano (on-inst :piano) (ls/with-clock clock))
+    (-> sin-bell-repeat (on-inst :sin-bell) (ls/with-clock con-clock))
+    (-> pad-phrase (on-inst :pad ) (ls/with-clock con-clock))
+    (-> choral-one (on-inst :chorus) (ls/with-clock clock))
+    (-> glock (on-inst :ring-bells) (ls/with-clock clock))
     ))
   )
 

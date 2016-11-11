@@ -82,14 +82,20 @@
   )
 
 ;; Make a little abstraction for a midi instrument which we can use to pass around state later on.
-(defn midi-instrument
+(defn midi-port
   ([channel] (midi-instrument "Bus 1" channel))
   ([bus channel]
    {
-    :instrument-type ::midi-instrument
     :receiver (get-opened-receiver bus)
     :channel  channel
     })
+  )
+
+
+;; Now make the instrument maps. Make an abstraction name to create it for now
+(defn midi-instrument-map [] {})
+(defn add-midi-instrument [m name port]
+  (assoc m name { :name name :port port })
   )
 
 (defn all-notes-off
