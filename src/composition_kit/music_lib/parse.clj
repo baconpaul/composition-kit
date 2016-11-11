@@ -29,7 +29,7 @@
   l-note-name = ('a'|'b'|'c'|'d'|'e'|'f'|'g'|'r') (* l-rest)
   l-rest = 'r' *)
   l-accidental = ('is'|'iis'|'es'|'ees')
-  l-octave-modifier = (','+|'\\''+)
+  l-octave-modifier = (','+|'-'+|'\\''+)
 
   l-chord = <'<'> <whitespace*> l-note (<whitespace> l-note)+ <whitespace*> <'>'> l-duration?
 
@@ -82,7 +82,7 @@
         ninterval     (let [i (th/interval-between prior-pitch pitch)]
                         (if (< i 7) i (- i 12)))
 
-        roctavediff   (* (count om) (if (= (first om) \,) -1 1))
+        roctavediff   (* (count om) (if (or (= (first om) \,) (= (first om) \-)) -1 1))
 
         interval      ( + ( * 12 roctavediff) ninterval )
         notes         (th/notes-by-midinote (+ interval (:midinote prior-note)))
