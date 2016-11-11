@@ -38,7 +38,7 @@
                     :composition-kit.music-lib.logical-item/notes-with-duration
                     (let [_          (schedulable-item item)
                           payload    (i/item-payload item)
-                          instrument (i/item-instrument item)
+                          instrument (:port (i/item-instrument item))
                           clock      (i/item-clock item)
                           t0         (tempo/beats-to-time clock beat-zero)
                           
@@ -86,7 +86,7 @@
                           payload    (i/item-payload item)
                           clock      (i/item-clock item)
                           t0         (tempo/beats-to-time clock beat-zero)
-                          instrument (i/item-instrument item)
+                          instrument (:port (i/item-instrument item))
                           
                           start-time (* 1000 (- (tempo/beats-to-time clock (i/item-beat item)) t0))]
                       (ps/add-to-sequence
@@ -104,7 +104,7 @@
                           payload    (i/item-payload item)
                           clock      (i/item-clock item)
                           t0         (tempo/beats-to-time clock beat-zero)
-                          instrument (i/item-instrument item)
+                          instrument (:port (i/item-instrument item))
                           
                           start-time (* 1000 (- (tempo/beats-to-time clock (i/item-beat item)) t0))
                           v  (:value payload)

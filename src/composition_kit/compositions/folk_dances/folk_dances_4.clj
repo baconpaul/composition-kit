@@ -6,20 +6,25 @@
 
   (:use composition-kit.core))
 
-(def piano (midi/midi-instrument 0))
-(def drum-set (midi/midi-instrument 1))
-(def syn-bass (midi/midi-instrument 2))
-(def muted-bell (midi/midi-instrument 3))
+(def instruments
+  (-> (midi/midi-instrument-map)
+      (midi/add-midi-instrument :piano       (midi/midi-port 0))
+      (midi/add-midi-instrument :drum-set    (midi/midi-port 1))
+      (midi/add-midi-instrument :syn-bass    (midi/midi-port 2))
+      (midi/add-midi-instrument :muted-bell  (midi/midi-port 3))
+      (midi/add-midi-instrument :violin-marc (midi/midi-port 4))
+      (midi/add-midi-instrument :violin-stac (midi/midi-port 5))
+      )
+  )
 
-(def violin-marc (midi/midi-instrument 4))
-(def violin-stac (midi/midi-instrument 5))
+(defn on-inst [s i] (ls/on-instrument s (i instruments)))
 
 ;;(try-out (lily "c4 d e") violin-marc)
 
 (def clock (tempo/constant-tempo 4 4 152))
 
 (defn try-out [p i]
-  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play :beat-clock clock)))
+  (-> p (on-inst i) (ls/with-clock clock) (midi-play :beat-clock clock)))
 
 (def accent-pattern-dynamics
   (fn [i]
@@ -273,11 +278,11 @@ g16 a g8 f4
           (>>> 
            (-> (ls/explicit-phrase [:c5] [3])
                (ls/hold-for-pct 1)
-               (ls/on-instrument violin-marc)
+               (on-inst :violin-marc)
                )
            (-> (ls/explicit-phrase [:c6 :c6] [1/2 1/2])
                (ls/hold-for-pct 0.8)
-               (ls/on-instrument violin-stac)
+               (on-inst :violin-stac)
                )
            )
           (ls/loop-n 7)
@@ -286,7 +291,7 @@ g16 a g8 f4
                                  [ 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3]
                                  )
              (ls/hold-for-pct 0.7)
-             (ls/on-instrument violin-stac)
+             (on-inst :violin-stac)
              )
          )
 
@@ -294,30 +299,30 @@ g16 a g8 f4
         (>>>
          (-> (ls/explicit-phrase [ :f5 nil ] [2 1/2])
              (ls/hold-for-pct 1.01)
-             (ls/on-instrument violin-marc)
+             (on-inst :violin-marc)
              )
          (-> (lily "f8 f16 d c8" :relative :c5)
              (ls/hold-for-pct 0.7)
-             (ls/on-instrument violin-stac)
+             (on-inst :violin-stac)
              (ls/explicit-dynamics '(75 92 81 94))
              )
          (-> (ls/explicit-phrase [ :f5 nil ] [2 2])
              (ls/hold-for-pct 1.01)
-             (ls/on-instrument violin-marc)
+             (on-inst :violin-marc)
              (ls/explicit-dynamics '(97))
              )
          (-> (ls/explicit-phrase [ :f5 nil ] [2 1/2])
              (ls/hold-for-pct 1.01)
-             (ls/on-instrument violin-marc)
+             (on-inst :violin-marc)
              )
          (-> (lily "f8 f16 d c8 ees d des c b bes" :relative :c5)
              (ls/hold-for-pct 0.7)
-             (ls/on-instrument violin-stac)
+             (on-inst :violin-stac)
              (ls/explicit-dynamics '(75 92 81 94 105 103 101 100))
              )
          (-> (ls/explicit-phrase [ :bes5 ] [1])
              (ls/hold-for-pct 1.01)
-             (ls/on-instrument violin-marc)
+             (on-inst :violin-marc)
              (ls/explicit-dynamics '(104))
              )
 
@@ -341,16 +346,16 @@ g16 a g8 f4
     (>>>
      (->
       (>>>
-       (-> one-a-piano (ls/on-instrument piano))
-       (-> one-b-piano (ls/on-instrument piano))
+       (-> one-a-piano (on-inst :piano))
+       (-> one-b-piano (on-inst :piano))
        )
       (ls/loop-n 2)
       )
-     (-> two-piano (ls/on-instrument piano))
+     (-> two-piano (on-inst :piano))
      )
-    (-> drum-pattern (ls/on-instrument drum-set))
-    (-> bass (ls/on-instrument syn-bass))
-    (-> bell-one (ls/on-instrument muted-bell))
+    (-> drum-pattern (on-inst :drum-set))
+    (-> bass (on-inst :syn-bass))
+    (-> bell-one (on-inst :muted-bell))
     violin
     )
    (ls/with-clock clock)
@@ -369,4 +374,4 @@ g16 a g8 f4
          ;;:beat-end 33
          :beat-clock clock
          ))))
-  
+

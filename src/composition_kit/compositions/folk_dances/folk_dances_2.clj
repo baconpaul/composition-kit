@@ -11,11 +11,16 @@
 ;; FIXME - dynamics on bass
 ;; FIXME - legato on bass across "sections"
 
-(def piano (midi/midi-instrument 0))
-(def soft-lead (midi/midi-instrument 1))
-(def gunky-hit (midi/midi-instrument 2))
-(def bass-inst (midi/midi-instrument 3))
-(def solo-violin (midi/midi-instrument 4))
+(def instruments
+  (-> (midi/midi-instrument-map)
+      (midi/add-midi-instrument :piano (midi/midi-port 0))
+      (midi/add-midi-instrument :soft-lead (midi/midi-port 1))
+      (midi/add-midi-instrument :gunky-hit (midi/midi-port 2))
+      (midi/add-midi-instrument :bass-inst (midi/midi-port 3))
+      (midi/add-midi-instrument :solo-violin (midi/midi-port 4))
+      ))
+
+(defn on-inst [s i] (ls/on-instrument s (i instruments)))
 
 ;; Ritardando at beat (217 )
 (defn btt [clock beats]
@@ -115,7 +120,7 @@
   )
 
 (defn try-out [p i]
-  (-> p (ls/on-instrument i) (ls/with-clock clock) (midi-play :beat-clock clock)))
+  (-> p (on-inst :i) (ls/with-clock clock) (midi-play :beat-clock clock)))
 
 (defn blur-chord [chord duration]
   (apply <*> (map
@@ -689,16 +694,16 @@ bes'4 bes,1 bes'4 bes,1 bes'4 bes,1
 
 (def final-song
   (<*>
-   (-> piano-m (ls/on-instrument piano))
-   (-> lead (ls/on-instrument soft-lead))
-   (-> gunk-poly (ls/on-instrument gunky-hit))
-   (-> bass-pattern (ls/on-instrument bass-inst))
-   (-> violin (ls/on-instrument solo-violin))
+   (-> piano-m (on-inst :piano))
+   (-> lead (on-inst :soft-lead))
+   (-> gunk-poly (on-inst :gunky-hit))
+   (-> bass-pattern (on-inst :bass-inst))
+   (-> violin (on-inst :solo-violin))
    )
   )
 
-;;(-> gunk-poly (ls/on-instrument gunky-hit) (ls/with-clock clock) (midi-play))
-;;(-> lead (ls/on-instrument soft-lead) (ls/with-clock clock) (midi-play :beat-zero 19))
+;;(-> gunk-poly (on-inst :gunky-hit) (ls/with-clock clock) (midi-play))
+;;(-> lead (on-inst :soft-lead) (ls/with-clock clock) (midi-play :beat-zero 19))
 
 (def play-it true)
 (def player
