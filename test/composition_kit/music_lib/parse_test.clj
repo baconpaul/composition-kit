@@ -5,17 +5,17 @@
   (require [composition-kit.music-lib.logical-item :as i]))
 
 (deftest lily-parse  
-  (let [parse (p/lily-to-logical-sequence "a4 bes8 r16 a a'4 ges,,")
+  (let [parse (p/lily-to-logical-sequence "a4 bes8 r16 a a'4 ges,, ges' ges-")
         by-t  (group-by i/item-type parse)
         notes (:composition-kit.music-lib.logical-item/notes-with-duration by-t)
         rests (:composition-kit.music-lib.logical-item/rest-with-duration by-t)
         ]
-    (is (= (count parse) 6))
-    (is (= (count notes) 5))
+    (is (= (count parse) 8))
+    (is (= (count notes) 7))
     (is (= (count rests) 1))
-    (is (= (flatten (map #(:notes (i/item-payload %)) notes)) '(:a3 :bes3 :a3 :a4 :ges2)))
-    (is (= (map i/item-beat parse) '(0 1 3/2 7/4 2 3)))
-    (is (= (map i/item-beat notes) '(0 1 7/4 2 3)))
+    (is (= (flatten (map #(:notes (i/item-payload %)) notes)) '(:a3 :bes3 :a3 :a4 :ges2 :ges3 :ges2)))
+    (is (= (map i/item-beat parse) '(0 1 3/2 7/4 2 3 4 5)))
+    (is (= (map i/item-beat notes) '(0 1 7/4 2 3 4 5)))
     (is (= (map i/item-beat rests) '(3/2)))
     )
   (let [parse (p/lily-to-logical-sequence "< c  bes'>4. <c bes'>4 <d e>" )]
