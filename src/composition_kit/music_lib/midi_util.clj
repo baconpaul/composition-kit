@@ -83,7 +83,7 @@
 
 ;; Make a little abstraction for a midi instrument which we can use to pass around state later on.
 (defn midi-port
-  ([channel] (midi-instrument "Bus 1" channel))
+  ([channel] (midi-port "Bus 1" channel))
   ([bus channel]
    {
     :receiver (get-opened-receiver bus)
