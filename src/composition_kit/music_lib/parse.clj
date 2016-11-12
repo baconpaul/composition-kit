@@ -126,8 +126,19 @@
       :l-note-item     (lily-phrase-traverse (first nodes) state)
 
       :l-control-information
-      (-> state
-          (update :controls assoc (keyword  (second (first (rest parse-item)))) (second (second (rest parse-item)))))
+      (let [tag (keyword (second (first (rest parse-item))))
+            val (second (second (rest parse-item)))
+            ]
+        (cond
+          (= tag :inst)
+          (when (or (nil? (:instruments (:arguments state)))
+                    (nil? ((keyword val) (:instruments (:arguments state))))
+                    )
+            (throw (ex-info "Unknown instrument" {:inst val :arguments (:arguments state)}))
+            )
+          )
+        (-> state
+            (update :controls assoc tag val)))
       
       :l-note-with-duration
       (let [new-note  (note-with-duration-to-note parse-item (:prior-root state))
