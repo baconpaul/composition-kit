@@ -274,19 +274,10 @@ g16 a g8 f4
 (def violin
   (let [part-b-first-time
         (>>>
-         (->
-          (>>> 
-           (-> (ls/explicit-phrase [:c5] [3])
-               (ls/hold-for-pct 1)
-               (on-inst :violin-marc)
-               )
-           (-> (ls/explicit-phrase [:c6 :c6] [1/2 1/2])
-               (ls/hold-for-pct 0.8)
-               (on-inst :violin-stac)
-               )
-           )
-          (ls/loop-n 7)
-          )
+         (->  (lily "^inst=violin-marc ^hold=1 c2.*55 ^inst=violin-stac ^hold=0.8 c8*67 c*82" :relative :c6 :instruments instruments)
+              (ls/loop-n 7))
+
+         ;; Truplets into lily would be awesome eh?
          (-> (ls/explicit-phrase [ :c5 :d5 :e5 :d5 :e5 :f5 :f5 :g5 :a5 :a5 :b5 :c6]
                                  [ 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3 1/3]
                                  )
@@ -295,38 +286,15 @@ g16 a g8 f4
              )
          )
 
-        part-a-second-time-round
-        (>>>
-         (-> (ls/explicit-phrase [ :f5 nil ] [2 1/2])
-             (ls/hold-for-pct 1.01)
-             (on-inst :violin-marc)
-             )
-         (-> (lily "f8 f16 d c8" :relative :c5)
-             (ls/hold-for-pct 0.7)
-             (on-inst :violin-stac)
-             (ls/explicit-dynamics '(75 92 81 94))
-             )
-         (-> (ls/explicit-phrase [ :f5 nil ] [2 2])
-             (ls/hold-for-pct 1.01)
-             (on-inst :violin-marc)
-             (ls/explicit-dynamics '(97))
-             )
-         (-> (ls/explicit-phrase [ :f5 nil ] [2 1/2])
-             (ls/hold-for-pct 1.01)
-             (on-inst :violin-marc)
-             )
-         (-> (lily "f8 f16 d c8 ees d des c b bes" :relative :c5)
-             (ls/hold-for-pct 0.7)
-             (on-inst :violin-stac)
-             (ls/explicit-dynamics '(75 92 81 94 105 103 101 100))
-             )
-         (-> (ls/explicit-phrase [ :bes5 ] [1])
-             (ls/hold-for-pct 1.01)
-             (on-inst :violin-marc)
-             (ls/explicit-dynamics '(104))
-             )
+        part-a-second-time-round 
+        (lily "^inst=violin-marc ^hold=1.01 f2 r8 
+               ^inst=violin-stac ^hold=0.7 f8*75 f16*92 d*81 c8*94
+               ^inst=violin-marc ^hold=1.01 f2*97 r2 f2*94 r8
+               ^inst=violin-stac ^hold=0.7 f8 f16 d c8 ees d des c b bes
+               ^inst=violin-marc bes4*104 
+              " :relative :c5 :instruments instruments)
 
-         )
+        
         ]
     (>>>
      (rest-for 32)

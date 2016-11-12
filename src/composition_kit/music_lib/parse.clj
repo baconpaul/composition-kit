@@ -10,7 +10,7 @@
   l-expression = <whitespace*> ( l-voice | l-voices ) 
                 (<whitespace>  ( l-voice | l-voices ))*
                  <whitespace*>
-  l-voice = (l-braces | l-tuplet | l-note-item)
+  l-voice = (l-braces | l-tuplet | l-note-item | l-control-information)
 
   l-voices = <'<<'> <whitespace*> l-voice+ <whitespace*> 
                  ( <'\\\\\\\\'> <whitespace+> l-voice+ <whitespace*> )* <'>>'>
@@ -20,16 +20,18 @@
   l-tuplet = <'\\\\tuplet'> <whitespace?> l-fraction <whitespace?> l-braces
   l-fraction = #\"\\d+\" <'/'> #\"\\d+\"
 
-  l-note-item = l-note-with-duration | l-chord
+  l-note-item = l-note-with-duration | l-chord 
   
-  l-note-with-duration = l-note l-duration?
+  l-note-with-duration = l-note l-duration? l-dynamic-modifier?
 
-  l-note = l-note-name l-accidental? l-octave-modifier?
+  l-note = l-note-name l-accidental? l-octave-modifier? 
 
   l-note-name = ('a'|'b'|'c'|'d'|'e'|'f'|'g'|'r') (* l-rest)
   l-rest = 'r' *)
   l-accidental = ('is'|'iis'|'es'|'ees')
-  l-octave-modifier = (','+|'\\''+)
+  l-octave-modifier = (','+|'-'+|'\\''+)
+  l-dynamic-modifier = <'*'>#\"\\d+\"
+
 
   l-chord = <'<'> <whitespace*> l-note (<whitespace> l-note)+ <whitespace*> <'>'> l-duration?
 
@@ -37,6 +39,11 @@
   l-duration-modifier = '.' | '..' | '...'
 
   whitespace = #'\\s+'
+
+  l-control-information = <'^'>  l-control-name <'='> l-control-value
+
+  l-control-name = #\"[a-zA-Z\\-]+\"
+  l-control-value = #\"\\S+\"
 
   "
   )
@@ -82,7 +89,7 @@
         ninterval     (let [i (th/interval-between prior-pitch pitch)]
                         (if (< i 7) i (- i 12)))
 
-        roctavediff   (* (count om) (if (= (first om) \,) -1 1))
+        roctavediff   (* (count om) (if (or (= (first om) \,) (= (first om) \-)) -1 1))
 
         interval      ( + ( * 12 roctavediff) ninterval )
         notes         (th/notes-by-midinote (+ interval (:midinote prior-note)))
@@ -99,8 +106,11 @@
                          :durations []
                          :logical-sequence []
                          :starts-at  0
-                         :prior-dur   0
-                         :prior-root :c4})
+                         :prior-dur   1
+                         :prior-root :c4
+                         :dynamics 80
+                         :controls  {}
+                         })
 
 ;; Darn it - since the LS changes between a list and vector unpredictably just do this whack together of vectors.
 (defn conj-on [m k i] (update-in m [k] concat [i]))
@@ -115,21 +125,55 @@
       :l-voice         (lily-phrase-traverse (first nodes) state) ;; simple passthrough
       :l-note-item     (lily-phrase-traverse (first nodes) state)
 
+      :l-control-information
+      (let [tag (keyword (second (first (rest parse-item))))
+            val (second (second (rest parse-item)))
+            ]
+        (cond
+          (= tag :inst)
+          (when (or (nil? (:instruments (:arguments state)))
+                    (nil? ((keyword val) (:instruments (:arguments state))))
+                    )
+            (throw (ex-info "Unknown instrument" {:inst val :arguments (:arguments state)}))
+            )
+          )
+        (-> state
+            (update :controls assoc tag val)))
+      
       :l-note-with-duration
       (let [new-note  (note-with-duration-to-note parse-item (:prior-root state))
+            dyn-info  (filter #(= (first %) :l-dynamic-modifier) (rest parse-item))
+
             dur       (or (:dur new-note) (:prior-dur state))
+            hold-for  (if-let [hc  (:hold (:controls state))]
+                        (* (Double/parseDouble  hc) dur)
+                        0.95
+                        )
+            inst      (when (:inst (:controls state)) ((keyword (:inst (:controls state))) (:instruments (:arguments state))))
+
+            dyn       (if (seq dyn-info)
+                        (Integer/parseInt (second (first  dyn-info)))
+                        (:dynamics state))
+
             ]
         (-> state
             (conj-on :raw-music parse-item)
             (conj-on :notes     (when-not (:is-rest new-note) (:note new-note)))
             (conj-on :durations (:dur new-note))
             (conj-on :logical-sequence
-                     (if (:is-rest new-note)
-                       (i/rest-with-duration dur (:starts-at state))
-                       (i/notes-with-duration (:note (:note new-note)) dur (:starts-at state) 0.95)))
+                     (->  (if (:is-rest new-note)
+                            (i/rest-with-duration dur (:starts-at state))
+                            (i/notes-with-duration (:note (:note new-note)) dur (:starts-at state) hold-for))
+                          (i/identity-item-transformer)
+                          (i/add-transform :instrument (constantly inst))
+                          (i/add-transform :dynamics (constantly (constantly dyn)))
+                          )
+
+                     )
             (update-in [:starts-at] #(+ % dur))
             (assoc   :prior-root (:note (:note new-note)))
             (assoc   :prior-dur  dur)
+            (assoc   :dynamics   dyn)
             ))
 
       :l-chord
@@ -194,7 +238,9 @@
   [line & optarr ]
   (let [opt    (apply hash-map optarr)
         state  (-> lily-blank-state
-                   (assoc :prior-root (or (:relative opt) (:prior-root lily-blank-state))))
+                   (assoc :prior-root (or (:relative opt) (:prior-root lily-blank-state)))
+                   (assoc :arguments opt)
+                   )
         parse  (lily-phrase-parser line)
         _      (if (insta/failure? parse)
                  (throw (ex-info (str "Failed to parse " (with-out-str (instafail/pprint-failure parse)))
@@ -203,6 +249,8 @@
     (:logical-sequence res)
     )
   )
+
+;;(:controls (lily-phrase-traverse (lily-phrase-parser "^hold=0.99 c4 d ^inst=piano d8*12 e ^inst=violin f*120") lily-blank-state))
 
 (defn char-to-range
   "given a character make a midi range with semantic that 0-9 and

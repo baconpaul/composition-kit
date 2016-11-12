@@ -23,7 +23,7 @@ of symbols. For instance
       (lily :relative :c4 e2 d4 c f16 e d c))"
   (let [lily-bits     (filter string? arguments)
         lily-string   (apply str (interpose " " lily-bits))
-        control-bits  (filter (comp keyword?) arguments)
+        control-bits  (filter (comp not string?) arguments)
         ]
     (apply parse/lily-to-logical-sequence (concat [ lily-string ] control-bits))
     )
