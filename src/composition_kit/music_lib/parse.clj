@@ -108,6 +108,7 @@
                          :starts-at  0
                          :prior-dur   1
                          :prior-root :c4
+                         :dynamics 80
                          :controls  {}
                          })
 
@@ -130,23 +131,38 @@
       
       :l-note-with-duration
       (let [new-note  (note-with-duration-to-note parse-item (:prior-root state))
+            dyn-info  (filter #(= (first %) :l-dynamic-modifier) (rest parse-item))
+
             dur       (or (:dur new-note) (:prior-dur state))
             hold-for  (if-let [hc  (:hold (:controls state))]
                         (* (Double/parseDouble  hc) dur)
                         0.95
                         )
+            inst      (when (:inst (:controls state)) ((keyword (:inst (:controls state))) (:instruments (:arguments state))))
+
+            dyn       (if (seq dyn-info)
+                        (Integer/parseInt (second (first  dyn-info)))
+                        (:dynamics state))
+
             ]
         (-> state
             (conj-on :raw-music parse-item)
             (conj-on :notes     (when-not (:is-rest new-note) (:note new-note)))
             (conj-on :durations (:dur new-note))
             (conj-on :logical-sequence
-                     (if (:is-rest new-note)
-                       (i/rest-with-duration dur (:starts-at state))
-                       (i/notes-with-duration (:note (:note new-note)) dur (:starts-at state) hold-for)))
+                     (->  (if (:is-rest new-note)
+                            (i/rest-with-duration dur (:starts-at state))
+                            (i/notes-with-duration (:note (:note new-note)) dur (:starts-at state) hold-for))
+                          (i/identity-item-transformer)
+                          (i/add-transform :instrument (constantly inst))
+                          (i/add-transform :dynamics (constantly (constantly dyn)))
+                          )
+
+                     )
             (update-in [:starts-at] #(+ % dur))
             (assoc   :prior-root (:note (:note new-note)))
             (assoc   :prior-dur  dur)
+            (assoc   :dynamics   dyn)
             ))
 
       :l-chord
@@ -211,7 +227,9 @@
   [line & optarr ]
   (let [opt    (apply hash-map optarr)
         state  (-> lily-blank-state
-                   (assoc :prior-root (or (:relative opt) (:prior-root lily-blank-state))))
+                   (assoc :prior-root (or (:relative opt) (:prior-root lily-blank-state)))
+                   (assoc :arguments opt)
+                   )
         parse  (lily-phrase-parser line)
         _      (if (insta/failure? parse)
                  (throw (ex-info (str "Failed to parse " (with-out-str (instafail/pprint-failure parse)))

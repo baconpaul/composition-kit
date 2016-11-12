@@ -20,11 +20,11 @@
 (def clock (tempo/constant-tempo 4 4 120))
 
 (def scale
-  (lily "^hold=0.05 c d e ^hold=0.99 f g"))
+  (lily "^inst=inst-a ^hold=0.05 c*20 d*90  ^inst=inst-b e8*70 f ^hold=0.99 f4 g*120" :relative :c5 :instruments instruments))
 
 (->
  (>>> 
-  (-> scale (on-inst :inst-a)))
+  (-> scale ))
  (ls/with-clock clock)
  (midi-play)
  )
