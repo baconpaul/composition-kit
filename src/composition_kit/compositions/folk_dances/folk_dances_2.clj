@@ -5,7 +5,8 @@
   (:require [composition-kit.music-lib.logical-item :as i])
   (:require [composition-kit.music-lib.curves :as curves])
 
-  (:use composition-kit.core))
+  (:use composition-kit.core)
+  )
 
 
 ;; FIXME - dynamics on bass

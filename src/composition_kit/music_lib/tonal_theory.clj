@@ -19,6 +19,8 @@
     (reduce (fn [m v] (assoc m (:note v) v)) {} notelist)
     ))
 
+
+
 (def ^:private notes-data-by-midinote
   (loop [n                   (vals notes-data)
          res                 {}]

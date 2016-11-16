@@ -5,6 +5,8 @@
   (:require [composition-kit.music-lib.logical-sequence :as ls])
   (:require [composition-kit.music-lib.logical-item :as i])
 
+  (:require [composition-kit.music-viz.render-score :as render])
+
   (:use composition-kit.core))
 
 
@@ -12,21 +14,25 @@
 
 (def instruments
   (-> (midi/midi-instrument-map)
-      (midi/add-midi-instrument :inst-a (midi/midi-port 0))
-      (midi/add-midi-instrument :inst-b (midi/midi-port 1))
+      (midi/add-midi-instrument :piano (midi/midi-port 0))
       ))
 
 (defn on-inst [s i] (ls/on-instrument s (i instruments)))
 (def clock (tempo/constant-tempo 4 4 120))
 
 (def scale
-  (lily "^inst=inst-a ^hold=0.05 c*20 d*90  ^inst=inst-b e8*70 f ^hold=0.99 f4 g*120" :relative :c5 ))
+  (lily "^inst=piano ^hold=0.05 c*20 d*90  e8*70 f ^hold=0.99 f4 g*120 r8 g c e f2" :instruments instruments :relative :c5 ))
 
-(->
- (>>> 
-  (-> scale ))
- (ls/with-clock clock)
- (midi-play)
- )
+(render/show-png  (render/sequence-to-png scale))
+
+#_(->
+   (>>> 
+    (-> scale ))
+   (ls/with-clock clock)
+   (midi-play)
+   )
+
+
+
 
 
