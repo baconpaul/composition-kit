@@ -10,5 +10,6 @@
 		 [org.jfree/jfreechart "1.0.19"]
                  ]
   :jvm-opts ["-Xmx2g"]
+  :source-paths ["src/"]
   :java-source-paths ["javasrc/"]
   )
