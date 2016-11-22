@@ -33,7 +33,7 @@
        ))
 
 (defn make-transport-window [^String window-title]
-  (let [state  (atom {:time 0 :beat 0 :pbeat 0 :pct 0 :on-stop nil})
+  (let [state  (atom {:time 0 :beat 0 :pbeat 0 :pct 0 :on-stop (fn [] true)})
 
         big-font    (java.awt.Font. "Menlo" 0 48)
         small-font  (java.awt.Font. "Menlo" 0 30)
@@ -117,8 +117,8 @@
     {:panel  panel
      :state  state
      :assoc  assoc-state
-     :close  (fn [] (doto frame (.setVisible false) (.dispose)))
-     :on-stop (fn [f] (swap! state assoc :on-stop f))
+     :close  (fn [] ((:on-stop @state)) (doto frame (.setVisible false) (.dispose)))
+     :on-stop (fn [f] (swap! state update :on-stop (fn [orig] (juxt f orig))))
      }
     )
   )
@@ -126,6 +126,5 @@
 (defn agent-transport-window []
   (:transport @*agent*))
 
-;;(def w (make-transport-window "ff"))
-;;((:close w))
+
 

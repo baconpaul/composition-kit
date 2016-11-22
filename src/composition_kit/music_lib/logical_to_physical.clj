@@ -6,6 +6,7 @@
   (:require [composition-kit.music-lib.logical-sequence :as ls])
   (:require [composition-kit.music-lib.logical-item :as i])
   (:require [composition-kit.music-lib.tonal-theory :as th])
+  (:require [composition-kit.music-lib.samples :as samp])
   )
 
 (defn ^:private schedulable-item [item]
@@ -27,6 +28,12 @@
         beat-zero (get opts :beat-zero 0)
         beat-end  (get opts :beat-end -1)
         beat-clk  (get opts :beat-clock nil)
+
+        samples (get opts :samples [])
+        ;; for now make the assumptino that the clip is always longer than the underlying sequence
+        clip-players (map (fn [config] (samp/clip-player (:file config) (:zero-point config)) ) samples)
+
+        
         pattern  (->> in-pattern
                       (drop-while #(< (i/item-beat %) beat-zero))
                       (take-while #(or (< beat-end 0) (< (i/item-beat %) beat-end)))
@@ -157,9 +164,30 @@
             
             )
           reduce-seq)
+
+        _ (when (and  (> (count clip-players) 0) (nil? beat-clk))
+            (throw (ex-info "A beat clock is required for samples" {}))
+            )
+        fresult (reduce
+                 ;; AD CLIP STARTERS
+                 (fn [pseq cp]
+                   (ps/add-to-sequence
+                    pseq
+                    (fn [ttt]
+                      (when-let [t-w (tw/agent-transport-window)]
+                        ((:on-stop t-w) (:stop-and-close cp))
+                        )
+                      ((:start-at cp) (* (tempo/beats-to-time beat-clk beat-zero) 1000000))
+                      )
+                    0
+                    )
+                   )
+                 result
+                 clip-players
+                 )
         ]
 
-    result 
+    fresult 
     )
   )
 
