@@ -130,7 +130,7 @@
             val (second (second (rest parse-item)))
             ]
         (cond
-          (= tag :inst)
+          (or  (= tag :inst) (= tag :i))
           (when (or (nil? (:instruments (:arguments state)))
                     (nil? ((keyword val) (:instruments (:arguments state))))
                     )
@@ -149,7 +149,9 @@
                         (* (Double/parseDouble  hc) dur)
                         0.95
                         )
-            inst      (when (:inst (:controls state)) ((keyword (:inst (:controls state))) (:instruments (:arguments state))))
+            inst      (or (when (:inst (:controls state)) ((keyword (:inst (:controls state))) (:instruments (:arguments state))))
+                          (when (:i (:controls state)) ((keyword (:i (:controls state))) (:instruments (:arguments state))))
+                          )
 
             dyn       (if (seq dyn-info)
                         (Integer/parseInt (second (first  dyn-info)))

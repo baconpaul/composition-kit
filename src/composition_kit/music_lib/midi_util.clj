@@ -5,6 +5,8 @@
   )
 ;;(t/refer-tupelo)
 
+(def opened-recv (atom []))
+
 (defn ^{:private true} get-opened-receiver-unmemo
   ([]  (get-opened-receiver-unmemo "Bus 1"))
   ([name]
@@ -12,14 +14,21 @@
          named-device-info (filter #(= (.getName ^MidiDevice$Info %) name) device-info)
          devices           (map #(MidiSystem/getMidiDevice ^MidDevice$Info %) named-device-info)
          receivables       (filter #(>= (.getMaxTransmitters ^MidiDevice %) 0) devices)
-         _                 (when (empty? receivables) (throw (ex-info "No midi devices with recievers" {:name name})))
+         _                 (when (empty? receivables)
+                             (throw (ex-info "Unable to resolve midi device name"
+                                             {:name name
+                                              :devices (map #(.getName ^MidiDevice %) device-info)
+                                              })))
          receivable        (first receivables)
          result            (do 
                              (.open ^MidiDevice receivable)
                              (.getReceiver ^MidiDevice receivable))]
+     (swap! opened-recv conj name)
      result)
    )
   )
+
+
 
 (defn ^{:private true} get-opened-transmitter-unmemo
   ([]  (get-opened-transmitter-unmemo "Bus 1"))
@@ -99,7 +108,7 @@
   )
 
 (defn all-notes-off
-  ([] (all-notes-off "Bus 1"))
+  ([] (doseq [r @opened-recv] (all-notes-off r)))
   ([b]
    (let [r (get-opened-receiver b)
          ]
@@ -114,7 +123,7 @@
    )
   )
 
-;;(all-notes-off)
+
 
 
 

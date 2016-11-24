@@ -171,16 +171,24 @@
         fresult (reduce
                  ;; AD CLIP STARTERS
                  (fn [pseq cp]
-                   (ps/add-to-sequence
-                    pseq
-                    (fn [ttt]
-                      (when-let [t-w (tw/agent-transport-window)]
-                        ((:on-stop t-w) (:stop-and-close cp))
+                   (-> pseq 
+                       (ps/add-to-sequence
+                        (fn [ttt]
+                          (when-let [t-w (tw/agent-transport-window)]
+                            ((:on-stop t-w) (:stop-and-close cp))
+                            )
+                          ((:start-at cp) (* (tempo/beats-to-time beat-clk beat-zero) 1000000))
+                          )
+                        0
                         )
-                      ((:start-at cp) (* (tempo/beats-to-time beat-clk beat-zero) 1000000))
-                      )
-                    0
-                    )
+                       (ps/add-to-sequence
+                        (fn [ttt]
+                          ((:position cp) (* (+ 0.5  (tempo/beats-to-time beat-clk beat-zero)) 1000000))
+                          )
+                        500
+                        )
+
+                       )
                    )
                  result
                  clip-players

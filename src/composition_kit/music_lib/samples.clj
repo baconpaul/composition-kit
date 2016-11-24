@@ -10,14 +10,17 @@
                     (.setMicrosecondPosition clip (- start-point-in-microseconds zero-point-in-microseconds))
                     (.start clip)
                     )
+        position (fn [start-point-in-microseconds]
+                   (.setMicrosecondPosition clip (- start-point-in-microseconds zero-point-in-microseconds)))
         stop      (fn [] (.stop clip))
         close     (fn [] (.close clip) (.close strm))
         ]
-    {:start-at start-at :stop stop :close close :stop-and-close (juxt stop close)}
+    {:start-at start-at :position position :stop stop :close close :stop-and-close (juxt stop close)}
     )
   )
 
-;;(def bd (clip-player "/Users/paul/Desktop/MM/Bouncedown.wav" 0))
+#_(def bd (clip-player "/Users/paul/Desktop/MM/Bouncedown.wav" 0))
+
 
 
 
