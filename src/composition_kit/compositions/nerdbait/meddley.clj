@@ -57,6 +57,16 @@
       (midi/add-midi-instrument :tp-sta (midi/midi-port "Bus 4" 2))
       (midi/add-midi-instrument :tbn-leg (midi/midi-port "Bus 4" 3))
 
+      (midi/add-midi-instrument :solov-leg-exp (midi/midi-port "Bus 5" 0))
+      (midi/add-midi-instrument :solov-leg-lyr (midi/midi-port "Bus 5" 1))
+      (midi/add-midi-instrument :solov-marc (midi/midi-port "Bus 5" 2))
+      (midi/add-midi-instrument :solov-stac (midi/midi-port "Bus 5" 3))
+
+      (midi/add-midi-instrument :soloc-leg-exp (midi/midi-port "Bus 5" 4))
+      (midi/add-midi-instrument :soloc-leg-lyr (midi/midi-port "Bus 5" 5))
+      (midi/add-midi-instrument :soloc-marc (midi/midi-port "Bus 5" 6))
+
+
       ))
 
 (def tdelay 150) 
@@ -731,8 +741,116 @@ c2 c,4 a'2 cis4 d2. c2.
    (ls/on-instrument (:tbn-leg instruments))
    ))
 
-;;(try-out tbn-swells)
-#_(try-out verse-3-bassoon)
+(def solo-violin
+  (let [ai (-> instruments
+               (make-alias :exp :solov-leg-exp )
+               (make-alias :lyr :solov-leg-lyr )
+               (make-alias :marc :solov-marc )
+               (make-alias :stac :solov-stac )
+               )
+        ]
+    (>>>
+     (<*>
+      (lily "^hold=0.97 ^i=exp f2.*120 bes2.*120 a2. c2." :relative :c5 :instruments ai)
+      (->
+       (>>>
+        (control-surge 11 90 102 3)
+        (control-surge 11 94 112 3)
+        (control-surge 11 94 112 3)
+        (control-surge 11 94 112 3)
+        )
+       (ls/on-instrument (:solov-leg-exp instruments))
+       )
+      )
+
+     (<*>
+      (lily "^hold=0.97 ^i=lyr d4. ^hold=0.8 ^i=stac d8*60 d e f*84 e d ^hold=0.97 ^i=lyr d4.*97
+^i=stac ^hold=0.8 c16 f a8 a g16 a f c f e d c bes a g c bes a g f e f
+ " :relative :c5 :instruments ai)
+      (->
+       (>>>
+        (control-surge 11 90 102 3/2)
+        (rest-for 3)
+        (control-surge 11 88 76 3/2)
+
+        )
+       (ls/on-instrument (:solov-leg-lyr instruments))
+       )
+      (->
+       (>>>
+        (rest-for 3/2)
+        (control-surge 11 60 82 3/2)
+        (control-surge 11 82 64 3/2)
+        (control-surge 11 72 84 2)
+        (control-surge 11 84 17 2)
+        (control-surge 11 84 17 2)
+        )
+       (ls/on-instrument (:solov-stac instruments))
+       )
+      )
+     (<*>
+      (lily "^hold=0.97 ^i=exp f2*120 a4 bes2.*120 a2. c2. d2. f1." :relative :c4 :instruments ai)
+      (->
+       (>>>
+        (control-surge 11 90 102 3)
+        (control-surge 11 94 112 3)
+        (control-surge 11 94 112 3)
+        (control-surge 11 94 112 3)
+        )
+       (ls/on-instrument (:solov-leg-exp instruments))
+       )
+      )
+
+     )
+    
+    ))
+;;(try-out solo-violin)
+
+(def solo-cello
+  (let [ai (-> instruments
+               (make-alias :exp :soloc-leg-exp )
+               (make-alias :lyr :soloc-leg-lyr )
+               (make-alias :marc :soloc-marc )
+               )
+        ]
+    (>>>
+     (<*>
+      (lily "^hold=0.97 ^inst=marc f16*120 g a bes c8 e ^inst=lyr f4 ^inst=exp d4. bes4. c4. ^inst=marc c16*77 d c*80 bes*84 a d*78 ^inst=lyr c2.
+bes4. f4 g8 f2. a4 c8 f4. c2.
+^i=exp bes2 c4 d2. c2. f2. f2. f4. a4.
+"
+            :relative :c3 :instruments ai)
+      (->
+       (>>>)
+       (ls/on-instrument (:marc ai))
+       )
+      (->
+       (>>>
+        (rest-for 3/2)
+        (control-surge 11 70 80 2)
+        (rest-for 6)
+        (control-surge 11 72 102 15)
+        )
+       (ls/on-instrument (:lyr ai))
+       )
+      (->
+       (>>>
+        (rest-for 24)
+        (control-surge 11 70 90 3)
+        (control-surge 11 82 94 3)
+        (control-surge 11 90 106 3)
+        (control-surge 11 82 97 3)
+        (control-surge 11 77 92 3)
+        (control-surge 11 70 86 3)
+        )
+       (ls/on-instrument (:exp ai))
+       )
+
+      ))
+    )
+  )
+;;(try-out (<*>  solo-cello solo-violin))
+
 (map ls/beat-length  (list
                       verse-2-violin-1
                       verse-2-violin-2
@@ -774,6 +892,10 @@ c2 c,4 a'2 cis4 d2. c2.
            tp-swells
            tbn-swells))
      )
+    (<*>
+     solo-violin
+     solo-cello
+     )
     (rest-for 180)
     )
    (ls/with-clock clock)
@@ -784,12 +906,11 @@ c2 c,4 a'2 cis4 d2. c2.
           final-song
           :samples [ {:file "/Users/paul/Desktop/MM/Bouncedown.wav"  :zero-point  (* (tempo/beats-to-time clock -3) 1000000)}]
           :beat-clock clock
-          :beat-zero tdelay ;;(+ 50 tdelay)
+          :beat-zero 271 ;;tdelay ;;(+ 50 tdelay)
           )
 
   )
 
 ;;(midi/all-notes-off)
-
 
 
