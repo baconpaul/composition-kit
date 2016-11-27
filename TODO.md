@@ -25,4 +25,7 @@
 * Curves applied to mulitple instruments (or really "apply to playing instrument" but that's super tough)
 
 
+* Cleanup ready for GITHUB upload
+
+
 
