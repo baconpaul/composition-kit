@@ -904,9 +904,9 @@ bes4. f4 g8 f2. a4 c8 f4. c2.
 
 (def ag  (midi-play
           final-song
-          :samples [ {:file "/Users/paul/Desktop/MM/Bouncedown.wav"  :zero-point  (* (tempo/beats-to-time clock -3) 1000000)}]
+          ;;:samples [ {:file "/Users/paul/Desktop/MM/Bouncedown.wav"  :zero-point  (* (tempo/beats-to-time clock -3) 1000000)}]
           :beat-clock clock
-          :beat-zero 271 ;;tdelay ;;(+ 50 tdelay)
+          :beat-zero tdelay ;;tdelay ;;(+ 50 tdelay)
           )
 
   )
