@@ -23,6 +23,7 @@
 (def scale
   (lily "^inst=piano ^hold=0.05 c*20 d*90  e8*70 f ^hold=0.99 f4 g*120 r8 g c e f2" :instruments instruments :relative :c5 ))
 
+
 (render/show-png  (render/sequence-to-png scale))
 
 #_(->

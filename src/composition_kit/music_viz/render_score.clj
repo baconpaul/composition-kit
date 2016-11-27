@@ -2,6 +2,7 @@
   (:require [composition-kit.music-lib.logical-sequence :as ls])
   (:require [composition-kit.music-lib.logical-item :as i])
   (:require [composition-kit.music-lib.tonal-theory :as t])
+  (:use clojure.java.shell)
   )
 
 (defn sequence-to-png 
@@ -47,7 +48,7 @@
                                 )
                               )
                           ]
-                      (if (seq (:notes p))
+                      (if (seq? (:notes p))
                         true
 
                         )

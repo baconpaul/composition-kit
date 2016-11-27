@@ -403,7 +403,7 @@ g4 ees bes c1 des4 ees f g aes bes bes2 c,4 c c bes1 c4 c c des2. r2
   )
 
 
-(def playit true)
+(def playit false)
 (def player
   (when playit
     (midi-play

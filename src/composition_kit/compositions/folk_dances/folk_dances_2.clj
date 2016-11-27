@@ -706,7 +706,7 @@ bes'4 bes,1 bes'4 bes,1 bes'4 bes,1
 ;;(-> gunk-poly (on-inst :gunky-hit) (ls/with-clock clock) (midi-play))
 ;;(-> lead (on-inst :soft-lead) (ls/with-clock clock) (midi-play :beat-zero 19))
 
-(def play-it true)
+(def play-it false)
 (def player
   (when play-it
     (->

@@ -897,7 +897,7 @@
   (-> p (on-inst i) (ls/with-clock clock) (midi-play)))
 
 
-(def play-it true)
+(def play-it false)
 (def player
   (when play-it
     (midi-play

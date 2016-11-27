@@ -330,7 +330,7 @@ g16 a g8 f4
    )
   )
 
-(def play-it true)
+(def play-it false)
 (def player
   (when play-it
     (-> final-song

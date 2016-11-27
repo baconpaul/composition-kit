@@ -1,4 +1,4 @@
-(ns composition-kit.compositions.folk-dances.folk-dances-4
+(ns composition-kit.compositions.nerdbait.meddley
   (:require [composition-kit.music-lib.midi-util :as midi])
   (:require [composition-kit.music-lib.tempo :as tempo])
   (:require [composition-kit.music-lib.logical-sequence :as ls])
@@ -902,12 +902,15 @@ bes4. f4 g8 f2. a4 c8 f4. c2.
    )
   )
 
-(def ag  (midi-play
-          final-song
-          ;;:samples [ {:file "/Users/paul/Desktop/MM/Bouncedown.wav"  :zero-point  (* (tempo/beats-to-time clock -3) 1000000)}]
-          :beat-clock clock
-          :beat-zero tdelay ;;tdelay ;;(+ 50 tdelay)
-          )
+(def play-meddley false)
+(def ag
+  (when play-meddley
+    (midi-play
+     final-song
+     ;;:samples [ {:file "/Users/paul/Desktop/MM/Bouncedown.wav"  :zero-point  (* (tempo/beats-to-time clock -3) 1000000)}]
+     :beat-clock clock
+     :beat-zero tdelay ;;tdelay ;;(+ 50 tdelay)
+     ))
 
   )
 
