@@ -17,7 +17,7 @@
          _                 (when (empty? receivables)
                              (throw (ex-info "Unable to resolve midi device name"
                                              {:name name
-                                              :devices (map #(.getName ^MidiDevice %) device-info)
+                                              :devices (map #(.getName ^MidiDevice$Info %) device-info)
                                               })))
          receivable        (first receivables)
          result            (do 

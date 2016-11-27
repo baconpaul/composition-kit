@@ -3,7 +3,7 @@
   (:import [javax.sound.sampled AudioInputStream AudioSystem]))
 
 (defn clip-player [fname zero-point-in-microseconds]
-  (let [strm  (AudioSystem/getAudioInputStream (File.  fname))
+  (let [strm  (AudioSystem/getAudioInputStream (File. ^String fname))
         clip  (AudioSystem/getClip)
         _     (.open clip strm)
         start-at  (fn [start-point-in-microseconds]
