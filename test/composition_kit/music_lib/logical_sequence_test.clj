@@ -185,7 +185,7 @@
 
 (deftest inst-and-clock
   (let [ph     (ls/repeated-note :c4 1/4 5)
-        inst   (midi/midi-instrument 0)
+        inst   (midi/midi-port 0)
         clock  (tempo/constant-tempo 2 4 140)
         phin   (ls/on-instrument ph inst)
         phcl   (ls/with-clock ph clock)

@@ -14,7 +14,7 @@
   (let [mphrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
         rphrase (ls/concrete-logical-sequence [(i/rest-with-duration 1 0)])
         controls (ls/concrete-logical-sequence (map (fn [v t] (i/control-event 64 v t)) [ 127 64 0] [ 0 1 3/2 ] ))
-        inst   (midi/midi-instrument 0)
+        inst    (midi/midi-instrument-from-name-and-port :test  (midi/midi-port 0))
         bpm    140
         clock  (tempo/constant-tempo 2 4 bpm)
         phrase (-> (ls/merge-sequences mphrase rphrase controls)
@@ -49,7 +49,7 @@
       (is (nil? (agent-error play-agent)))
 
       ;; Was everything on the channel of the midi instrument
-      (is (every? #(= (:channel %) (:channel inst)) test-midi-notes-sent))
+      (is (every? #(= (:channel %) (:channel (:port inst))) test-midi-notes-sent))
       ;; Are the notes what we expected
       (let [ons (filter #(= (:command %) ShortMessage/NOTE_ON) test-midi-notes-sent)
             offs (filter #(= (:command %) ShortMessage/NOTE_OFF) test-midi-notes-sent)
@@ -71,20 +71,21 @@
 
   )
 
+
 (deftest schedule-a-loop
   (let [phrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] )
         loop   (ls/loop-sequence phrase 10)
         pseq   (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
                 (-> loop
-                    (ls/on-instrument (midi/midi-instrument 0))
+                    (ls/on-instrument (midi/midi-instrument-from-name-and-port :test  (midi/midi-port 0)))
                     (ls/with-clock (tempo/constant-tempo 4 4 120)))
                 )
         clock (tempo/constant-tempo 4 4 120)
         pseq-bc (ltop/schedule-logical-on-physical
                  (ps/new-sequence)
                  (-> loop
-                     (ls/on-instrument (midi/midi-instrument 0))
+                     (ls/on-instrument (midi/midi-instrument-from-name-and-port :test (midi/midi-port 0)))
                      (ls/with-clock clock))
                  :beat-clock clock
                  )
@@ -99,11 +100,11 @@
         pseq   (ltop/schedule-logical-on-physical
                 (ps/new-sequence)
                 (-> phrase
-                    (ls/on-instrument (midi/midi-instrument 0))
+                    (ls/on-instrument (midi/midi-instrument-from-name-and-port :test (midi/midi-port 0)))
                     (ls/with-clock (tempo/constant-tempo 4 4 120))))
         shortseq (ltop/create-and-schedule
                   (-> phrase
-                      (ls/on-instrument (midi/midi-instrument 0))
+                      (ls/on-instrument (midi/midi-instrument-from-name-and-port :test (midi/midi-port 0)))
                       (ls/with-clock (tempo/constant-tempo 4 4 120))))]
     (is (= (count (:seq pseq)) (count (:seq shortseq))))
     (is (= (map i/item-beat (:seq pseq)) (map i/item-beat (:seq shortseq))))
@@ -115,7 +116,7 @@
   (let [phrase (ls/line-segment-dynamics (ls/loop-sequence (ls/sequence-from-pitches-and-durations [ :c4 :d4 :e4 ] [ 1 1/2 1/2 ] ) 10)
                                          0 10
                                          20 120)
-        inst   (midi/midi-instrument 0)
+        inst   (midi/midi-instrument-from-name-and-port :test (midi/midi-port 0))
         bpm    200
         clock  (tempo/constant-tempo 2 4 bpm)
         pseq   (ltop/schedule-logical-on-physical
@@ -148,7 +149,7 @@
       (is (nil? (agent-error play-agent)))
 
       ;; Was everything on the channel of the midi instrument
-      (is (every? #(= (:channel %) (:channel inst)) test-midi-notes-sent))
+      (is (every? #(= (:channel %) (:channel (:port  inst))) test-midi-notes-sent))
       ;; Are the notes what we expected
       (let [ons (filter #(= (:command %) ShortMessage/NOTE_ON) test-midi-notes-sent)
             offs (filter #(= (:command %) ShortMessage/NOTE_OFF) test-midi-notes-sent)
@@ -167,7 +168,7 @@
 
 (deftest error-cases
   (let [phrase (ls/sequence-from-pitches-and-durations [ :c4 :d4 ] [ 1 1 ] )
-        inst   (midi/midi-instrument 0)
+        inst   (midi/midi-instrument-from-name-and-port :test (midi/midi-port 0))
         clock  (tempo/constant-tempo 2 4 200)
         ]
     (is (thrown? clojure.lang.ExceptionInfo (ltop/schedule-logical-on-physical (ps/new-sequence) phrase)))

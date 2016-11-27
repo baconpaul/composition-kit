@@ -103,8 +103,10 @@
 
 ;; Now make the instrument maps. Make an abstraction name to create it for now
 (defn midi-instrument-map [] {})
+
+(defn midi-instrument-from-name-and-port [name port] {:name name :port port})
 (defn add-midi-instrument [m name port]
-  (assoc m name { :name name :port port })
+  (assoc m name (midi-instrument-from-name-and-port name port))
   )
 
 (defn all-notes-off

@@ -77,8 +77,8 @@
     )
   )
 
-(deftest midi-instrument-api
-  (let [m (m/midi-instrument "Bus 1" 0)
+(deftest midi-port-api
+  (let [m (m/midi-port "Bus 1" 0)
         t (m/get-opened-transmitter)
         callback-store (atom [])
         ]
@@ -103,7 +103,7 @@
       (is (= (map :data1 test-midi-cycle) '(12)))
       (is (= (map :data2 test-midi-cycle) '(72)))
 
-      (is (= (m/midi-instrument "Bus 1" 13) (m/midi-instrument 13)))
+      (is (= (m/midi-port "Bus 1" 13) (m/midi-port 13)))
       )
     )
   )
