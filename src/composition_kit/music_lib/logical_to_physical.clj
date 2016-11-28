@@ -36,7 +36,7 @@
         
         pattern  (->> in-pattern
                       (drop-while #(< (i/item-beat %) beat-zero))
-                      (take-while #(or (< beat-end 0) (< (i/item-beat %) beat-end)))
+                      (take-while #(or (neg? beat-end) (< (i/item-beat %) beat-end)))
                       )
         
         reduce-seq
@@ -136,7 +136,7 @@
                 pattern)
 
         result
-        (if (not (nil? beat-clk))
+        (if-not (nil? beat-clk)
           (let [len  (ls/beat-length pattern)
                 overs 4
                 ]
@@ -165,7 +165,7 @@
             )
           reduce-seq)
 
-        _ (when (and  (> (count clip-players) 0) (nil? beat-clk))
+        _ (when (and  (pos? (count clip-players)) (nil? beat-clk))
             (throw (ex-info "A beat clock is required for samples" {}))
             )
         fresult (reduce

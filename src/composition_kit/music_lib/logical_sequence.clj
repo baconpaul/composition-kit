@@ -98,7 +98,7 @@
 
 (defn concat-sequences [ & concat-these ]
   "string sequences on after another"
-  (mapcat (fn [se of] (beat-shift se of)) concat-these  (reductions + 0 (map beat-length concat-these)))
+  (mapcat beat-shift concat-these  (reductions + 0 (map beat-length concat-these)))
   )
 
 (defn transform-when [sequence pred xform value]
@@ -221,7 +221,7 @@ is a slow then fast crescendo on top of the undelrying dynmics"
 hold it until the next beat, where it releases and re-applies. So basically pedal clears are
 at each of the arguments. The last argument ends the pedal."
   (let [shiftarg  (concat (rest arguments) [(last arguments)])
-        fromto    (map (fn [ a b ] (list a b)) arguments shiftarg)
+        fromto    (map list arguments shiftarg)
 
         ramps     (mapcat (fn [[s e]]
                             (if (= s e) ;; we are at the end so just turn off

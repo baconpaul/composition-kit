@@ -103,7 +103,7 @@
 
 (defn add-transform [ transformer type xform ]
   (let [keyw (keyword (str (name type) "-xform"))]
-    (if (not (contains? transformer keyw))
+    (if-not (contains? transformer keyw)
       (throw (ex-info (str "Can't assign transformer to unknown slot '" keyw "' (" type ")")
                       {:type type :slot keyw}))
       (assoc transformer keyw xform))

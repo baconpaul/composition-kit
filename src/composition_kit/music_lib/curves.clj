@@ -20,7 +20,7 @@
          ]
      (fn [x]
        (let [t (x-shift x)
-             r (/ 1 (+ 1 (Math/exp (- t))))
+             r (/ 1 (inc (Math/exp (- t))))
              ]
          (r-shift r))
        )

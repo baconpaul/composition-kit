@@ -32,7 +32,7 @@ at measure 12. Remember measures start at 1.
        1   120
        10  160
        12  104)"
-  (if (not (= (first measures-and-tempi) 1)) (throw (ex-info "The first measure has to be 1" {:inputs measures-and-tempi }))
+  (if (not= (first measures-and-tempi) 1) (throw (ex-info "The first measure has to be 1" {:inputs measures-and-tempi }))
       (let [measures (take-nth 2 measures-and-tempi)
             tempi    (take-nth 2 (rest measures-and-tempi))
             beats-at-transition (map #(* (dec %) beats-per-measure) measures)

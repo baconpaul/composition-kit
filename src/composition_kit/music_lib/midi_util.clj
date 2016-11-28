@@ -118,7 +118,7 @@
       (map (fn [chan]
              ((send-control-change r chan 64 0) 0);; no pedal
              (doall (map #(do
-                            (when (= 0 (mod % 20)) (java.lang.Thread/sleep 1))
+                            (when (zero? (mod % 20)) (java.lang.Thread/sleep 1))
                             ((send-note-off r chan %) 0)) (range 128))))
            (range 16))))
    true

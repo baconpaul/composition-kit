@@ -53,7 +53,7 @@
 (defn duration-list-to-beats [ ld ]
   (let [ndur (first ld)
         rval (rest ld)
-        _    (when (and (not (empty? rval)) (not (= (ffirst rval) :l-duration-modifier)))
+        _    (when (and (not (empty? rval)) (not= (ffirst rval) :l-duration-modifier))
                (throw (ex-info "Malformed parse tree in duration"
                                {:d ld})))
         dots (if (empty? rval) "" (second (first rval)))
@@ -181,7 +181,7 @@
       :l-chord
       (let [notes  (filter #(= (first %) :l-note) nodes)
             kl-to-m      #(reduce (fn [m el] (assoc m (first el) (rest el))) {} %)
-            other  (kl-to-m (filter #(not (= (first %) :l-note)) nodes))
+            other  (kl-to-m (filter #(not= (first %) :l-note) nodes))
 
             resolved-chord-notes
             (loop [[n & rst] notes
@@ -292,7 +292,7 @@
          dur      (or (:dur restmap) 1/4)] ;; 1/4 of a beat is a 16th note generally
      (->>
       (map-indexed (fn[idx c] {:char      c
-                               :note     (not (= c \.))
+                               :note     (not= c \.)
                                :value    (if (= c \.) 0 (xform c))
                                :dur      dur
                                :beat     (* idx dur)
