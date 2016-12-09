@@ -27,6 +27,12 @@
     (is (= (count parse) 7))
     (is (= (map i/item-beat parse) '(0 1 1 3/2 2 5/2 4)))
     )
+  (let [parse 
+        (p/lily-to-logical-sequence "a4 b \\tuplet 2/3 { c8 d e } f")]
+    (is (= (count parse) 6))
+    (is (= (map (i/item-beat parse) '(0 1 2 (+ 2 2/3) (+ 2 4/3) 3))))
+    )
+
   )
 
 (deftest step-parse
@@ -45,4 +51,5 @@
     (is (= dyn '(0 127 0 127 0 127 63 63)))
     )
   )
+
 

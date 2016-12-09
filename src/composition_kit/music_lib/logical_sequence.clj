@@ -232,3 +232,30 @@ at each of the arguments. The last argument ends the pedal."
         ]
     result
     ))
+
+(defn speed-up-by [ amt sqn ]
+  (->> sqn
+       (map #(-> (identity-item-transformer %)
+                 (add-transform :beat (fn [i] (/ (item-beat i) amt)))
+                 (add-transform :end-beat (fn [i] (/ (item-end-beat i) amt)))
+                 (add-transform :payload
+                                (fn [i]
+                                  (case (item-type i)
+                                    :composition-kit.music-lib.logical-item/notes-with-duration
+                                    (-> (item-payload i)
+                                        (update :dur (fn [x] (/ x amt)))
+                                        (update :hold-for (fn [x] (/ x amt)))
+                                        )
+                                    :composition-kit.music-lib.logical-item/rest-with-duration
+                                    (-> (item-payload i)
+                                        (update :dur (fn [x] (/ x amt)))
+                                        )
+                                    
+                                    (item-payload i)
+                                    )
+                                  ))
+                 ;; and whack hold-for and dur if it's a note
+                 ) ))
+  )
+
+
