@@ -6,6 +6,9 @@
 
   (:use composition-kit.core))
 
+;; bass and drums over new piano in a simple A B A structure
+;; end it with an extended bersion of the mixed beat descent with triplets layered over in a growing descent pattern to a big double hit
+
 (def instruments
   (-> (midi/midi-instrument-map)
       (midi/add-midi-instrument :piano       (midi/midi-port 0))
@@ -38,6 +41,32 @@
           (= b4 3) 104
           (= b4 7/2) 107
           :else (-  87 (* 3 bm3w))))
+      )))
+
+(def accent-pattern-dynamics-two
+  (fn [i]
+    (fn [w]
+      (let [b (i/item-beat w)
+            b4 (mod b 4)
+            ]
+        (cond
+          (= b4 0) 105
+          (= b4 3/2) 98
+          (= b4 5/2) 107
+          :else 87))
+      )))
+(def accent-pattern-dynamics-three
+  (fn [i]
+    (fn [w]
+      (let [b (i/item-beat w)
+            b4 (mod b 4)
+            ]
+        (cond
+          (= b4 0) 105
+          (= b4 3/2) 98
+          (= b4 5/2) 107
+          (>= b4 3) 110
+          :else 87))
       )))
 
 
@@ -108,20 +137,34 @@ e16 f e8 dis4 e16 f e8 d4
   )
 
 (def two-piano
-  (let [lh (->  (lily "f4. a2 r8 bes4. g2 r8" :relative :c3)
+  (let [lh (->  (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 a4.*76
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 <c c'>8
+" :relative :c3)
                 (as-> ms
                     (<*> ms (ls/transpose ms -12)))
                 (ls/hold-for-pct 0.99)
                 )
-        rh (->  (lily "<f a c>1 <f bes c>1" :relative :c3) (ls/hold-for-pct 0.99))
+        rh (>>>
+            (->  (lily "c8 f e f a bes f g e g c g bes a f c" :relative :c4)
+                 (ls/transform :dynamics accent-pattern-dynamics-two)
+                 (ls/amplify 0.9)
+                 (ls/hold-for-pct 0.7))
+            (->  (lily "c8 f e f a bes f g e g c g bes a <c, g c'> <c g c'>" :relative :c4)
+                 (ls/transform :dynamics accent-pattern-dynamics-three)
+                 (ls/amplify 0.94)
+                 (ls/hold-for-pct 0.7))
+            )
 
         p (<*> lh rh)
-        ;;_ (try-out p piano)        
+        ;;_ (try-out p :piano)        
         ]
     (>>>
      p
      p
+     p
+     p ;; probably get a transitionary "Q" here eventually
      )))
+
 
 (def drum-pattern
   (let [test-p (ls/explicit-phrase [ :c4 :c4 ] [1 1])
@@ -203,8 +246,41 @@ e16 f e8 dis4 e16 f e8 d4
          (ls/loop-n 2)
          )
 
+        b-part-intro
+        (>>> (rest-for (+ 4 4 4 3))
+             two-beat-accent)
+
+        b-pattern-one
+        [:c1   "X.....X........."
+         :e6   ".FGY...G....M..."
+         :f6   "....P...G.Z....A"
+         :c4   ".....Q...R...RZ."
+         :fis2 "G...U...R...P..." 
+         ]
+
+        b-pattern-one-end
+        [:c1   "X.....X....."
+         :e6   ".FGY...G...."
+         :f6   "....P...G.Z."
+         :c4   ".....Q...R.."
+         :fis2 "G...U...R..." 
+         ]
+        
+
+        b-part-first
+        (>>>
+         b-part-intro
+
+         (->  (>>> 
+               (-> (step-strings b-pattern-one) (ls/loop-n 3))
+               (step-strings b-pattern-one-end)
+               two-beat-accent)
+              (ls/loop-n 3))
+
+         )
         ;;_
         ;;(try-out intro drum-pattern)
+        ;;_ (try-out (ls/loop-n  (step-strings b-pattern-one) 2) :drum-set)
         ]
     
     (>>> 
@@ -212,6 +288,7 @@ e16 f e8 dis4 e16 f e8 d4
      first-sec
      intro-repeat
      first-sec
+     b-part-first
      )
 
 
@@ -230,6 +307,13 @@ e16 f e8 dis4 e16 f e8 d4
            (lily "f4. g4. bes4 f4. g4. bes4 f4. g4. bes4 r2. bes4" :relative :c2)
            (lily "f4. g4. bes4 f4. g4. bes4 f4. g4. bes4 r2. bes4" :relative :c2)
            (lily "c1 c1 c1 c1 c1 c1 c1 c2 e2" :relative :c3)
+           (lily "f8 r8 r2. r1 r1 r2. c8 c," :relative :c3)
+           (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relative :c2)
+           (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relative :c2)
+           (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relative :c2)
            )
           (ls/hold-for-pct 0.96))
      )
@@ -291,9 +375,20 @@ g16 a g8 f4
                ^inst=violin-stac ^hold=0.7 f8*75 f16*92 d*81 c8*94
                ^inst=violin-marc ^hold=1.01 f2*97 r2 f2*94 r8
                ^inst=violin-stac ^hold=0.7 f8 f16 d c8 ees d des c b bes
-               ^inst=violin-marc bes4*104 
+               ^inst=violin-marc bes'4*97 
               " :relative :c5 :instruments instruments)
 
+        part-c
+        (lily "^inst=violin-marc ^hold=1.01 f4*104" :relative :c5 :instruments instruments)
+
+        b-part-solo
+        (lily "^inst=violin-marc ^hold=1.01 
+c1*110
+f1*114
+g1*117
+^inst=violin-stac ^hold=1.01 a16. bes c d  e f g f c8 b
+
+" :relative :c5 :instruments instruments)
         
         ]
     (>>>
@@ -302,6 +397,9 @@ g16 a g8 f4
      part-a-second-time-round
      part-a-second-time-round
      part-b-first-time
+     part-c
+     (rest-for 15) ;; since part c has the final accent in it
+     b-part-solo
      )
     )
   )
@@ -330,16 +428,19 @@ g16 a g8 f4
    )
   )
 
-(def play-it false)
+
+(def play-it true)
 (def player
   (when play-it
     (-> final-song
         (midi-play
-         :beat-zero -1
-         ;;:beat-zero 32
+         ;;:beat-zero -1
+         :beat-zero 124
          ;;:beat-zero 30
          ;;:beat-zero 14
          ;;:beat-end 33
          :beat-clock clock
          ))))
+
+
 
