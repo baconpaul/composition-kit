@@ -112,6 +112,18 @@
                          :controls  {}
                          })
 
+
+(defn clone-to-blankish [s]
+  (let [af (fn [q r] (assoc q r (r s)))]
+    (-> lily-blank-state
+        (af :prior-root)
+        (af :prior-dur)
+        (af :dynamics)
+        (af :controls)
+        (af :arguments)
+        )))
+
+
 ;; Darn it - since the LS changes between a list and vector unpredictably just do this whack together of vectors.
 (defn conj-on [m k i] (update-in m [k] concat [i]))
 
@@ -210,10 +222,7 @@
       :l-voices
       ;; This is actually pretty straigt forward. Make a blank state with the prior of the current state
       ;; then start mapping it over the voices
-      (let [bstate    (-> lily-blank-state
-                          ;;(assoc :starts-at (:starts-at state))
-
-                          (assoc :prior-dur  (:prior-dur state)))
+      (let [bstate    (clone-to-blankish state)
             resolved  (map #(lily-phrase-traverse % bstate) nodes)
 
             merged    (apply ls/merge-sequences (map :logical-sequence resolved))
@@ -247,8 +256,7 @@
             inv-frac-val (/ (Integer/parseInt (nth frac 2)) (Integer/parseInt (nth frac 1)))
             
             ;; Now we are sort of like 'voices' except we only have one braces and we need to adjust lengths
-            bstate    (-> lily-blank-state
-                          (assoc :prior-dur  (:prior-dur state)))
+            bstate    (clone-to-blankish state)
             resolved  (lily-phrase-traverse braces bstate)
 
             spedup    (ls/speed-up-by inv-frac-val (:logical-sequence resolved))
