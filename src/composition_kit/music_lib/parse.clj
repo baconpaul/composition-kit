@@ -232,7 +232,45 @@
       (->
        (reduce (fn [s n] (lily-phrase-traverse n s)) state nodes)
        (update-in [:logical-sequence] ls/concrete-logical-sequence))
+
+      :l-tuplet
+      (let [frac (first nodes)
+            braces (second nodes)
+            _ (when-not (and
+                         (= (first frac) :l-fraction)
+                         (= (first braces) :l-braces)
+                         (= (count nodes) 2)
+                         )
+                (throw (ex-info (str "Malformed tuplet. I expect fraction and braces." {:nodes nodes})))
+                )
+
+            inv-frac-val (/ (Integer/parseInt (nth frac 2)) (Integer/parseInt (nth frac 1)))
+            
+            ;; Now we are sort of like 'voices' except we only have one braces and we need to adjust lengths
+            bstate    (-> lily-blank-state
+                          (assoc :prior-dur  (:prior-dur state)))
+            resolved  (lily-phrase-traverse braces bstate)
+
+            spedup    (ls/speed-up-by inv-frac-val (:logical-sequence resolved))
+
+            nextls    (ls/concat-sequences (:logical-sequence state) spedup)
+            nextsa    (ls/beat-length nextls)
+            ]
+        (-> state
+            (conj-on :raw-music parse-item)
+            (conj-on :notes :TUPLETS)
+            (conj-on :dur (ls/beat-length spedup))
+            (assoc :logical-sequence nextls)
+            (assoc :starts-at nextsa))
+        )
+      
+      ;; Default
+      (throw (ex-info (str  "Unhandled node in Lily Parser '" key "'")
+                      { :parse-item parse-item :state state }
+                      ))
       )
+
+    
     )
   )
 

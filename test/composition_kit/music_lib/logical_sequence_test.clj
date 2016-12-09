@@ -252,3 +252,22 @@
         ]
     (is (= (count q) 4))
     ))
+
+(deftest speedup
+  (let [ph (ls/repeated-note :c4 1 6)
+        ph2 (ls/speed-up-by 2 ph)
+        ph3 (ls/speed-up-by 3/2 ph)
+        ]
+    (is (= (ls/beat-length ph) 6))
+    (is (= (ls/beat-length ph2) 3))
+    (is (= (ls/beat-length ph3) 4))
+    (is (= (map (comp :hold-for i/item-payload) ph) (repeat 6 0.95)))
+    (is (= (map (comp :hold-for i/item-payload) ph2) (repeat 6 0.475)))
+    (is (= (map (comp :dur i/item-payload) ph) (repeat 6 1)))
+    (is (= (map (comp :dur i/item-payload) ph2) (repeat 6 1/2)))
+    (is (= (map (comp :dur i/item-payload) ph3) (repeat 6 2/3)))
+
+    )
+  
+  )
+
