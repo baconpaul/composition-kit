@@ -202,11 +202,28 @@
               (if (nil? n) res
                   (let [new-note (note-with-duration-to-note [ :l-note-with-duration n ] p)]
                     (recur rst (:note (:note new-note)) (conj res (:note new-note))))))
-            
+
+            ;; This is a gross mess that I have to copy this all down to chord. Come back to this
+            ;; and fix it some time (like when I add the next thing to the syntax) but for now
+            ;; do this. Note there's a limit that all chord elements have the same dynamics.
             dur
             (if (:l-duration other)
               (duration-list-to-beats (:l-duration other))
               (:prior-dur state))
+
+            hold-for  (if-let [hc  (:hold (:controls state))]
+                        (* (Double/parseDouble  hc) dur)
+                        0.95
+                        )
+            inst      (or (when (:inst (:controls state)) ((keyword (:inst (:controls state))) (:instruments (:arguments state))))
+                          (when (:i (:controls state)) ((keyword (:i (:controls state))) (:instruments (:arguments state))))
+                          )
+
+            dyn-info  (filter #(= (first %) :l-dynamic-modifier) (rest parse-item))
+
+            dyn       (if (seq dyn-info)
+                        (Integer/parseInt (second (first  dyn-info)))
+                        (:dynamics state))
             
             ]
         (-> state
@@ -214,7 +231,12 @@
             (conj-on :notes     resolved-chord-notes)
             (conj-on :durations dur)
             (conj-on :logical-sequence
-                     (i/notes-with-duration (map :note resolved-chord-notes) dur (:starts-at state)))
+                     (-> (i/notes-with-duration (map :note resolved-chord-notes) dur (:starts-at state) hold-for)
+                         (i/identity-item-transformer)
+                         (i/add-transform :instrument (constantly inst))
+                         (i/add-transform :dynamics (constantly (constantly dyn)))
+                         )
+                     )
             (update-in [:starts-at] #(+ % dur))
             (assoc :prior-root (:note (first resolved-chord-notes)))
             (assoc   :prior-dur  dur)))
