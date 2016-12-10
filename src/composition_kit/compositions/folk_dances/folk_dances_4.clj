@@ -6,7 +6,8 @@
 
   (:use composition-kit.core))
 
-;; bass and drums over new piano in a simple A B A structure
+;; drum smidge
+;; then back to piano with bass and drum one and on interwoven down continue
 ;; end it with an extended bersion of the mixed beat descent with triplets layered over in a growing descent pattern to a big double hit
 
 (def instruments
@@ -17,6 +18,8 @@
       (midi/add-midi-instrument :muted-bell  (midi/midi-port 3))
       (midi/add-midi-instrument :violin-marc (midi/midi-port 4))
       (midi/add-midi-instrument :violin-stac (midi/midi-port 5))
+      (midi/add-midi-instrument :violin-lyr  (midi/midi-port 6))
+      (midi/add-midi-instrument :wierdo-lead  (midi/midi-port 7))
       )
   )
 
@@ -137,7 +140,8 @@ e16 f e8 dis4 e16 f e8 d4
   )
 
 (def two-piano
-  (let [lh (->  (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 a4.*76
+  (let [
+        lh (->  (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 a4.*76
 f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 <c c'>8
 " :relative :c3)
                 (as-> ms
@@ -156,13 +160,37 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 <c c'>8
             )
 
         p (<*> lh rh)
+
+        lh-q (->  (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 a4.*76
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>4
+" :relative :c3)
+                  (as-> ms
+                      (<*> ms (ls/transpose ms -12)))
+                  (ls/hold-for-pct 0.99)
+                  )
+        rh-q (>>>
+              (->  (lily "c8 f e f a bes f g e g c g bes a f c" :relative :c4)
+                   (ls/transform :dynamics accent-pattern-dynamics-two)
+                   (ls/amplify 0.9)
+                   (ls/hold-for-pct 0.7))
+              (->  (lily "c8 f e f a bes f g e g c g bes a <c, g c'>4" :relative :c4)
+                   (ls/transform :dynamics accent-pattern-dynamics-three)
+                   (ls/amplify 0.94)
+                   (ls/hold-for-pct 0.7))
+              )
+
         ;;_ (try-out p :piano)        
         ]
     (>>>
      p
      p
      p
-     p ;; probably get a transitionary "Q" here eventually
+     p
+     p
+     p
+     (<*> lh-q rh-q)
+     (rest-for 4) (lily "<c c' c' g' c>8 <c c' c' g' c>" :relative :c2)
+     (rest-for 4) (lily "<c c' c' g' c>8 <c c' c' g' c>" :relative :c2)
      )))
 
 
@@ -177,7 +205,21 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 <c c'>8
                                (ls/explicit-dynamics '( 120 110))))
                          (->  (ls/explicit-phrase [ :cis1 :cis1 ] [ 1/2 1/2 ])
                               (ls/explicit-dynamics '( 120 110)))
+
                          )
+        
+        one-beat-accent (<*>
+                         (->  (ls/explicit-phrase [ :c1  ] [ 1/2])
+                              (ls/explicit-dynamics '( 120 )))
+                         (>>>
+                          (rest-for 0.05)
+                          (->  (ls/explicit-phrase [ :d1  ] [ 0.95])
+                               (ls/explicit-dynamics '( 120))))
+                         (->  (ls/explicit-phrase [ :cis1  ] [ 1 ])
+                              (ls/explicit-dynamics '( 120 )))
+
+                         )
+
         intro  (>>> (rest-for (+ 4 4 4 3))
                     two-beat-accent
                     (->
@@ -275,8 +317,12 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 <c c'>8
                (-> (step-strings b-pattern-one) (ls/loop-n 3))
                (step-strings b-pattern-one-end)
                two-beat-accent)
-              (ls/loop-n 3))
+              (ls/loop-n 5)
 
+              )
+         (-> (step-strings b-pattern-one) (ls/loop-n 3))
+         (step-strings b-pattern-one-end)
+         one-beat-accent
          )
         ;;_
         ;;(try-out intro drum-pattern)
@@ -289,6 +335,10 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 <c c'>8
      intro-repeat
      first-sec
      b-part-first
+     (rest-for 4)
+     two-beat-accent
+     (rest-for 4)
+     two-beat-accent
      )
 
 
@@ -314,6 +364,13 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relativ
 f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relative :c2)
            (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
 f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relative :c2)
+           (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relative :c2)
+           (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relative :c2)
+           (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>4" :relative :c2)
+           (lily "r1 c8 c8 r1 c8 c8" :relative :c2)
            )
           (ls/hold-for-pct 0.96))
      )
@@ -386,9 +443,20 @@ g16 a g8 f4
 c1*110
 f1*114
 g1*117
-^inst=violin-stac ^hold=1.01 a16. bes c d  e f g f c8 b
+^inst=violin-stac ^hold=0.6  \\tuplet 2/3 { a,8*80 bes c*83 bes c d*90 c d e*97 f g a }
+^inst=violin-marc ^hold=1.01
+bes4*105 c2*108  d4*88
+^inst=violin-stac ^hold=0.8 \\tuplet 2/3 {c4 d8 c4 bes8 a4 bes8 a8 g f}
+^inst=violin-marc ^hold=1.01 g,4*108 a2.*110
 
 " :relative :c5 :instruments instruments)
+
+        smidge-theme
+        (lily "
+^inst=violin-marc ^hold=0.9  c4. c4 ^inst=violin-stac ^hold=0.9 c16 bes a8 g e c
+^inst=violin-marc ^hold=0.9  c'4. c4 ^inst=violin-stac ^hold=0.9 c16 bes a8 g e c
+"
+              :relative :c6 :instruments instruments)
         
         ]
     (>>>
@@ -400,9 +468,61 @@ g1*117
      part-c
      (rest-for 15) ;; since part c has the final accent in it
      b-part-solo
+     (rest-for 36)
+     b-part-solo
+     (rest-for 4)
+     smidge-theme
      )
     )
   )
+
+(def wierdo-b-lead
+  (let [arp (fn [& args]
+              (ls/explicit-phrase args (repeat (* 1 (count args)) 1/4))
+              )
+        pre-hit-arp (arp :c5 :d5 :a5 :bes5
+                         :c6 :bes5 :c6 :e6
+                         :f6 :g6 :d6 :f5
+                         :d6 :bes5 :a5 :g5
+                         
+                         :c5 :c6 :c5 :d6
+                         :e6 :d6 :c6 :e6
+                         :f6 :d6 :bes5 :f5
+                         :g5 :a5 :bes5 :d6
+
+                         :c5 :d5 :a5 :bes5
+                         :c6 :bes5 :c6 :e6
+                         :f6 :g6 :d6 :f5
+                         :d6 :bes5 :a5 :g5
+                         
+                         :c5 :c6 :c5 :d6
+                         :e6 :d6 :c6 :e6
+                         :f6 :d6 :bes5 :f5
+                         )
+        pat-arp
+        (>>>
+         pre-hit-arp
+         (ls/explicit-phrase [:c6 :c6] [ 1/2 1/2 ])
+         )
+
+        pat-arp-b
+        (>>>
+         pre-hit-arp
+         (ls/explicit-phrase [:c6] [ 1 ])
+         )
+
+        ;;_ (try-out pat-arp :wierdo-lead)
+
+        ]
+    (>>>
+     (rest-for 176)
+     ;; this is the right idea. Figure out the chords I want to use; and also figure out the sound a bit more "filtery"
+     pat-arp
+     pat-arp
+     pat-arp
+     pat-arp-b
+     )))
+
 
 ;;(try-out bell-one muted-bell)
 
@@ -418,24 +538,26 @@ g1*117
       (ls/loop-n 2)
       )
      (-> two-piano (on-inst :piano))
+     (-> one-a-piano (on-inst :piano))
      )
     (-> drum-pattern (on-inst :drum-set))
     (-> bass (on-inst :syn-bass))
     (-> bell-one (on-inst :muted-bell))
     violin
+    (-> wierdo-b-lead (on-inst :wierdo-lead))
     )
    (ls/with-clock clock)
    )
   )
-
 
 (def play-it true)
 (def player
   (when play-it
     (-> final-song
         (midi-play
-         ;;:beat-zero -1
-         :beat-zero 124
+         :beat-zero -1
+         ;;:beat-zero 196
+         ;;:beat-end 184
          ;;:beat-zero 30
          ;;:beat-zero 14
          ;;:beat-end 33
