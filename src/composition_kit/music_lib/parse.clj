@@ -5,6 +5,8 @@
   (:require [instaparse.core :as insta])
   (:require [instaparse.failure :as instafail]))
 
+;; Parsers for lilypond-like-syntax I'm using and for the step sequencer in ascii
+
 (def lily-phrase-grammar
   "
   l-expression = <whitespace*> ( l-voice | l-voices ) 

@@ -1,5 +1,8 @@
 (ns composition-kit.music-lib.tonal-theory)
 
+;; A nascent library of concepts like notes and intervals. I used this less composing than I thought I would but it's
+;; still handy to have around.
+
 (def ^:priave notes-data
   ;;(sorted-set-by (map-comparator :octave :notebase :accidental)
   (let [accidental-names { -2 "ees" -1 "es" 0 "" 1 "is" 2 "iis" }

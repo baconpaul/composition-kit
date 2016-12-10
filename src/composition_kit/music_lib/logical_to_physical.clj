@@ -9,6 +9,9 @@
   (:require [composition-kit.music-lib.samples :as samp])
   )
 
+;; Here we project through the clock and the instrument to a set of actual midi functions which will play the music
+;; to the midi ports specified at the time and volumen needed, including the various control and pitch commands.
+
 (defn ^:private schedulable-item [item]
   (let [instrument (i/item-instrument item)
         clock      (i/item-clock item)
@@ -23,7 +26,7 @@
 (defn schedule-logical-on-physical
   [in-seq in-pattern & opt-arr]
   ;; This is basically a massive reduce statement on a big switch based on item type which then
-  ;; does the magic
+  ;; does the magic. There's no real way to make this anything other than it is as far as I can see.
   (let [opts (apply hash-map opt-arr)
         beat-zero (get opts :beat-zero 0)
         beat-end  (get opts :beat-end -1)

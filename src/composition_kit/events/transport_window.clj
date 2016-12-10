@@ -1,5 +1,9 @@
 (ns composition-kit.events.transport-window)
 
+;; This is really just gunky UI code to make a window that shows me where I am and has a stop button.
+;; The real trick is in logical to physical where we put in the updates of the beats to change the position
+;; in the song which forces the UI refresh.
+
 (defn format-time [t]
   (let [ms (mod t 1000)
         ss (int (/ t 1000.0))

@@ -3,9 +3,11 @@
   (:use [composition-kit.music-lib.logical-item])
   )
 
-;; so a logical sequence is simply an object respodning to first and rest where the guarantee is that
+;; a logical sequence is simply an object respodning to first and rest where the guarantee is that
 ;; (item-beat first) < (item-beat (first rest)) always. There are lots of ways to make these. Here are a few,
-;; but with lazy-seq you can of course do more
+;; but with lazy-seq you can of course do more. The items are assumed to be logical items (so music-item? x returns true).
+;;
+;; This library also contains a variety of transformers and combinators on sequences which let you construct music.
 
 (defn concrete-logical-sequence [items]
   (sort-by item-beat items))
