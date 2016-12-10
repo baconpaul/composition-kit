@@ -162,7 +162,7 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 <c c'>8
         p (<*> lh rh)
 
         lh-q (->  (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 a4.*76
-f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>4
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 r8
 " :relative :c3)
                   (as-> ms
                       (<*> ms (ls/transpose ms -12)))
@@ -173,7 +173,7 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>4
                    (ls/transform :dynamics accent-pattern-dynamics-two)
                    (ls/amplify 0.9)
                    (ls/hold-for-pct 0.7))
-              (->  (lily "c8 f e f a bes f g e g c g bes a <c, g c'>4" :relative :c4)
+              (->  (lily "c8 f e f a bes f g e g c g bes a <c, g c'>8 r8" :relative :c4)
                    (ls/transform :dynamics accent-pattern-dynamics-three)
                    (ls/amplify 0.94)
                    (ls/hold-for-pct 0.7))
@@ -190,7 +190,7 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>4
      p
      (<*> lh-q rh-q)
      (rest-for 4) (lily "<c c' c' g' c>8 <c c' c' g' c>" :relative :c2)
-     (rest-for 4) (lily "<c c' c' g' c>8 <c c' c' g' c>" :relative :c2)
+     (rest-for 4) (lily "<c c' c' g' c>8 <c c' c' g' c> <c c' c' g' c>" :relative :c2)
      )))
 
 
@@ -339,6 +339,7 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>4
      two-beat-accent
      (rest-for 4)
      two-beat-accent
+     one-beat-accent
      )
 
 
@@ -369,8 +370,8 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relativ
            (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
 f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relative :c2)
            (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
-f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>4" :relative :c2)
-           (lily "r1 c8 c8 r1 c8 c8" :relative :c2)
+f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 r8" :relative :c2)
+           (lily "r1 c8 c8 r1 c8 c8 c8" :relative :c2)
            )
           (ls/hold-for-pct 0.96))
      )
@@ -454,7 +455,7 @@ bes4*105 c2*108  d4*88
         smidge-theme
         (lily "
 ^inst=violin-marc ^hold=0.9  c4. c4 ^inst=violin-stac ^hold=0.9 c16 bes a8 g e c
-^inst=violin-marc ^hold=0.9  c'4. c4 ^inst=violin-stac ^hold=0.9 c16 bes a8 g e c
+^inst=violin-marc ^hold=0.9  c'4. c4 ^inst=violin-stac ^hold=0.9 c16 bes a8 g e c c'*108
 "
               :relative :c6 :instruments instruments)
         
@@ -508,7 +509,8 @@ bes4*105 c2*108  d4*88
         pat-arp-b
         (>>>
          pre-hit-arp
-         (ls/explicit-phrase [:c6] [ 1 ])
+         (ls/explicit-phrase [:c6] [ 1/2 ])
+         (rest-for 1/2)
          )
 
         ;;_ (try-out pat-arp :wierdo-lead)
@@ -550,13 +552,13 @@ bes4*105 c2*108  d4*88
    )
   )
 
-(def play-it true)
+(def play-it false)
 (def player
   (when play-it
     (-> final-song
         (midi-play
          :beat-zero -1
-         ;;:beat-zero 196
+         ;;:beat-zero 232
          ;;:beat-end 184
          ;;:beat-zero 30
          ;;:beat-zero 14

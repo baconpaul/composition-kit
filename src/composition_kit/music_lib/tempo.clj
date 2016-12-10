@@ -1,5 +1,8 @@
 (ns composition-kit.music-lib.tempo)
 
+;; A Clock is a function from a logical concept of a beat to a physical concept of time. I abstract them with multimethods
+;; so we can have multiple clocks with different functional behaviours.
+
 ;; We have a few key operations we can do on a tempo clock. Define them as multimethods switched on :clocktype
 (defmulti metronome?           :clocktype)
 (defmethod metronome? :default [cl] false)

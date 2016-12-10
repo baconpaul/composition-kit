@@ -1,5 +1,13 @@
 (ns composition-kit.music-lib.logical-item)
 
+;; Logical Items are the core thing we assemble in logical sequences. They represent notes, controls, rests, etc.
+;; They are described by a set of multimethods which allow them to express their item-ness, "payload" (which is type
+;; specific) type, start and end beat, dynamics, instrument, and clock.
+;;
+;; There is a special item type, the transformer, which allows you to build a chain of functions on any of the characteristics
+;; which is how things like time shifts and speedups work.
+
+
 ;; so we start with an item which can be sequenced, defined by a set of multimethods
 (defmulti music-item?    :itemtype)
 (defmethod music-item? :default [it] false)
@@ -28,7 +36,7 @@
 (defmulti item-clock :itemtype)
 (defmethod item-clock :default [it] nil)
 
-;; We define two types of items; one which has a duration (like a note) and one which is simply at a point
+;; We define several types of items; one which has a duration (like a note) and one which is simply at a point
 ;; in beat (like, say, a dynamics). The note with a duration has a separate dimension of time which is how long
 ;; it is held for. Since notes can slur, echo, be staccato, be detache and so on, this is a number which
 ;; when rendered would tell you how much to hold inside the duration.

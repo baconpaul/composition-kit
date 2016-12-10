@@ -1,10 +1,12 @@
 (ns composition-kit.music-lib.midi-util
   (:import (javax.sound.midi MidiSystem ShortMessage MidiDevice MidiDevice$Info Transmitter Receiver))
   (require [composition-kit.music-lib.logical-sequence :as ls])
-  ;;(:require [tupelo.core     :as t])
   )
-;;(t/refer-tupelo)
 
+;; A set of functions to allow me to interact with javax.sound.midi in a slightly less painful way from clojure.
+
+
+;; I keep a running global of the pipes I've opened so I can do an all-pipes-shutdown.
 (def opened-recv (atom []))
 
 (defn ^{:private true} get-opened-receiver-unmemo

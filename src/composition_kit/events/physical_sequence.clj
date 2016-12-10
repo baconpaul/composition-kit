@@ -25,7 +25,8 @@
 
 
 (defn new-sequence []
-  "Generate a new sequence object to which sequencable items can be added"
+  "Generate a new sequence object to which sequencable items can be added.
+This is the data which is bound by the agent when you play"
   {:seq (sorted-set-by (compare-by-key-then :time))
    :return-values []
    :play true
@@ -44,6 +45,8 @@
 (defn ^:private play-on-thread [agent-data t0-in-millis]
   ;; this function schedules the next event and gets a little spinny as the event comes near so we make
   ;; sure we hit the milisecond accuracy. It also allows you to stop the playing as you go
+  ;; The basic protocol is to poll the seq which is time ordered and sleep with a backoff
+  ;; but if I'm empty or have my play set to falls externally, stop and call the user shutdowns
   (let [rnow              (- (System/currentTimeMillis) t0-in-millis)
         to-be-played      (:seq agent-data)
         curr              (take-while #(<= (:time %) rnow) to-be-played)
