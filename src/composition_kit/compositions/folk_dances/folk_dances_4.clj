@@ -29,8 +29,11 @@
 
 (def clock (tempo/constant-tempo 4 4 152))
 
-(defn try-out [p i]
-  (-> p (on-inst i) (ls/with-clock clock) (midi-play :beat-clock clock)))
+(defn try-out
+  ([p] (-> p (ls/with-clock clock) (midi-play :beat-clock clock)))
+  ([p i]
+   (-> p (on-inst i) (ls/with-clock clock) (midi-play :beat-clock clock))))
+
 
 (def accent-pattern-dynamics
   (fn [i]
@@ -190,8 +193,49 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 r8
      p
      (<*> lh-q rh-q)
      (rest-for 4) (lily "<c c' c' g' c>8 <c c' c' g' c>" :relative :c2)
-     (rest-for 4) (lily "<c c' c' g' c>8 <c c' c' g' c> <c c' c' g' c>" :relative :c2)
+     (rest-for 4) 
      )))
+
+(def one-restate-piano
+  (->
+   (<*>
+    (->
+     (lily "
+c8 c8 c8 c8 c8 c8 d bes'
+        c,8 c8 c8 c8 c8 c8 d bes'
+        c,8 c8 c8 c8 c8 c8 d bes'
+        ees,8 d des c ces bes <bes' bes'>8 <bes bes'>
+c,8 c8 c8 c8 c8 c8 d bes'
+        c,8 c8 c8 c8 c8 c8 d bes'
+        c,8 c8 c8 c8 c8 c8 d bes'
+        ees,8 d des c ces bes <bes' bes'>8 r
+        f8    e ees d des c   <bes' bes'>  r
+        <ees, ees'>8 <d d'> <des des'> <c c'> <ces ces'> <b b'> <bes' bes'> <bes bes'> <bes bes'> <bes bes'>
+
+")
+     (ls/transform :dynamics accent-pattern-dynamics)
+     (ls/hold-for-pct 0.7)
+     )
+    (->
+     
+     (lily  "
+a8. a8. a8. a8. g8 <ees bes'>8
+            a8. a8. a8. a8. bes8 <ees, bes'>8
+            a8. a8. a8. a8. g8 <ees bes'>8	
+            des'8. c8. ces8. bes8. <bes, bes'>8 <bes bes'>8
+a'8. a8. a8. a8. g8 <ees bes'>8
+            a8. a8. a8. a8. bes8 <ees, bes'>8
+            a8. a8. a8. a8. g8 <ees bes'>8	
+            des'8. c8. ces8. bes8. <bes, bes'>8 r
+            ees'8. d8. des8. c8. <bes, bes'>8 r
+            <des des'>8. <c c'> <ces ces'> <bes bes'> <bes, bes'>8 <bes bes'> <bes bes'> <bes bes'>
+")
+     (ls/transform :dynamics accent-pattern-dynamics)
+     (ls/hold-for-pct 0.7)
+     )
+    )
+   )
+  )
 
 
 (def drum-pattern
@@ -218,8 +262,20 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 r8
                          (->  (ls/explicit-phrase [ :cis1  ] [ 1 ])
                               (ls/explicit-dynamics '( 120 )))
 
+
                          )
 
+        four-beat-accent (<*>
+                          (->  (ls/explicit-phrase [ :c1  :c1 :c1 :c1 ] [ 1/2 1/2 1/2 1/2 ])
+                               (ls/explicit-dynamics '( 120 108 104 125 )))
+                          (>>>
+                           (rest-for 0.05)
+                           (->  (ls/explicit-phrase [ :d1 :d1 :d1 :d1 ] [ 0.45 0.5 0.5 0.5 ])
+                                (ls/explicit-dynamics '( 120 107 98 118 ))))
+                          (->  (ls/explicit-phrase [ :c4 :cis1 :cis1 :c4  ] [ 1/2 1/2 1/2 1/2 ])
+                               (ls/explicit-dynamics '( 120 112 103 127 )))
+                          )
+        
         intro  (>>> (rest-for (+ 4 4 4 3))
                     two-beat-accent
                     (->
@@ -261,6 +317,12 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 r8
                         :fis2 "P...M.P.R.X."
                         :c1   "Z..........."
                         ] ;; only 3 beats here please
+
+
+        intro-back-smidge [:c4   "ADFGKURSTWXZ"
+                           :fis2 "P...M.P.R.X."
+                           :c1   "A...F...Z..."
+                           ] ;; only 3 beats here please
 
         first-sec
         (->
@@ -324,6 +386,29 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 r8
          (step-strings b-pattern-one-end)
          one-beat-accent
          )
+
+        smidge-4
+        (step-strings [:c4    "ACDEGHIKMNPRTVXZ" ;; bass drum
+                       :fis2  "P...P...R...M..."
+                       
+                       ])
+        post-smidge
+        (->
+         (>>>
+          (-> (step-strings intro-back)
+              (ls/loop-n 3))
+          (step-strings intro-back-alt)
+          two-beat-accent
+          (-> (step-strings intro-back)
+              (ls/loop-n 3))
+          (step-strings intro-back-alt)
+          one-beat-accent
+          (rest-for 3)
+          one-beat-accent
+          (step-strings intro-back-smidge) 
+          four-beat-accent
+          )
+         )
         ;;_
         ;;(try-out intro drum-pattern)
         ;;_ (try-out (ls/loop-n  (step-strings b-pattern-one) 2) :drum-set)
@@ -337,9 +422,8 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 a8*80 <c, c'>8 r8
      b-part-first
      (rest-for 4)
      two-beat-accent
-     (rest-for 4)
-     two-beat-accent
-     one-beat-accent
+     smidge-4
+     post-smidge
      )
 
 
@@ -371,7 +455,11 @@ f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relativ
 f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 <c c'>8" :relative :c2)
            (lily "f8.*92 g8.*74 a4*79 bes4.*82 c,8.*92 e*84 g4*78 f4.*76
 f,8.*92 g8.*74 a4*79 bes4.*82 c8.*92 e*84 g4*78 f8*80 <c, c'>8 r8" :relative :c2)
-           (lily "r1 c8 c8 r1 c8 c8 c8" :relative :c2)
+           (lily "r1 c8 c8 c1" :relative :c2)
+           ;; post-smidge
+           (lily "f4. g4. bes4 f4. g4. bes4 f4. g4. bes4 r2. bes4" :relative :c2)
+           (lily "f4. g4. bes4 f4. g4. bes4 f4. g4. bes4 r2. bes4" :relative :c2)
+           (lily "r2. c4 r2. bes2" :relative :c2)
            )
           (ls/hold-for-pct 0.96))
      )
@@ -455,9 +543,32 @@ bes4*105 c2*108  d4*88
         smidge-theme
         (lily "
 ^inst=violin-marc ^hold=0.9  c4. c4 ^inst=violin-stac ^hold=0.9 c16 bes a8 g e c
-^inst=violin-marc ^hold=0.9  c'4. c4 ^inst=violin-stac ^hold=0.9 c16 bes a8 g e c c'*108
+^inst=violin-marc ^hold=0.9  c'4. c4 ^inst=violin-stac ^hold=0.9 c16 bes a8 g 
 "
               :relative :c6 :instruments instruments)
+
+        post-smidge
+        (lily "
+^inst=violin-marc ^hold=1.01 f2 r8 
+^inst=violin-stac ^hold=0.7 f8*75 f16*92 d*81 c8*94
+^inst=violin-marc ^hold=1.01 f2*97 r2 f2*94 r8
+^inst=violin-stac ^hold=0.7 f8 f16 d c8 ees d des c b bes
+^inst=violin-marc bes'4*97 
+
+^inst=violin-marc ^hold=1.01 f2 r8 
+^inst=violin-stac ^hold=0.7 f8*75 f16*92 d*81 c8*94
+^inst=violin-marc ^hold=1.01 f2*97 r2 f2*94 r8
+^inst=violin-stac ^hold=0.7 f8 f16 d c8 ees d des c b bes
+^inst=violin-marc bes'4*97 
+
+^inst=violin-stac ^hold=0.7 f8 e ees d des c
+^inst=violin-marc bes'4*97 
+
+^inst=violin-stac ^hold=0.7  ees,8 d des c b bes
+^inst=violin-marc ^hold=0.3 bes8*97 bes'*110 bes*114 bes*118
+
+              " :relative :c5 :instruments instruments)
+        ;;_ (try-out post-smidge )
         
         ]
     (>>>
@@ -473,6 +584,7 @@ bes4*105 c2*108  d4*88
      b-part-solo
      (rest-for 4)
      smidge-theme
+     post-smidge
      )
     )
   )
@@ -540,7 +652,7 @@ bes4*105 c2*108  d4*88
       (ls/loop-n 2)
       )
      (-> two-piano (on-inst :piano))
-     (-> one-a-piano (on-inst :piano))
+     (-> one-restate-piano (on-inst :piano))
      )
     (-> drum-pattern (on-inst :drum-set))
     (-> bass (on-inst :syn-bass))
@@ -552,13 +664,13 @@ bes4*105 c2*108  d4*88
    )
   )
 
-(def play-it false)
+(def play-it true)
 (def player
   (when play-it
     (-> final-song
         (midi-play
          :beat-zero -1
-         ;;:beat-zero 232
+         ;;:beat-zero 260
          ;;:beat-end 184
          ;;:beat-zero 30
          ;;:beat-zero 14
