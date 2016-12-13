@@ -36,7 +36,7 @@ There were a few other princpiples as well
 
 1. Test the software
 2. Have the result be readable if you know lilypond and lisp
-3. Make the code opensource (Apache 2), and make the music creative commons (Attributino ShareAlike 4.0)
+3. Make the code opensource (Apache 2), and make the music creative commons (Attribution ShareAlike 4.0)
 
 ## How do I use it?
 
