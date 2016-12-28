@@ -5,7 +5,7 @@
             :url "http://www.apache.org/licenses/LICENSE-2.0"}
   :dependencies [
                  [org.clojure/clojure "1.8.0"]
-                 [instaparse "1.4.3"]
+                 [instaparse "1.4.4"]
                  [org.clojure/data.csv "0.1.3"]
 		 [org.jfree/jfreechart "1.0.19"]
                  ]
