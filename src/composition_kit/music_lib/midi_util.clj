@@ -1,6 +1,8 @@
 (ns composition-kit.music-lib.midi-util
   (:import (javax.sound.midi MidiSystem ShortMessage MidiDevice MidiDevice$Info Transmitter Receiver))
-  (require [composition-kit.music-lib.logical-sequence :as ls])
+  (require [composition-kit.music-lib.logical-sequence :as ls]
+           [composition-kit.events.transport-window :as tw])
+
   )
 
 ;; A set of functions to allow me to interact with javax.sound.midi in a slightly less painful way from clojure.
@@ -142,37 +144,61 @@
       )
   )
 
-(defn time-code-interpret [m t]
-  (let [d (.getMessage m)
-        type (bit-and 0xFF (nth d 0))
+(defn make-time-code-interpret []
+  (let [transport (tw/make-transport-window "MTC")
+        posn (atom {:sixteenths 0 :frames 0})
         ]
-    (condp = type
-      javax.sound.midi.ShortMessage/SONG_POSITION_POINTER
-      (let [posn-in-16ths (pair-as-14-bits (nth d 1) (nth d 2))]
-        (println "POSITION  " posn-in-16ths "/16ths" )
+    (fn [m t]
+      (let [d (.getMessage m)
+            type (bit-and 0xFF (nth d 0))
+            ]
+        (condp = type
+          javax.sound.midi.ShortMessage/SONG_POSITION_POINTER
+          (let [posn-in-16ths (pair-as-14-bits (nth d 1) (nth d 2))]
+            (swap! posn assoc :sixteenths posn-in-16ths)
+            ((:assoc transport) :midi-clock-position @posn)
+            )
+          
+          javax.sound.midi.ShortMessage/MIDI_TIME_CODE
+          nil; (println "TIMECD  " (bit-and 0xff (nth d 1)))
+
+          javax.sound.midi.ShortMessage/TIMING_CLOCK
+          (do 
+            (if (= (:frames @posn) 5)
+              (do (swap! posn (fn [pm] {:sixteenths (inc (:sixteenths pm)) :frames 0}) ))
+              (do (swap! posn update-in [:frames] inc))
+              )
+            ((:assoc transport) :midi-clock-position @posn)
+            )
+
+          javax.sound.midi.ShortMessage/START
+          nil; (println "START" )
+
+          javax.sound.midi.ShortMessage/STOP 
+          nil; (println "STOP" )
+
+          javax.sound.midi.ShortMessage/CONTINUE
+          nil; (println "CONTINUE ")
+
+          (println "Unknown timecode message " type)
+          )
         )
-
-
-      javax.sound.midi.ShortMessage/MIDI_TIME_CODE
-      (println "TIMECODE  " t)
-
-      javax.sound.midi.ShortMessage/TIMING_CLOCK
-      (println "CLOCK     " t)
-
-      javax.sound.midi.ShortMessage/START
-      (println "START     " t)
-
-      javax.sound.midi.ShortMessage/STOP 
-      (println "STOP      " t)
-
-      (println "Unknown timecode message " type)
       )
-    
     )
   )
 
-;; (def iac2 (get-opened-transmitter "Bus 2"))
-;; (register-transmitter-callback  iac2 time-code-interpret)
+(def iac2 (get-opened-transmitter "Bus 2"))
+
+;;(def msgatom (atom []))
+;;(register-transmitter-callback iac2 (fn [m t] (swap! msgatom conj m)))
+
+
+(register-transmitter-callback  iac2 (make-time-code-interpret))
+
+_(let [m (make-time-code-interpret)]
+   (doall (map #(m % 0) @msgatom))
+   )
+
 
 
 
