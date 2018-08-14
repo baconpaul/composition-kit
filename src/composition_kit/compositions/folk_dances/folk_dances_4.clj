@@ -669,7 +669,7 @@ bes4*105 c2*108  d4*88
   (when play-it
     (-> final-song
         (midi-play
-         :beat-zero -1
+         :beat-zero -3
          ;;:beat-zero 260
          ;;:beat-end 184
          ;;:beat-zero 30

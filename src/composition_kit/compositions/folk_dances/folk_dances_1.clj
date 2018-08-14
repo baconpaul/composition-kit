@@ -897,7 +897,7 @@
   (-> p (on-inst i) (ls/with-clock clock) (midi-play)))
 
 
-(def play-it false)
+(def play-it true)
 (def player
   (when play-it
     (midi-play
@@ -914,7 +914,8 @@
 
 ;;(agent-errors player)
 
-;;(try-out first-lead synth-lead)
 
 
 
+
+(count first-lead)

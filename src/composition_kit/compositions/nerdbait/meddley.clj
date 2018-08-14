@@ -902,7 +902,7 @@ bes4. f4 g8 f2. a4 c8 f4. c2.
    )
   )
 
-(def play-meddley false)
+(def play-meddley true)
 (def ag
   (when play-meddley
     (midi-play
