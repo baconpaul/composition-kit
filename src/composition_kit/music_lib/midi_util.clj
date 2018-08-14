@@ -147,6 +147,18 @@
 (defn make-time-code-interpret []
   (let [transport (tw/make-transport-window "MTC")
         posn (atom {:sixteenths 0 :frames 0})
+        tc-byte-parse (fn [ti]
+                        (let [t (bit-and 0xFF ti)
+                              high-n (-> t
+                                         (bit-and 0xF0)
+                                         (bit-shift-right 4))
+                              low-n (bit-and t 0x0F)
+                              ]
+                          {:high high-n :low low-n}
+                          )
+                        )
+
+        time-code (atom {:frames 0 :seconds 0 :minutes 0 :hours 0 :fps 24})
         ]
     (fn [m t]
       (let [d (.getMessage m)
@@ -160,7 +172,45 @@
             )
           
           javax.sound.midi.ShortMessage/MIDI_TIME_CODE
-          nil; (println "TIMECD  " (bit-and 0xff (nth d 1)))
+          ;; https://www.recordingblogs.com/wiki/midi-quarter-frame-message
+          (let [tc (tc-byte-parse (nth d 1))
+                l (:low tc)]
+            (condp = (:high tc)
+              0 ; frames low
+              (swap! time-code assoc :frames l )
+              1 ; frames high
+              (swap! time-code update-in [:frames] bit-or (bit-shift-left l 4))
+              2 ; seconds low
+              (swap! time-code assoc :seconds l )
+              3 ; seconds high
+              (swap! time-code update-in [:seconds] bit-or (bit-shift-left l 4))
+              4 ; minutes low
+              (swap! time-code assoc :minutes l )
+              5 ; minutes high
+              (swap! time-code update-in [:minutes] bit-or (bit-shift-left l 4))
+              6 ; hours low
+              (swap! time-code assoc :hours l )
+              7 ; 0 rr h where rr is frame rate 00->24 01->25 10->29.97 11->30
+              (let [hb (bit-and l 0x1)
+                    rr (bit-shift-right (bit-and l 0x6) 1)
+                    ]
+                (swap! time-code update-in [:hours] bit-or (bit-shift-left hb 4))
+                (swap! time-code assoc :fps (condp = rr 0 24 1 25 2 29.97 3 30))
+                
+                (let [full-time (+
+                                 (* (- (:hours @time-code) 1) 60 60)
+                                 (* (:minutes @time-code) 60)
+                                 (:seconds @time-code)
+                                 (/ (:frames @time-code) 1.0 (:fps @time-code))
+                                 
+                                 )]
+                  ((:assoc transport) :time (* 1000 full-time))
+                  )
+                ) 
+              )
+
+            )
+
 
           javax.sound.midi.ShortMessage/TIMING_CLOCK
           (do 
@@ -178,7 +228,7 @@
           nil; (println "STOP" )
 
           javax.sound.midi.ShortMessage/CONTINUE
-          nil; (println "CONTINUE ")
+          nil; (println "CONTINUE " (.getLength m))
 
           (println "Unknown timecode message " type)
           )

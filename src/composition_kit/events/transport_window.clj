@@ -67,7 +67,6 @@
                                 (format-beat (:beat @state) (:pct @state))
                                 (format-midi-clock-position (:midi-clock-position @state))
                                 )]
-              (println beat-string)
               (doto g
                 (.setColor (java.awt.Color. 30 30 50))
                 (.fillRect 0 0 (.getWidth ^java.awt.Canvas this) (.getHeight ^java.awt.Canvas this))
