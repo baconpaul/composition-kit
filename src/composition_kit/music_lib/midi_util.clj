@@ -126,3 +126,56 @@
    true
    )
   )
+
+
+(defn pair-as-14-bits [b1 b2]
+  ;;unsigned short CombineBytes(unsigned char First, unsigned char Second)
+  ;; unsigned short _14bit                ;
+  ;;_14bit = (unsigned short)Second      ;
+  ;;_14bit <<= 7                         ;
+  ;;_14bit |= (unsigned short)First      ;
+  ;;return(_14bit)                       ;
+  (-> b2
+      (bit-and 0xFF)
+      (bit-shift-left 7)
+      (bit-or (bit-and 0xFF b1))
+      )
+  )
+
+(defn time-code-interpret [m t]
+  (let [d (.getMessage m)
+        type (bit-and 0xFF (nth d 0))
+        ]
+    (condp = type
+      javax.sound.midi.ShortMessage/SONG_POSITION_POINTER
+      (let [posn-in-16ths (pair-as-14-bits (nth d 1) (nth d 2))]
+        (println "POSITION  " posn-in-16ths "/16ths" )
+        )
+
+
+      javax.sound.midi.ShortMessage/MIDI_TIME_CODE
+      (println "TIMECODE  " t)
+
+      javax.sound.midi.ShortMessage/TIMING_CLOCK
+      (println "CLOCK     " t)
+
+      javax.sound.midi.ShortMessage/START
+      (println "START     " t)
+
+      javax.sound.midi.ShortMessage/STOP 
+      (println "STOP      " t)
+
+      (println "Unknown timecode message " type)
+      )
+    
+    )
+  )
+
+;; (def iac2 (get-opened-transmitter "Bus 2"))
+;; (register-transmitter-callback  iac2 time-code-interpret)
+
+
+
+
+
+
