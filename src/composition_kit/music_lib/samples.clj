@@ -23,4 +23,11 @@
 
 
 
+(defn directory->sampler
+  ([dirname] (directory->sampler [dirname identity]))
+  ([dirname name-xform]
+
+   )
+  )
+
 

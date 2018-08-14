@@ -172,3 +172,4 @@ makes your note louder. (There's a utility function for that below though)"
       (add-transform :beat (comp (partial + shift) item-beat))
       (add-transform :end-beat (comp (partial + shift) item-end-beat))))
 
+;; metadata holder item
