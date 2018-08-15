@@ -1,7 +1,6 @@
 (ns composition-kit.music-lib.midi-util
   (:import (javax.sound.midi MidiSystem ShortMessage MidiDevice MidiDevice$Info Transmitter Receiver))
-  (require [composition-kit.music-lib.logical-sequence :as ls]
-           [composition-kit.events.transport-window :as tw])
+  (require [composition-kit.music-lib.logical-sequence :as ls])
 
   )
 
@@ -144,9 +143,8 @@
       )
   )
 
-(defn make-time-code-interpret []
-  (let [transport (tw/make-transport-window "MTC")
-        posn (atom {:sixteenths 0 :frames 0})
+(defn make-time-code-interpret [actfn]
+  (let [posn (atom {:sixteenths 0 :frames 0})
         tc-byte-parse (fn [ti]
                         (let [t (bit-and 0xFF ti)
                               high-n (-> t
@@ -168,7 +166,7 @@
           javax.sound.midi.ShortMessage/SONG_POSITION_POINTER
           (let [posn-in-16ths (pair-as-14-bits (nth d 1) (nth d 2))]
             (swap! posn assoc :sixteenths posn-in-16ths)
-            ((:assoc transport) :midi-clock-position @posn)
+            (actfn :midi-clock-position @posn)
             )
           
           javax.sound.midi.ShortMessage/MIDI_TIME_CODE
@@ -197,14 +195,15 @@
                 (swap! time-code update-in [:hours] bit-or (bit-shift-left hb 4))
                 (swap! time-code assoc :fps (condp = rr 0 24 1 25 2 29.97 3 30))
                 
+
                 (let [full-time (+
                                  (* (- (:hours @time-code) 1) 60 60)
                                  (* (:minutes @time-code) 60)
                                  (:seconds @time-code)
-                                 (/ (:frames @time-code) 1.0 (:fps @time-code))
+                                 (/ (+ 2 (:frames @time-code)) 1.0 (:fps @time-code)) ;; this +2 is because it takes 2 frames to get to me
                                  
                                  )]
-                  ((:assoc transport) :time (* 1000 full-time))
+                  (actfn :smtpe-timecode-time (* 1000 full-time))
                   )
                 ) 
               )
@@ -218,17 +217,17 @@
               (do (swap! posn (fn [pm] {:sixteenths (inc (:sixteenths pm)) :frames 0}) ))
               (do (swap! posn update-in [:frames] inc))
               )
-            ((:assoc transport) :midi-clock-position @posn)
+            (actfn :midi-clock-position @posn)
             )
 
           javax.sound.midi.ShortMessage/START
-          nil; (println "START" )
+          (actfn :start nil)
 
           javax.sound.midi.ShortMessage/STOP 
-          nil; (println "STOP" )
+          (actfn :stop nil)
 
           javax.sound.midi.ShortMessage/CONTINUE
-          nil; (println "CONTINUE " (.getLength m))
+          (actfn :continue nil)
 
           (println "Unknown timecode message " type)
           )
@@ -237,17 +236,6 @@
     )
   )
 
-(def iac2 (get-opened-transmitter "Bus 2"))
-
-;;(def msgatom (atom []))
-;;(register-transmitter-callback iac2 (fn [m t] (swap! msgatom conj m)))
-
-
-(register-transmitter-callback  iac2 (make-time-code-interpret))
-
-_(let [m (make-time-code-interpret)]
-   (doall (map #(m % 0) @msgatom))
-   )
 
 
 
