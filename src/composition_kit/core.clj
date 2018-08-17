@@ -73,3 +73,16 @@ the midi subsystem. Arguments like :beat-clock :beat-zer and :beat-end are prett
     )
   )
 
+(defn midi-play-slaved [ item bus & opt-arr ]
+  "midi-play takes a set of sequences with instruments and clocks appropriately assigned and plays them through
+the midi subsystem. Arguments like :beat-clock :beat-zer and :beat-end are pretty common."
+  (let [target item
+        ps      (-> (ps/new-sequence)
+                    (as-> s
+                        ;;(ltop/schedule-logical-on-physical (:composition-payload item)))]
+                        (apply ltop/schedule-logical-on-physical (concat [ s item ] opt-arr))))]
+    (ps/play-slaved ps bus :user-stop midi/all-notes-off)
+    
+    )
+  )
+

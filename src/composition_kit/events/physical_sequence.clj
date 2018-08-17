@@ -1,5 +1,6 @@
 (ns composition-kit.events.physical-sequence
   (:require [composition-kit.events.transport-window :as tw])
+  (:require [composition-kit.music-lib.midi-util :as midi])
   )
 
 ;; This is a set of functions which allow you to build a sequence of functions then 'play' them (have them triggered at their time)
@@ -46,8 +47,6 @@ This is the data which is bound by the agent when you play"
 ;;; have a separate midi input reader update the agent data with SMTPE timecode and play and stop. So write down that
 ;;; state diagram and have the first change be that the state diagram work in no-slaved mode; then add a ps/play-slaved
 ;;; and in code a midi-play-slaved and work on that with the timecode stuff in the midi lib.
-;;;
-;;; But step 1 is t0-in-milis comes on the agent data rather than the argument
 
 (defn ^:private play-on-thread [agent-data]
   ;; this function schedules the next event and gets a little spinny as the event comes near so we make
@@ -91,10 +90,73 @@ This is the data which is bound by the agent when you play"
     )
   )
 
-
 (defn stop [ s ] (send s (fn [agent-data] (assoc agent-data :play false))))
 
-(defn play [ s & items ]
+
+;;; These are the state transitions for the slaved agent model
+;;;
+;;; if (:master == :smpte)
+;;;    look at :slave-status
+;;;    :awaiting-transport   -> means either we got a :stop or have never started and are waiting for a :start or :continue
+;;;    :awaiting-first-time  -> means we got a :start or a :continue but haven't had a time yet
+;;;    :in-transport         -> we have a start and are getting timecodes
+;;;          :t0-in-milis has standard setup
+;;;          inbound timecodes update that
+;;;
+;;; So what do our transitions look like
+;;;    :awaiting-transport   -> :start or :continue -> :awaiting-first-time; all other are errors or ignores
+;;;    :awaiting-first-time  -> :time -> :in-transport with t0 set; :stop -> :awaiting-transport; :continue is fine; :start is errors
+;;;    :in-transport         -> :time -> update :t0; :stop -> :awaiting-transport; :continue -> no-op; :start is an error
+
+(defn make-smtpe-transition-engine [ag]
+  (fn [action data]
+    (let [master       (:master @ag)
+          slave-status (:slave-status @ag)
+          start-fn     (fn [a]
+                         (-> a
+                             (assoc :slave-status :awaiting-first-time))
+                         )
+          ]
+      (if (= master :smtpe)
+        (condp = action
+          :start
+          (do
+            (send ag start-fn))
+
+          :continue
+          (do
+            (send ag start-fn))
+
+          :stop
+          (do
+            (send ag (fn [a] (assoc a :slave-status :awaiting-transport)))
+            (stop ag) ;; this stop is "too terminal" right now
+            )
+
+          :smtpe-timecode-time
+          (let [t data]
+            (send ag
+                  (fn [a]
+                    (if (= (:slave-status a) :awaiting-first-time)
+                      (do
+                        (send *agent* play-on-thread))
+                      )
+                    (-> a
+                        (assoc :t0-in-millis (- (System/currentTimeMillis) t))
+                        (assoc :slave-status :in-transport)
+                        )
+                    ))
+            )
+          
+          nil  ;; We do hae some unhandled states
+          )
+        nil
+        )
+      )
+    )
+  )
+
+(defn setup-agent [s & items]
   (let [args  (apply hash-map items)
         use-transport true
         mod-s
@@ -112,13 +174,41 @@ This is the data which is bound by the agent when you play"
            (when-let [us (:user-stop args)]
              (send ag (fn [d] (us) d))))
          )
-       ))
-    
+       )
+      )
+    ag
+    )
+  )
+
+(defn play [ s & items ]
+  (let [ag (apply setup-agent s items)]
     (send ag (fn [ad]
                (send *agent* play-on-thread)
-               (assoc ad :t0-in-millis (System/currentTimeMillis))
-               ))
-    )
+               (-> ad
+                   (assoc :master :native)
+                   (assoc :t0-in-millis (System/currentTimeMillis)))
+               )))
+  )
+
+
+(defn play-slaved [ s bus & items ]
+  (let [ag (apply setup-agent s items)
+        buso (midi/get-opened-transmitter bus)
+        ag-eh (fn [a e]          (println "evil error occured: " e " and we still have value " (dissoc @a :seq)))
+        _ (set-error-handler! ag ag-eh)
+        ]
+    ;; SetUp SMTPE Reciever on bus
+    (midi/register-transmitter-callback buso (midi/make-time-code-interpret (make-smtpe-transition-engine ag)))
+
+    ;; Let the agent know what's up with what
+    (send ag (fn [ad]
+               ;; We don't play here; we play when we are ready (send *agent* play-on-thread)
+               (-> ad
+                   (assoc :master :smtpe)
+                   (assoc :slave-status :waiting-transport)
+                   )
+               
+               )))
   )
 
 

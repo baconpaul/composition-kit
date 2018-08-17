@@ -13,14 +13,23 @@
       (midi/add-midi-instrument :ep (midi/midi-port 0))
       ))
 
-(def clock (tempo/constant-tempo 4 4 132))
+(def clock (tempo/constant-tempo 4 4 192))
 (defn on-inst [s i] (ls/on-instrument s (i instruments)))
 
 (def mary-theme
   (lily "e4 d c d <e g> <e g> <e g>2 d4 d d2 e4 e e2"
         :relative :c5))
 
-(-> mary-theme
+(def lots-o-mary
+  (->> (map (fn [d] (ls/transpose mary-theme d)) (range 5))
+       (apply  ls/concat-sequences)
+       )
+  )
+
+(-> lots-o-mary
     (ls/with-clock clock)
     (on-inst :ep)
-    (midi-play))
+    (midi-play-slaved "Bus 2")
+    ((constantly true))
+    )
+
