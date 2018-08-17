@@ -41,13 +41,20 @@ This is the data which is bound by the agent when you play"
       (assoc s :seq new-set))))
 
 
+;;; OK to play in either standalone or slave mode we need to modify this so that t0-in-milis and currenttime aren't
+;;; just blatted in; but rather the agent data gets a toffset and toffset-0 and we also have a defered state, then we
+;;; have a separate midi input reader update the agent data with SMTPE timecode and play and stop. So write down that
+;;; state diagram and have the first change be that the state diagram work in no-slaved mode; then add a ps/play-slaved
+;;; and in code a midi-play-slaved and work on that with the timecode stuff in the midi lib.
+;;;
+;;; But step 1 is t0-in-milis comes on the agent data rather than the argument
 
-(defn ^:private play-on-thread [agent-data t0-in-millis]
+(defn ^:private play-on-thread [agent-data]
   ;; this function schedules the next event and gets a little spinny as the event comes near so we make
   ;; sure we hit the milisecond accuracy. It also allows you to stop the playing as you go
   ;; The basic protocol is to poll the seq which is time ordered and sleep with a backoff
   ;; but if I'm empty or have my play set to falls externally, stop and call the user shutdowns
-  (let [rnow              (- (System/currentTimeMillis) t0-in-millis)
+  (let [rnow              (- (System/currentTimeMillis) (:t0-in-millis agent-data))
         to-be-played      (:seq agent-data)
         curr              (take-while #(<= (:time %) rnow) to-be-played)
         future-item       (drop-while #(<= (:time %) rnow) to-be-played)
@@ -63,7 +70,7 @@ This is the data which is bound by the agent when you play"
       (not (:play agent-data)) agent-data  ;; someone stopped me in another action so just chillax
 
       (not (empty? curr)   )   (do
-                                 (send *agent* play-on-thread t0-in-millis)
+                                 (send *agent* play-on-thread)
                                  (reduce
                                   (fn [data curr-el] ;; evaluate the item and glie it onto the return values
                                     (let [return-value ((:item curr-el) rnow)
@@ -77,7 +84,7 @@ This is the data which is bound by the agent when you play"
 
       :else                    (let [time-until  (- (:time (first to-be-played)) rnow)]
                                  ;; spin (with a little backoff sleeping)
-                                 (send *agent* play-on-thread t0-in-millis)
+                                 (send *agent* play-on-thread)
                                  (when (> time-until 5) (Thread/sleep (min 100 (* time-until 0.7)))) ;; that 100 keeps clock tickin
                                  agent-data)
       )
@@ -107,7 +114,10 @@ This is the data which is bound by the agent when you play"
          )
        ))
     
-    (send ag play-on-thread (System/currentTimeMillis))
+    (send ag (fn [ad]
+               (send *agent* play-on-thread)
+               (assoc ad :t0-in-millis (System/currentTimeMillis))
+               ))
     )
   )
 
