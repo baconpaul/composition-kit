@@ -66,7 +66,8 @@ This is the data which is bound by the agent when you play"
                                  (assoc agent-data :play false)
                                  )
 
-      (not (:play agent-data)) agent-data  ;; someone stopped me in another action so just chillax
+      (not (:play agent-data)) (do
+                                 agent-data) ;; someone stopped me in another action so just chillax
 
       (not (empty? curr)   )   (do
                                  (send *agent* play-on-thread)
@@ -114,9 +115,12 @@ This is the data which is bound by the agent when you play"
           slave-status (:slave-status @ag)
           start-fn     (fn [a]
                          (-> a
+                             (assoc :play true)
+                             (assoc :seq (:original-seq a))
                              (assoc :slave-status :awaiting-first-time))
                          )
           ]
+      (if (not (or (= master :midi-clock-position))) (println action master))
       (if (= master :smtpe)
         (condp = action
           :start
@@ -129,8 +133,17 @@ This is the data which is bound by the agent when you play"
 
           :stop
           (do
-            (send ag (fn [a] (assoc a :slave-status :awaiting-transport)))
-            (stop ag) ;; this stop is "too terminal" right now
+            ;; We actually need to do quite a lot of state resetting here
+            (send ag
+                  (fn [a]
+                    (when-let [stop-fn (:user-stop (:args a))]
+                      (send *agent* (fn [x] (stop-fn) x))
+                      )
+                    (-> a
+                        (assoc :play false)
+                        (assoc :slave-status :awaiting-transport)
+                        )
+                    ))
             )
 
           :smtpe-timecode-time
@@ -142,6 +155,7 @@ This is the data which is bound by the agent when you play"
                         (send *agent* play-on-thread))
                       )
                     (-> a
+                        ;; FIXME we want to trim events here up to time
                         (assoc :t0-in-millis (- (System/currentTimeMillis) t))
                         (assoc :slave-status :in-transport)
                         )
@@ -164,7 +178,9 @@ This is the data which is bound by the agent when you play"
           (let [t-w (tw/make-transport-window "Transport")]
             (assoc s :transport t-w))
           s)
-        ag   (agent mod-s)
+        ag   (agent (->  mod-s
+                         (assoc :args args)
+                         (assoc :original-seq (:seq mod-s))))
         ]
     (when use-transport
       ((:on-stop (:transport @ag))
@@ -194,7 +210,7 @@ This is the data which is bound by the agent when you play"
 (defn play-slaved [ s bus & items ]
   (let [ag (apply setup-agent s items)
         buso (midi/get-opened-transmitter bus)
-        ag-eh (fn [a e]          (println "evil error occured: " e " and we still have value " (dissoc @a :seq)))
+        ag-eh (fn [a e]          (println "play agent occured: " e " and we still have value " (-> @a (dissoc :seq) (dissoc :original-seq))))
         _ (set-error-handler! ag ag-eh)
         ]
     ;; SetUp SMTPE Reciever on bus

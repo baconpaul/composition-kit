@@ -13,7 +13,7 @@
       (midi/add-midi-instrument :ep (midi/midi-port 0))
       ))
 
-(def clock (tempo/constant-tempo 4 4 192))
+(def clock (tempo/constant-tempo 4 4 180))
 (defn on-inst [s i] (ls/on-instrument s (i instruments)))
 
 (def mary-theme
