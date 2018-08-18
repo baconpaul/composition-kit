@@ -196,14 +196,20 @@
                 (swap! time-code assoc :fps (condp = rr 0 24 1 25 2 29.97 3 30))
                 
 
-                (let [full-time (+
-                                 (* (- (:hours @time-code) 1) 60 60)
-                                 (* (:minutes @time-code) 60)
-                                 (:seconds @time-code)
-                                 (/ (+ 2 (:frames @time-code)) 1.0 (:fps @time-code)) ;; this +2 is because it takes 2 frames to get to me
-                                 
-                                 )]
-                  (actfn :smtpe-timecode-time (* 1000 full-time))
+                (let [time-now (+
+                                (* (- (:hours @time-code) 1) 60 60)
+                                (* (:minutes @time-code) 60)
+                                (:seconds @time-code)
+                                (/ (+ (:frames @time-code) 2) 1.0 (:fps @time-code)) ;; I do -2 since I want to know origin time
+                                
+                                )
+                      ms-now (* 1000 time-now)
+                      frame-offset (* 1000  (/ 2.0 (:fps @time-code)))
+                      ]
+                  (actfn :smtpe-timecode-time {:time-now  ms-now
+                                               :time-origin (- ms-now (* 2 frame-offset))
+                                               :time-prior (- ms-now frame-offset)
+                                               })
                   )
                 ) 
               )

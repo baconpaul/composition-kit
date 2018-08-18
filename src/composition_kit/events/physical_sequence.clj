@@ -116,11 +116,9 @@ This is the data which is bound by the agent when you play"
           start-fn     (fn [a]
                          (-> a
                              (assoc :play true)
-                             (assoc :seq (:original-seq a))
                              (assoc :slave-status :awaiting-first-time))
                          )
           ]
-      (if (not (or (= master :midi-clock-position))) (println action master))
       (if (= master :smtpe)
         (condp = action
           :start
@@ -151,12 +149,21 @@ This is the data which is bound by the agent when you play"
             (send ag
                   (fn [a]
                     (if (= (:slave-status a) :awaiting-first-time)
-                      (do
-                        (send *agent* play-on-thread))
+                      (do 
+                        (send *agent*
+                              (fn [a]
+                                (let [fseq 
+                                      (drop-while #(< (:time %) (:time-prior data))
+                                                  (:original-seq a))]
+                                  (send *agent* play-on-thread)
+                                  (assoc a :seq fseq)
+                                  )
+                                
+                                )
+                              ))
                       )
                     (-> a
-                        ;; FIXME we want to trim events here up to time
-                        (assoc :t0-in-millis (- (System/currentTimeMillis) t))
+                        (assoc :t0-in-millis (- (System/currentTimeMillis) (:time-now  t)))
                         (assoc :slave-status :in-transport)
                         )
                     ))
@@ -210,7 +217,7 @@ This is the data which is bound by the agent when you play"
 (defn play-slaved [ s bus & items ]
   (let [ag (apply setup-agent s items)
         buso (midi/get-opened-transmitter bus)
-        ag-eh (fn [a e]          (println "play agent occured: " e " and we still have value " (-> @a (dissoc :seq) (dissoc :original-seq))))
+        ag-eh (fn [a e]          (println "Slave agent error: " e "\nagent\n " (-> @a (dissoc :seq) (dissoc :original-seq))))
         _ (set-error-handler! ag ag-eh)
         ]
     ;; SetUp SMTPE Reciever on bus
